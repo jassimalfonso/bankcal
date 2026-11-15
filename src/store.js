@@ -14,7 +14,7 @@ const PRESETS = {
 
 const BLANK = {
   name: '', character: 'mochi', theme: 'sky', sex: 'm', age: '', height: '', weight: '',
-  activity: 'sedentary', goal: 'lose025', customBudget: '', mode: 'auto', onboarded: false,
+  activity: 'sedentary', goal: 'lose025', customBudget: '', mode: 'light', onboarded: false,
 }
 
 export function useStore(user) {
@@ -29,6 +29,10 @@ export function useStore(user) {
         const data = snap.data()
         // one-time: Fart Monster becomes the fried egg, Sewer Butt the avocado
         const preset = PRESETS[user.email?.toLowerCase()]
+        // one-time: switch everyone who was on 'auto' to the new light default
+        if (!data.lightV1) {
+          setDoc(ref, { lightV1: true, ...(data.mode === 'auto' || !data.mode ? { mode: 'light' } : {}) }, { merge: true })
+        }
         if (preset && !data.buddyV2) {
           setDoc(ref, { character: preset.character, buddyV2: true }, { merge: true })
         }

@@ -28,7 +28,7 @@ function useMode(mode) {
 export default function App() {
   const [user, setUser] = useState(undefined) // undefined = still checking
   useEffect(() => onAuthStateChanged(auth, setUser), [])
-  useMode('auto')
+  useMode('light')
 
   if (DEMO && location.search.includes('buddies')) return <BuddySheet />
   if (DEMO && !location.search.includes('signin')) return <Bank user={{ uid: 'demo', email: 'demo@example.com' }} />
@@ -42,7 +42,7 @@ function Bank({ user }) {
   const { profile, entries } = store
   const [tab, setTab] = useState('today')
   const [adding, setAdding] = useState(false)
-  useMode(profile?.mode ?? 'auto')
+  useMode(profile?.mode ?? 'light')
 
   const today = logicalDayKey(profile ?? {})
   const todays = useMemo(() => entries.filter((e) => e.day === today), [entries, today])

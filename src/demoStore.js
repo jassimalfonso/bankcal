@@ -5,7 +5,7 @@ import { dayKey } from './calc'
 export function useDemoStore() {
   const [profile, setProfile] = useState({
     name: 'Fart Monster', character: 'egg', theme: 'moss', sex: 'm', age: '', height: '', weight: '',
-    activity: 'sedentary', goal: 'lose025', customBudget: '', mode: 'auto', onboarded: new URLSearchParams(location.search).get('new') !== '1',
+    activity: 'sedentary', goal: 'lose025', customBudget: '', mode: 'light', onboarded: new URLSearchParams(location.search).get('new') !== '1',
     ...(new URLSearchParams(location.search).has('seed') ? {
       age: '32', height: 173, weight: 83.4, targetWeight: 78,
       days: Object.fromEntries(Array.from({ length: 15 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (14 - i)); return [dayKey(d), { weight: Math.round((85.2 - i * 0.13 + (i % 3 === 0 ? 0.2 : 0)) * 10) / 10 }] })),
