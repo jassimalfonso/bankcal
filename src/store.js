@@ -8,7 +8,7 @@ import { dayKey } from './calc'
 
 // You two are set up automatically; everyone else picks their own.
 const PRESETS = {
-  'jassim.alfonso@gmail.com': { name: 'Fart Monster', character: 'cloud', theme: 'moss', sex: 'm', onboarded: true },
+  'jassim.alfonso@gmail.com': { name: 'Fart Monster', character: 'husky', theme: 'moss', sex: 'm', onboarded: true },
   'christinenantonio@gmail.com': { name: 'Sewer Butt', character: 'dog', theme: 'plum', sex: 'f', onboarded: true },
 }
 
@@ -26,7 +26,12 @@ export function useStore(user) {
     const ref = doc(db, 'users', uid)
     const unsubProfile = onSnapshot(ref, (snap) => {
       if (snap.exists()) {
-        setProfile({ ...BLANK, ...snap.data() })
+        const data = snap.data()
+        // one-time: Fart Monster becomes a husky (was the cloud monster)
+        if (user.email?.toLowerCase() === 'jassim.alfonso@gmail.com' && !data.huskyV1) {
+          setDoc(ref, { character: 'husky', huskyV1: true }, { merge: true })
+        }
+        setProfile({ ...BLANK, ...data })
       } else if (!snap.metadata.fromCache) {
         const preset = PRESETS[user.email?.toLowerCase()] ?? { name: user.displayName?.split(' ')[0] ?? '' }
         const fresh = { ...BLANK, ...preset, email: user.email, createdAt: Date.now() }

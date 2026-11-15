@@ -4,7 +4,7 @@ import { dayKey } from './calc'
 
 export function useDemoStore() {
   const [profile, setProfile] = useState({
-    name: 'Fart Monster', character: 'cloud', theme: 'moss', sex: 'm', age: '', height: '', weight: '',
+    name: 'Fart Monster', character: 'husky', theme: 'moss', sex: 'm', age: '', height: '', weight: '',
     activity: 'sedentary', goal: 'lose025', customBudget: '', mode: 'auto', onboarded: new URLSearchParams(location.search).get('new') !== '1',
   })
   const [entries, setEntries] = useState([])

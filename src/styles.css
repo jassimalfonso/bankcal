@@ -244,7 +244,7 @@ h1, h2, p { margin: 0; }
 .onboard .preview { display: grid; place-items: center; height: 190px; border-radius: 28px; background: var(--soft); margin-bottom: 8px; }
 .onboard h1 { font-size: 32px; font-weight: 900; letter-spacing: -0.02em; margin: 18px 4px 4px; }
 .onboard > p { color: var(--muted); margin: 0 4px; }
-.choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.choice-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .choice { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px; border-radius: 20px; background: var(--card); border: 2.5px solid transparent; font-weight: 750; font-size: 14px; box-shadow: var(--shadow); }
 .choice.on { border-color: var(--accent); }
 .swatches { display: flex; gap: 12px; padding: 4px; }

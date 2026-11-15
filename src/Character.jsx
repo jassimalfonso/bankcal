@@ -9,7 +9,7 @@ export function moodFor(budget, spent) {
   return 'happy'
 }
 
-function Eyes({ mood, y = 56, gap = 15, cx = 60 }) {
+function Eyes({ mood, y = 56, gap = 15, cx = 60, iris }) {
   if (mood === 'sleepy') {
     return (
       <g stroke="#2b2b30" strokeWidth="3" strokeLinecap="round" fill="none">
@@ -25,7 +25,8 @@ function Eyes({ mood, y = 56, gap = 15, cx = 60 }) {
       {[cx - gap, cx + gap].map((x) => (
         <g key={x}>
           <circle cx={x} cy={y} r={r} fill="#fff" />
-          <circle cx={x + 1} cy={py} r="4.2" fill="#2b2b30" />
+          {iris && <circle cx={x + 1} cy={py} r="5.6" fill={iris} />}
+          <circle cx={x + 1} cy={py} r={iris ? 3 : 4.2} fill="#2b2b30" />
           <circle cx={x + 2.5} cy={py - 1.8} r="1.4" fill="#fff" />
         </g>
       ))}
@@ -111,16 +112,47 @@ function GoldenRetriever({ mood }) {
   )
 }
 
-// kind: 'cloud' (the Fart Monster shape) or 'dog' (the Sewer Butt golden retriever)
+function Husky({ mood }) {
+  return (
+    <>
+      <defs>
+        <linearGradient id="hk-body" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#7d8796" />
+          <stop offset="1" stopColor="#4c5563" />
+        </linearGradient>
+      </defs>
+      {/* upright pointed ears */}
+      <path d="M24 52 L30 8 L56 34 Z" fill="#4c5563" />
+      <path d="M96 52 L90 8 L64 34 Z" fill="#4c5563" />
+      <path d="M31 42 L34 20 L48 34 Z" fill="#f4d7de" />
+      <path d="M89 42 L86 20 L72 34 Z" fill="#f4d7de" />
+      {/* grey head */}
+      <rect x="20" y="28" width="80" height="80" rx="40" fill="url(#hk-body)" />
+      {/* white husky mask: forehead stripe, eyebrow dots, lower face */}
+      <path d="M60 34 C54 44 52 52 46 58 C36 60 26 70 26 82 C28 100 44 108 60 108 C76 108 92 100 94 82 C94 70 84 60 74 58 C68 52 66 44 60 34 Z" fill="#f7f7fa" />
+      <ellipse cx="43" cy="44" rx="5" ry="3.4" fill="#f7f7fa" />
+      <ellipse cx="77" cy="44" rx="5" ry="3.4" fill="#f7f7fa" />
+      <ellipse cx="38" cy="80" rx="6.5" ry="4" fill="#ff8fa3" opacity="0.4" />
+      <ellipse cx="82" cy="80" rx="6.5" ry="4" fill="#ff8fa3" opacity="0.4" />
+      <Eyes mood={mood} y={60} gap={15} iris="#6ec3f0" />
+      <path d="M53 72 h14 a4 4 0 0 1 -3 6 l-4 3 l-4 -3 a4 4 0 0 1 -3 -6 z" fill="#2b2b30" />
+      <Mouth mood={mood} y={89} />
+      {mood === 'happy' && <ellipse cx="60" cy="97" rx="5" ry="6" fill="#ff7d93" />}
+    </>
+  )
+}
+
+// kind: 'husky' (Fart Monster), 'dog' (Sewer Butt, golden retriever) or 'cloud' (cloud monster)
 export const CHARACTERS = [
-  { id: 'cloud', label: 'Cloud monster' },
+  { id: 'husky', label: 'Husky' },
   { id: 'dog', label: 'Golden retriever' },
+  { id: 'cloud', label: 'Cloud monster' },
 ]
 
 export default function Character({ kind, mood = 'happy', size = 64, className = '' }) {
   return (
     <svg className={`character ${className}`} width={size} height={size} viewBox="0 0 120 120" aria-hidden="true">
-      {kind === 'dog' || kind === 'roo' || kind === 'rat' ? <GoldenRetriever mood={mood} /> : <FartMonster mood={mood} />}
+      {kind === 'husky' ? <Husky mood={mood} /> : kind === 'dog' || kind === 'roo' || kind === 'rat' ? <GoldenRetriever mood={mood} /> : <FartMonster mood={mood} />}
     </svg>
   )
 }

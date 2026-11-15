@@ -24,7 +24,7 @@ export default function SignIn() {
   return (
     <div className="signin">
       <div className="pair">
-        <span className="theme-moss"><Character kind="cloud" size={96} /></span>
+        <span className="theme-moss"><Character kind="husky" size={96} /></span>
         <span className="theme-plum"><Character kind="dog" size={96} /></span>
       </div>
       <h1>BankCal</h1>
