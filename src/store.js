@@ -1,63 +1,64 @@
-// Local-first storage. Everything lives on this phone (localStorage).
-// v0.3 will swap this for a synced backend without touching the screens.
-import { useEffect, useState, useCallback } from 'react'
+// Cloud store. Each person's data lives under users/{uid} in Firestore.
+// Firestore's on-device cache means reads and writes work offline and
+// sync automatically when the phone is back online.
+import { useCallback, useEffect, useState } from 'react'
+import { collection, deleteDoc, doc, limit, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore'
+import { db } from './firebase'
 import { dayKey } from './calc'
 
-const KEY = 'cal-bank:v1'
-
-const DEFAULT = {
-  active: 'fm',
-  mode: 'auto', // appearance: auto | light | dark
-  profiles: {
-    fm: { name: 'Fart Monster', emoji: '👾', theme: 'moss', sex: 'm', age: '', height: '', weight: '', activity: 'sedentary', goal: 'lose025', customBudget: '' },
-    sb: { name: 'Sewer Butt', emoji: '🐀', theme: 'plum', sex: 'f', age: '', height: '', weight: '', activity: 'sedentary', goal: 'lose025', customBudget: '' },
-  },
-  entries: [], // { id, pid, day, ts, name, kcal, meal, photo }
+// You two are set up automatically; everyone else picks their own.
+const PRESETS = {
+  'jassim.alfonso@gmail.com': { name: 'Fart Monster', character: 'cloud', theme: 'moss', sex: 'm', onboarded: true },
+  'christinenantonio@gmail.com': { name: 'Sewer Butt', character: 'rat', theme: 'plum', sex: 'f', onboarded: true },
 }
 
-function load() {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (!raw) return DEFAULT
-    const s = JSON.parse(raw)
-    return { ...DEFAULT, ...s, profiles: { ...DEFAULT.profiles, ...s.profiles } }
-  } catch {
-    return DEFAULT
-  }
+const BLANK = {
+  name: '', character: 'cloud', theme: 'sky', sex: 'm', age: '', height: '', weight: '',
+  activity: 'sedentary', goal: 'lose025', customBudget: '', mode: 'auto', onboarded: false,
 }
 
-export function useStore() {
-  const [state, setState] = useState(load)
+export function useStore(user) {
+  const [profile, setProfile] = useState(null)
+  const [entries, setEntries] = useState([])
+  const uid = user.uid
 
   useEffect(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state))
-    } catch {
-      /* storage full — photos are the usual cause; v0.2 moves them to IndexedDB */
-    }
-  }, [state])
+    const ref = doc(db, 'users', uid)
+    const unsubProfile = onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        setProfile({ ...BLANK, ...snap.data() })
+      } else if (!snap.metadata.fromCache) {
+        const preset = PRESETS[user.email?.toLowerCase()] ?? { name: user.displayName?.split(' ')[0] ?? '' }
+        const fresh = { ...BLANK, ...preset, email: user.email, createdAt: Date.now() }
+        setProfile(fresh)
+        setDoc(ref, fresh, { merge: true })
+      }
+    })
+    const q = query(collection(db, 'users', uid, 'entries'), orderBy('ts', 'desc'), limit(500))
+    const unsubEntries = onSnapshot(q, (snap) => setEntries(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
+    return () => { unsubProfile(); unsubEntries() }
+  }, [uid, user.email, user.displayName])
 
-  const setActive = useCallback((active) => setState((s) => ({ ...s, active })), [])
-  const setMode = useCallback((mode) => setState((s) => ({ ...s, mode })), [])
-
-  const updateProfile = useCallback(
-    (pid, patch) => setState((s) => ({ ...s, profiles: { ...s.profiles, [pid]: { ...s.profiles[pid], ...patch } } })),
-    [],
-  )
+  const updateProfile = useCallback((patch) => {
+    setProfile((p) => ({ ...p, ...patch }))
+    setDoc(doc(db, 'users', uid), patch, { merge: true })
+  }, [uid])
 
   const addEntry = useCallback((e) => {
+    const ref = doc(collection(db, 'users', uid, 'entries'))
     const now = new Date()
-    const entry = { id: crypto.randomUUID?.() ?? String(now.getTime()), ts: now.getTime(), day: dayKey(now), ...e }
-    setState((s) => ({ ...s, entries: [entry, ...s.entries] }))
-  }, [])
+    const entry = { ts: now.getTime(), day: dayKey(now), name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo ?? null }
+    setDoc(ref, entry) // the local cache updates instantly; the cloud catches up when online
+    return ref.id
+  }, [uid])
 
-  const removeEntry = useCallback((id) => setState((s) => ({ ...s, entries: s.entries.filter((x) => x.id !== id) })), [])
+  const removeEntry = useCallback((id) => { deleteDoc(doc(db, 'users', uid, 'entries', id)) }, [uid])
 
-  return { state, setActive, setMode, updateProfile, addEntry, removeEntry }
+  return { profile, entries, updateProfile, addEntry, removeEntry }
 }
 
-// Shrink a camera photo to a small JPEG thumbnail so storage stays light.
-export function compressPhoto(file, max = 320) {
+// Shrink a camera photo to a small JPEG thumbnail so cloud storage stays tiny (~8–15 KB).
+export function compressPhoto(file, max = 280) {
   return new Promise((resolve, reject) => {
     const img = new Image()
     const url = URL.createObjectURL(file)
@@ -68,7 +69,7 @@ export function compressPhoto(file, max = 320) {
       c.height = Math.round(img.height * scale)
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height)
       URL.revokeObjectURL(url)
-      resolve(c.toDataURL('image/jpeg', 0.72))
+      resolve(c.toDataURL('image/jpeg', 0.68))
     }
     img.onerror = reject
     img.src = url

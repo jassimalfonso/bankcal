@@ -1,55 +1,70 @@
 import { useEffect, useMemo, useState } from 'react'
+import { onAuthStateChanged } from 'firebase/auth'
+import { auth } from './firebase'
 import { useStore } from './store'
+import { useDemoStore } from './demoStore'
+
+const DEMO = import.meta.env.MODE === 'demo'
 import { dailyBudget, dayKey } from './calc'
 import Today from './screens/Today'
 import Statement from './screens/Statement'
 import Me from './screens/Me'
 import AddSheet from './screens/AddSheet'
-import SwitchSheet from './screens/SwitchSheet'
+import SignIn from './screens/SignIn'
+import Onboarding from './screens/Onboarding'
 import { IconMe, IconPlus, IconStatement, IconToday } from './icons'
 
+function useMode(mode) {
+  useEffect(() => {
+    document.documentElement.dataset.mode = mode
+    const dark = mode === 'dark' || (mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#000000' : '#F2F3F7')
+  }, [mode])
+}
+
 export default function App() {
-  const store = useStore()
-  const { state } = store
-  const pid = state.active
-  const profile = state.profiles[pid]
+  const [user, setUser] = useState(undefined) // undefined = still checking
+  useEffect(() => onAuthStateChanged(auth, setUser), [])
+  useMode('auto')
+
+  if (DEMO && !location.search.includes('signin')) return <Bank user={{ uid: 'demo', email: 'demo@example.com' }} />
+  if (user === undefined) return <div className="loading" />
+  if (!user) return <SignIn />
+  return <Bank user={user} />
+}
+
+function Bank({ user }) {
+  const store = DEMO ? useDemoStore() : useStore(user) // eslint-disable-line react-hooks/rules-of-hooks
+  const { profile, entries } = store
   const [tab, setTab] = useState('today')
   const [adding, setAdding] = useState(false)
-  const [switching, setSwitching] = useState(false)
+  useMode(profile?.mode ?? 'auto')
 
-  const mine = useMemo(() => state.entries.filter((e) => e.pid === pid), [state.entries, pid])
   const today = dayKey()
-  const todays = mine.filter((e) => e.day === today)
+  const todays = useMemo(() => entries.filter((e) => e.day === today), [entries, today])
+
+  if (!profile) return <div className="loading" />
+  if (!profile.onboarded) return <Onboarding {...store} />
+
   const budget = dailyBudget(profile)
-
-  useEffect(() => {
-    const root = document.documentElement
-    root.dataset.mode = state.mode
-    const dark = state.mode === 'dark' || (state.mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches)
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#1B1B19' : '#EDEEEA')
-  }, [state.mode])
-
-  const ctx = { ...store, pid, profile, mine, todays, budget, openSwitch: () => setSwitching(true), goSetup: () => setTab('me') }
+  const ctx = { ...store, user, profile, mine: entries, todays, budget, goSetup: () => setTab('me') }
 
   return (
     <div className={`app theme-${profile.theme}`}>
-      <main className="screen" key={tab + pid}>
+      <main className="screen" key={tab}>
         {tab === 'today' && <Today {...ctx} />}
-        {tab === 'statement' && <Statement {...ctx} />}
+        {tab === 'week' && <Statement {...ctx} />}
         {tab === 'me' && <Me {...ctx} />}
       </main>
 
+      <button className="fab" onClick={() => setAdding(true)} aria-label="Log food">
+        <IconPlus size={30} />
+      </button>
+
       <nav className="tabbar">
         <TabBtn id="today" tab={tab} setTab={setTab} label="Today" Icon={IconToday} />
-        <TabBtn id="statement" tab={tab} setTab={setTab} label="Week" Icon={IconStatement} />
-        <button className="fab" onClick={() => setAdding(true)} aria-label="Log food">
-          <IconPlus size={28} />
-        </button>
-        <TabBtn id="me" tab={tab} setTab={setTab} label="Me" Icon={IconMe} />
-        <button className="tab avatar-tab" onClick={() => setSwitching(true)} aria-label="Switch profile">
-          <span className="mini-avatar">{profile.emoji}</span>
-          <span>Switch</span>
-        </button>
+        <TabBtn id="week" tab={tab} setTab={setTab} label="Week" Icon={IconStatement} />
+        <TabBtn id="me" tab={tab} setTab={setTab} label="Settings" Icon={IconMe} />
       </nav>
 
       {adding && (
@@ -57,21 +72,20 @@ export default function App() {
           {...ctx}
           onClose={() => setAdding(false)}
           onSave={(e) => {
-            store.addEntry({ ...e, pid })
+            store.addEntry(e)
             navigator.vibrate?.(12)
             setAdding(false)
             setTab('today')
           }}
         />
       )}
-      {switching && <SwitchSheet {...ctx} onClose={() => setSwitching(false)} />}
     </div>
   )
 }
 
 function TabBtn({ id, tab, setTab, label, Icon }) {
   return (
-    <button className={`tab ${tab === id ? 'on' : ''}`} onClick={() => setTab(id)}>
+    <button className={`tab ${tab === id ? 'on' : ''}`} onClick={() => setTab(id)} aria-current={tab === id ? 'page' : undefined}>
       <Icon />
       <span>{label}</span>
     </button>

@@ -1,4 +1,4 @@
-# Cal Bank 🏦
+# BankCal 🏦
 
 A daily calorie budget that works like a bank account — you get a balance each morning, every meal is a transaction, and the statement tells you whether you saved (deficit) or overspent (surplus).
 
@@ -8,9 +8,10 @@ Two accounts: **👾 Fart Monster** and **🐀 Sewer Butt**.
 
 | Version | Scope | Status |
 |---|---|---|
-| v0.1 | Profiles, budget calculator, manual logging, wallet, statement, installable PWA | ✅ |
-| v0.2 | Photo → AI calorie estimate (serverless function, API key in Vercel env) | ⏳ |
-| v0.3 | Sync both profiles across both phones (Supabase) | ⏳ |
+| v0.1 | Budget calculator, manual logging, statement, installable PWA | ✅ |
+| v0.2 | Soft & airy redesign with mascots, Google login, Firestore sync with offline cache, anyone can join | ✅ |
+| v0.3 | Target weight + date plan, steps/treadmill, food search, photo → calories (Gemini) | ⏳ |
+| v0.4 | Progress + finish-date estimate, daily quote, good-job / motivation screens | ⏳ |
 
 ## How the budget is calculated
 
@@ -45,3 +46,9 @@ src/
 ```
 
 Deploys automatically on Vercel on every push to `main`.
+
+## Firebase
+
+- Project: `bankcal-2d763` (Spark, free). Auth: Google. Database: Firestore.
+- Security rules live in `firestore.rules` — paste into Firebase console → Firestore → Rules → Publish whenever they change.
+- Test UI without signing in: `npx vite build --mode demo --outDir dist-demo && npx vite preview --outDir dist-demo`
