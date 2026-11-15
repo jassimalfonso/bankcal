@@ -175,7 +175,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
         <Line label="Wake up"><input className="date-in" type="time" value={p.wakeTime ?? DEFAULT_WAKE} onChange={(e) => set({ wakeTime: e.target.value })} /></Line>
         <Line label="Bedtime"><input className="date-in" type="time" value={p.bedTime ?? DEFAULT_BED} onChange={(e) => set({ bedTime: e.target.value })} /></Line>
       </div>
-      <p className="fine">Your morning card appears when your day starts. An hour before bed, “Close my day” appears, and at bedtime BankCal offers to close it for you. Late-night snacks after midnight still count to the day you’re in.</p>
+      <p className="fine">A new day starts at midnight, and your morning card greets you the first time you open the app. An hour before bed, “Close my day” appears, and at bedtime BankCal offers to close it for you. Anything eaten after midnight counts toward the new day.</p>
 
       <HabitPicker profile={p} updateProfile={set} />
 

@@ -1222,4 +1222,3 @@ html, body { max-width: 100%; overflow-x: clip; }
 
 /* Nothing shows through beneath the dock */
 body:has(.app)::after, body[data-bg]:not([data-bg='plain']):has(.app)::after { background: linear-gradient(to top, var(--bg) 0, var(--bg) calc(var(--safe-b) + 46px), transparent); }
-.date.late { margin-top: 2px; font-size: 12.5px; font-weight: 700; opacity: 0.85; }

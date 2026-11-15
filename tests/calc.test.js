@@ -56,21 +56,7 @@ test('BMI categories, international and Asian', () => {
   assert.equal(c.bmiInfo(50, 173).cat, 'Underweight')
 })
 
-test('the day rolls over 3 hours before wake-up, never later than 5 am', () => {
-  const p = { wakeTime: '06:30' }
-  assert.equal(c.logicalDayKey(p, new Date(2026, 10, 16, 1, 0)), '2026-11-15') // 1 am snack → yesterday
-  assert.equal(c.logicalDayKey(p, new Date(2026, 10, 16, 3, 30)), '2026-11-16')
-  assert.equal(c.logicalDayKey({ wakeTime: '10:00' }, new Date(2026, 10, 16, 5, 1)), '2026-11-16')
-})
 
-test('wind-down and bedtime windows', () => {
-  const p = { wakeTime: '06:30', bedTime: '22:30' }
-  assert.equal(c.isWindDown(p, new Date(2026, 10, 15, 21, 29)), false)
-  assert.equal(c.isWindDown(p, new Date(2026, 10, 15, 21, 30)), true)
-  assert.equal(c.isBedtime(p, new Date(2026, 10, 15, 22, 15)), true)
-  assert.equal(c.isBedtime(p, new Date(2026, 10, 16, 2, 0)), true) // past midnight, same day
-  assert.equal(c.isBedtime(p, new Date(2026, 10, 16, 8, 0)), false)
-})
 
 test('sleep hours across midnight', () => {
   assert.equal(c.sleepHours({ bed: '22:30', wake: '06:30' }), 8)
@@ -220,18 +206,23 @@ test('routine items: honest calories from time and effort', async () => {
   assert.equal(c.earned({ workouts: [w, hard] }, 84).work, 41)
 })
 
-test('missing wake or bed time falls back to the defaults (06:30, 22:30)', () => {
-  const at = (h, m) => new Date(2026, 10, 16, h, m)
-  assert.equal(c.logicalDayKey({}, at(0, 40)), '2026-11-15') // was treated as a midnight rollover
-  assert.equal(c.logicalDayKey({ wakeTime: '' }, at(0, 40)), '2026-11-15')
-  assert.equal(c.logicalDayKey({}, at(3, 30)), '2026-11-16')
-  assert.equal(c.isWindDown({}, at(21, 0)), false)
-  assert.equal(c.isWindDown({}, at(21, 45)), true)
-  assert.equal(c.isBedtime({}, at(12, 0)), false)
+
+
+test('the day changes at midnight, like the clock', () => {
+  const at = (d, h, m) => new Date(2026, 10, d, h, m)
+  assert.equal(c.logicalDayKey({ wakeTime: '06:30' }, at(15, 23, 59)), '2026-11-15')
+  assert.equal(c.logicalDayKey({ wakeTime: '06:30' }, at(16, 0, 1)), '2026-11-16')
+  assert.equal(c.logicalDayKey({}, at(16, 0, 40)), '2026-11-16')
 })
 
-test('after midnight the header explains which day is counting', () => {
-  assert.deepEqual(c.dayEnd({}, new Date(2026, 10, 16, 0, 55)), { late: true, at: '3:30 am' })
-  assert.equal(c.dayEnd({}, new Date(2026, 10, 16, 9, 0)).late, false)
-  assert.equal(c.dayEnd({ wakeTime: '10:00' }, new Date(2026, 10, 16, 1, 0)).at, '5:00 am')
+test('close-my-day windows end at midnight', () => {
+  const at = (h, m) => new Date(2026, 10, 15, h, m)
+  const p = { bedTime: '22:30' }
+  assert.equal(c.isWindDown(p, at(21, 29)), false); assert.equal(c.isWindDown(p, at(21, 30)), true); assert.equal(c.isWindDown(p, at(23, 59)), true)
+  assert.equal(c.isBedtime(p, at(22, 14)), false); assert.equal(c.isBedtime(p, at(22, 15)), true)
+  assert.equal(c.isBedtime(p, at(0, 30)), false); assert.equal(c.isWindDown(p, at(8, 0)), false) // a new day: nothing to close yet
+  assert.equal(c.isWindDown({}, at(21, 45)), true); assert.equal(c.isBedtime({}, at(12, 0)), false) // defaults
+  const owl = { bedTime: '01:00' } // bedtime after midnight: prompt late in the evening
+  assert.equal(c.isWindDown(owl, at(22, 59)), false); assert.equal(c.isWindDown(owl, at(23, 0)), true)
+  assert.equal(c.isBedtime(owl, at(23, 45)), true); assert.equal(c.isBedtime(owl, at(0, 30)), false)
 })

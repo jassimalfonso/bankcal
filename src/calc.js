@@ -256,36 +256,33 @@ export function streak(entries, budgetFor, todayKey, includeToday) {
 }
 
 // ───────── Your day: wake-up and bedtime ─────────
-// The "day" rolls over 3 hours before you wake (never later than 5 am), so a
-// late-night snack after midnight still counts towards the day you were in.
+// The app's day is the calendar day: it changes at midnight, the same as the phone's clock.
 // 'HH:MM' → minutes; anything missing or malformed → null so the defaults apply
 const toMin = (hhmm) => { if (!/^\d{1,2}:\d{2}$/.test(String(hhmm ?? ''))) return null; const [h, m] = hhmm.split(':').map(Number); return h * 60 + m }
 const nowMin = (d) => d.getHours() * 60 + d.getMinutes()
-const inWindow = (m, s, e) => (s <= e ? m >= s && m < e : m >= s || m < e)
 export const DEFAULT_WAKE = '06:30'
 export const DEFAULT_BED = '22:30'
 
-function rollover(p) {
-  const wake = toMin(p?.wakeTime) ?? toMin(DEFAULT_WAKE)
-  return Math.min(300, Math.max(0, wake - 180))
+export function logicalDayKey(_p, now = new Date()) {
+  return dayKey(now)
 }
 
-export function logicalDayKey(p, now = new Date()) {
-  const d = new Date(now)
-  if (nowMin(now) < rollover(p)) d.setDate(d.getDate() - 1)
-  return dayKey(d)
-}
-
-// From an hour before bedtime until the day rolls over: time to close the day.
-export function isWindDown(p, now = new Date()) {
+// Evening windows run from shortly before bedtime until midnight. If bedtime is after
+// midnight, they use the last stretch of the evening so they still belong to the day being closed.
+const eveningFrom = (p, lead, fallback) => {
   const bed = toMin(p?.bedTime) ?? toMin(DEFAULT_BED)
-  return inWindow(nowMin(now), (bed - 60 + 1440) % 1440, rollover(p))
+  const start = (bed - lead + 1440) % 1440
+  return start < 720 ? fallback : start
+}
+
+// From an hour before bedtime: time to close the day.
+export function isWindDown(p, now = new Date()) {
+  return nowMin(now) >= eveningFrom(p, 60, 23 * 60)
 }
 
 // From 15 minutes before bedtime: the app offers to close the day by itself.
 export function isBedtime(p, now = new Date()) {
-  const bed = toMin(p?.bedTime) ?? toMin(DEFAULT_BED)
-  return inWindow(nowMin(now), (bed - 15 + 1440) % 1440, rollover(p))
+  return nowMin(now) >= eveningFrom(p, 15, 23 * 60 + 45)
 }
 
 // Sleep: stored on the day you woke up as { bed: 'HH:MM', wake: 'HH:MM' }.
@@ -450,12 +447,4 @@ export function partnerProgress({ entries, profile, budgetFor, todayKey }) {
     }
   }
   return out
-}
-
-// When the app's day ends, as 'H:MM am', and whether we're in the after-midnight stretch of it.
-export function dayEnd(p, now = new Date()) {
-  const r = rollover(p)
-  const late = dayKey(now) !== logicalDayKey(p, now)
-  const h = Math.floor(r / 60), m = r % 60
-  return { late, at: `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}` }
 }
