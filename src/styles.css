@@ -1089,3 +1089,27 @@ html, body { max-width: 100%; overflow-x: clip; }
 .ver { position: relative; margin: 14px 0 0; font-size: 12px; font-weight: 700; color: var(--muted); opacity: 0.8; text-align: center; font-variant-numeric: tabular-nums; }
 .signin .ver { max-width: none; font-size: 12px; }
 @media (min-width: 860px) { .signin .ver { grid-column: 2; grid-row: 6; text-align: left; align-self: start; } }
+
+/* Arrange cards in place on Today */
+.cards { -webkit-touch-callout: none; }
+.cards :not(input):not(textarea) { -webkit-user-select: none; user-select: none; }
+.cards.arranging { padding: 6px 0 96px; }
+.cards.arranging .slot-body { display: none; }
+.arrange-hint { margin: 30px 4px 12px; font-weight: 800; font-size: 15px; color: var(--muted); animation: fade 0.3s; }
+.cards.arranging .slot { margin-bottom: 10px; transition: transform 0.22s var(--ease); position: relative; }
+.slot-tile { display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 8px; border-radius: 18px; background: var(--card); box-shadow: var(--shadow); font-weight: 850; font-size: 16px; touch-action: none; cursor: grab; animation: tile-in 0.28s var(--ease) backwards, wiggle 2.4s ease-in-out 0.3s infinite; }
+.slot:nth-child(even) .slot-tile { animation-delay: 0s, 0.9s; }
+.slot.lifted .slot-tile { animation: none; box-shadow: 0 14px 30px -10px rgba(30, 30, 60, 0.4); cursor: grabbing; }
+.cards.dragging .slot-tile { animation: none; }
+.st-icon { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 11px; background: var(--soft); font-size: 18px; }
+.st-name { flex: 1; min-width: 0; }
+.slot-tile .grip { margin: -6px -4px -6px 0; }
+@keyframes tile-in { from { opacity: 0; transform: scale(0.96); } }
+@keyframes wiggle { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-0.5deg); } 75% { transform: rotate(0.5deg); } }
+.arrange-bar { position: fixed; left: 0; right: 0; bottom: calc(var(--safe-b) + 92px); z-index: 12; display: flex; justify-content: center; pointer-events: none; animation: fade 0.3s; }
+.arrange-bar .btn-primary { pointer-events: auto; padding: 14px 44px; box-shadow: 0 10px 24px -8px var(--accent); }
+@media (prefers-reduced-motion: reduce) { .slot-tile { animation: none; } }
+/* a satisfying tick */
+.habit .check.on, .pick .check.on { animation: tick 0.35s var(--spring); }
+@keyframes tick { 0% { transform: scale(0.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.arrange-bar .btn-primary { width: auto; }

@@ -5,7 +5,7 @@ import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
 
 // Today: tick tiny habits. No streak pressure — just a quiet row of dots for the week.
-export function HabitsCard({ profile, updateProfile, dayLog, setDay, today, goSetup }) {
+export function HabitsCard({ profile, updateProfile, dayLog, setDay, today, goSetup, notify }) {
   const mine = profile.habits ?? []
   const done = dayLog.habits ?? {}
   if (!mine.length) {
@@ -37,7 +37,7 @@ export function HabitsCard({ profile, updateProfile, dayLog, setDay, today, goSe
           const two = habitDays(profile.days, id, today, 14).filter(Boolean).length
           const on = !!done[id]
           return (
-            <button key={id} className={`habit ${on ? 'on' : ''}`} onClick={() => setDay(today, { habits: { ...done, [id]: !on } })} aria-pressed={on}>
+            <button key={id} className={`habit ${on ? 'on' : ''}`} onClick={() => { setDay(today, { habits: { ...done, [id]: !on } }); if (!on && mine.length > 1 && mine.every((x) => x === id || done[x])) notify?.('All your habits done today 🎉') }} aria-pressed={on}>
               <span className="h-emoji">{h.emoji}</span>
               <span className="h-main">
                 <b>{h.label}</b>

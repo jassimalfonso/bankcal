@@ -186,7 +186,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
 
       <h2 className="group-title">Today screen</h2>
       <DragList items={fullLayout(p.layout2)} names={SECTION_NAMES} onChange={(layout2) => set({ layout2 })} />
-      <p className="fine">Hold a row and drag it to change the order of the cards on Today. You can also hold any card on Today to do this.</p>
+      <p className="fine">Hold a row and drag it to change the order of the cards on Today. You can also hold any card on Today and drag it right there.</p>
 
       <h2 className="group-title">Look and feel</h2>
       <div className="card form-list">
