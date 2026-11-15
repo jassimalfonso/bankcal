@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { WORKOUTS, fmt, workoutKcal, workoutMinutes } from '../calc'
 import { IconClose } from '../icons'
+import { useSheetDrag } from '../motion'
 
 // Pick an exercise, enter amounts, see the calories it earns, deposit.
 export default function WorkoutSheet({ profile, onClose, onSave }) {
   const [type, setType] = useState(null)
+  const drag = useSheetDrag(onClose)
   const [f, setF] = useState({ min: '', sec: '', sets: '1', reps: '', kg: '' })
   const def = WORKOUTS.find((w) => w.id === type)
   const entry = def ? { type, min: +f.min, sec: +f.sec, sets: +f.sets || 1, reps: +f.reps, kg: +f.kg } : null
@@ -14,8 +16,8 @@ export default function WorkoutSheet({ profile, onClose, onSave }) {
 
   return (
     <div className="sheet-wrap" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Log a workout">
-        <div className="grabber" />
+      <div className="sheet" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Log a workout">
+        <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
         <div className="sheet-head">
           <div>
             <p className="muted">Workouts earn calories</p>

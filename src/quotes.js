@@ -3,6 +3,7 @@
 // Cached per day so it still shows offline. Plus one famous motivational saying.
 import { useEffect, useState } from 'react'
 import { MOTIVATION } from './motivation'
+import { REFLECTIONS } from './reflections'
 
 const BIBLE_REFS = [
   'Philippians 4:13', 'Isaiah 40:31', 'Joshua 1:9', '1 Corinthians 6:19-20', '1 Corinthians 10:31', 'Galatians 6:9',
@@ -56,6 +57,7 @@ export function useVerse(ref, cacheTag) {
 }
 
 export function useDailyWords(dayKey) {
-  const verse = useVerse(pick(BIBLE_REFS, dayKey, 7), dayKey)
-  return { verse, motivation: pick(MOTIVATION, dayKey, 3) }
+  const ref = pick(BIBLE_REFS, dayKey, 7)
+  const verse = useVerse(ref, dayKey)
+  return { verse, reflection: REFLECTIONS[ref] ?? null, motivation: pick(MOTIVATION, dayKey, 3) }
 }

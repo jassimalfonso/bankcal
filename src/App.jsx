@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from './firebase'
 import { useStore } from './store'
@@ -51,6 +51,14 @@ function Bank({ user }) {
   const [morning, setMorning] = useState(() => { try { return !localStorage.getItem(seenKey) } catch { return false } })
   const closeMorning = () => { try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } setMorning(false) }
   const [result, setResult] = useState(false)
+  // One toast for the whole app, with optional Undo.
+  const [toast, setToast] = useState(null)
+  const toastTimer = useRef(null)
+  const notify = (text, undo) => {
+    clearTimeout(toastTimer.current)
+    setToast({ text, undo, key: Date.now() })
+    toastTimer.current = setTimeout(() => setToast(null), 4000)
+  }
   // At bedtime, offer to close the day once (if anything was logged and it isn't closed yet).
   const bedKey = `bankcal:bedtime:${user.uid}:${today}`
   useEffect(() => {
@@ -77,7 +85,7 @@ function Bank({ user }) {
   const yEntries = entries.filter((e) => e.day === yKey)
   const yesterday = yEntries.length && budgetFor(yKey) != null ? { net: budgetFor(yKey) - yEntries.reduce((a, e) => a + e.kcal, 0) } : null
   const closeDay = () => { if (budget != null && spent - budget <= 0) store.setDay(today, { closed: true }); setResult(true) }
-  const ctx = { ...store, addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: () => setTab('me') }
+  const ctx = { ...store, notify, addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: () => setTab('me') }
 
   return (
     <div className={`app theme-${profile.theme}`}>
@@ -97,6 +105,12 @@ function Bank({ user }) {
         <TabBtn id="me" tab={tab} setTab={setTab} label="Settings" Icon={IconMe} />
       </nav>
 
+      {toast && (
+        <div className="toast" role="status" key={toast.key}>
+          <span>{toast.text}</span>
+          {toast.undo && <button onClick={() => { toast.undo(); setToast(null) }}>Undo</button>}
+        </div>
+      )}
       {morning && <MorningCard profile={profile} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
       {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true)} today={today} onClose={() => setResult(false)} />}
 
@@ -105,8 +119,9 @@ function Bank({ user }) {
           {...ctx}
           onClose={() => setAdding(false)}
           onSave={(e) => {
-            store.addEntry({ ...e, day: today })
+            const id = store.addEntry({ ...e, day: today })
             navigator.vibrate?.(12)
+            notify(`Spent ${e.kcal.toLocaleString('en-US')} kcal on ${e.name}`, () => store.removeEntry(id))
             setAdding(false)
             setTab('today')
           }}

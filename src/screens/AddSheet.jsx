@@ -4,6 +4,7 @@ import { fmt, mealFor } from '../calc'
 import { searchFoods } from '../foods'
 import { askFood } from '../ai'
 import { IconCamera, IconClose } from '../icons'
+import { useSheetDrag } from '../motion'
 
 export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
   const [photo, setPhoto] = useState(null)
@@ -12,6 +13,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
   const [picked, setPicked] = useState(false) // hide suggestions after choosing one
   const [ai, setAi] = useState({ busy: false, err: '', results: null, items: null, confidence: '' })
   const fileRef = useRef(null)
+  const drag = useSheetDrag(onClose)
   const meal = mealFor()
 
   // One-tap repeats: last distinct foods this person logged.
@@ -87,8 +89,8 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
 
   return (
     <div className="sheet-wrap" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Log food">
-        <div className="grabber" />
+      <div className="sheet" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Log food">
+        <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
         <div className="sheet-head">
           <div>
             <p className="muted">{meal}</p>

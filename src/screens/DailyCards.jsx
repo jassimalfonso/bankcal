@@ -3,9 +3,20 @@ import { GOOD_REFS, OVER_REFS, pick, useVerse } from '../quotes'
 import { BOUNCE_BACK, GOOD_DAY } from '../motivation'
 import Character from '../Character'
 
-function Words({ words }) {
+export function Words({ words }) {
   return (
     <div className="words">
+      <div className="word">
+        <span className="word-tag">Today’s verse</span>
+        {words.verse.text ? <p className="word-text">“{words.verse.text}”</p> : <p className="word-text muted">Connect to the internet to load today’s verse.</p>}
+        <span className="word-ref">{words.verse.reference}{words.verse.version ? ` · ${words.verse.version}` : ''}</span>
+      </div>
+      {words.reflection && (
+        <div className="word reflection">
+          <span className="word-tag">Reflection</span>
+          <p className="word-text">{words.reflection}</p>
+        </div>
+      )}
       {words.motivation && (
         <div className="word">
           <span className="word-tag">Today’s motivation</span>
@@ -13,11 +24,6 @@ function Words({ words }) {
           <span className="word-ref">{words.motivation.by}</span>
         </div>
       )}
-      <div className="word">
-        <span className="word-tag">Today’s verse</span>
-        {words.verse.text ? <p className="word-text">“{words.verse.text}”</p> : <p className="word-text muted">Connect to the internet to load today’s verse.</p>}
-        <span className="word-ref">{words.verse.reference}{words.verse.version ? ` · ${words.verse.version}` : ''}</span>
-      </div>
     </div>
   )
 }
@@ -95,12 +101,11 @@ export function DayResult({ profile, budget, spent, earn, streakDays, today, onC
   )
 }
 
-export function WordsCard({ words, onOpen }) {
+export function WordsCard({ words }) {
   return (
-    <button className="card words-card" onClick={onOpen}>
-      <span className="word-tag">Today’s motivation</span>
-      <p>{words.motivation ? `“${words.motivation.text}”` : ''}</p>
-      <small>{words.motivation?.by} · tap for today’s verse</small>
-    </button>
+    <section className="today-words">
+      <h2 className="group-title">Today’s word</h2>
+      <Words words={words} />
+    </section>
   )
 }

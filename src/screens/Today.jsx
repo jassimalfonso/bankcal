@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useCountUp, useSwipe } from '../motion'
 import { fmt } from '../calc'
 import Character, { moodFor } from '../Character'
 import Activity from './Activity'
@@ -32,12 +33,14 @@ export function Ring({ value, size = 220, stroke = 20, children }) {
 }
 
 export default function Today(props) {
-  const { profile, mine, todays, budget, base, earn, addEntry, removeEntry, goSetup, words, streakDays, closeDay, openWords, windDown } = props
-  const [toast, setToast] = useState(null)
+  const { profile, mine, todays, budget, base, earn, addEntry, removeEntry, goSetup, words, streakDays, closeDay, openWords, windDown, notify } = props
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const left = budget != null ? budget - spent : null
   const over = left != null && left < 0
   const mood = moodFor(budget, spent)
+  const shownLeft = useCountUp(left != null ? Math.abs(left) : null)
+  const shownSpent = useCountUp(spent)
+  const shownEarn = useCountUp(earn.total)
   const date = (() => { const [y, m, d] = props.today.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) })()
 
   const recent = useMemo(() => {
@@ -53,9 +56,7 @@ export default function Today(props) {
   function quickAdd(r) {
     const id = addEntry({ name: r.name, kcal: r.kcal, meal: r.meal, photo: r.photo })
     navigator.vibrate?.(10)
-    setToast({ id, text: `Added ${r.name}` })
-    clearTimeout(quickAdd.t)
-    quickAdd.t = setTimeout(() => setToast(null), 3500)
+    notify(`Spent ${fmt(r.kcal)} kcal on ${r.name}`, () => removeEntry(id))
   }
 
   return (
@@ -72,7 +73,7 @@ export default function Today(props) {
 
       <section className={`card hero ${over ? 'is-over' : ''}`}>
         <Ring value={budget ? (over ? 1 : left / budget) : 0}>
-          <Character kind={profile.character} mood={mood} size={112} className="bob" />
+          <span className="munch" key={todays.length}><Character kind={profile.character} mood={mood} size={112} className="bob" /></span>
         </Ring>
 
         {budget == null ? (
@@ -83,21 +84,20 @@ export default function Today(props) {
         ) : (
           <>
             <div className="hero-num">
-              <b>{fmt(Math.abs(left))}</b>
+              <b>{fmt(shownLeft ?? 0)}</b>
               <span>{over ? 'kcal over' : 'kcal left'}</span>
             </div>
             <p className="hero-msg">{message(profile.name, budget, spent)}</p>
             {(windDown || location.search.includes('evening')) && todays.length > 0 && <button className="btn-soft close-day" onClick={closeDay}>Close my day</button>}
             <div className="hero-stats three">
-              <div><b>{fmt(spent)}</b><span>Eaten</span></div>
-              <div><b className="pos">+{fmt(earn.total)}</b><span>Earned</span></div>
+              <div><b>{fmt(shownSpent)}</b><span>Eaten</span></div>
+              <div><b className="pos">+{fmt(shownEarn)}</b><span>Earned</span></div>
               <div><b>{fmt(base)}</b><span>Budget</span></div>
             </div>
           </>
         )}
       </section>
 
-      <WordsCard words={words} onOpen={openWords} />
 
       {budget != null && <Activity {...props} />}
 
@@ -124,35 +124,37 @@ export default function Today(props) {
         </div>
       ) : (
         <ul className="card list">
-          {todays.map((e) => <Row key={e.id} e={e} onDelete={() => removeEntry(e.id)} />)}
+          {todays.map((e) => <Row key={e.id} e={e} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo })) }} />)}
         </ul>
       )}
 
-      {toast && (
-        <div className="toast" role="status">
-          <span>{toast.text}</span>
-          <button onClick={() => { removeEntry(toast.id); setToast(null) }}>Undo</button>
-        </div>
-      )}
+      <WordsCard words={words} />
+
     </>
   )
 }
 
 export function Row({ e, onDelete }) {
   const [open, setOpen] = useState(false)
+  const { dx, setDx, handlers } = useSwipe(() => onDelete?.())
   const time = new Date(e.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const shift = onDelete ? (dx || (open ? -84 : 0)) : 0
   return (
-    <li className="row" onClick={() => onDelete && setOpen((o) => !o)}>
-      {e.photo ? <img className="row-img" src={e.photo} alt="" /> : <span className="row-img ph">{e.name.slice(0, 1).toUpperCase()}</span>}
-      <div className="row-text">
-        <b>{e.name}</b>
-        <small>{e.meal} at {time}</small>
-      </div>
-      {open && onDelete ? (
-        <button className="row-del" onClick={(ev) => { ev.stopPropagation(); onDelete() }}>Remove</button>
-      ) : (
+    <li className="row-wrap">
+      {onDelete && <button className="row-del-bg" onClick={() => onDelete()} aria-label={`Remove ${e.name}`}>Remove</button>}
+      <div
+        className="row"
+        style={{ transform: `translateX(${shift}px)`, transition: dx ? 'none' : undefined }}
+        onClick={() => { if (!onDelete) return; setDx(0); setOpen((o) => !o) }}
+        {...(onDelete ? handlers : {})}
+      >
+        {e.photo ? <img className="row-img" src={e.photo} alt="" /> : <span className="row-img ph">{e.name.slice(0, 1).toUpperCase()}</span>}
+        <div className="row-text">
+          <b>{e.name}</b>
+          <small>{e.meal} at {time}</small>
+        </div>
         <span className="row-kcal">{fmt(e.kcal)}<small> kcal</small></span>
-      )}
+      </div>
     </li>
   )
 }
