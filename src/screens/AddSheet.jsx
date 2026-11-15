@@ -53,7 +53,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
         <div className="sheet-head">
           <div>
             <p className="muted">{meal}</p>
-            <h2>What are you spending on?</h2>
+            <h2>What are you about to eat?</h2>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
         </div>
@@ -64,8 +64,8 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
           ) : (
             <>
               <IconCamera size={30} />
-              <span>Snap your plate</span>
-              <small>AI calorie reading arrives in v0.2</small>
+              <span>Take a photo of your plate</span>
+              <small>Calories from photos are coming in the next update</small>
             </>
           )}
         </button>
@@ -97,7 +97,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
 
         {after != null && (
           <p className={`after ${after < 0 ? 'neg' : ''}`}>
-            {after < 0 ? `This puts you ${fmt(-after)} kcal over budget` : `${fmt(after)} kcal left after this`}
+            {after < 0 ? `This takes you ${fmt(-after)} kcal over` : `${fmt(after)} kcal left after this`}
           </p>
         )}
 

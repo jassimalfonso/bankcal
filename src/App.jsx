@@ -26,7 +26,7 @@ export default function App() {
     const root = document.documentElement
     root.dataset.mode = state.mode
     const dark = state.mode === 'dark' || (state.mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches)
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#161513' : '#EEEAE3')
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#1B1B19' : '#EDEEEA')
   }, [state.mode])
 
   const ctx = { ...store, pid, profile, mine, todays, budget, openSwitch: () => setSwitching(true), goSetup: () => setTab('me') }
@@ -41,7 +41,7 @@ export default function App() {
 
       <nav className="tabbar">
         <TabBtn id="today" tab={tab} setTab={setTab} label="Today" Icon={IconToday} />
-        <TabBtn id="statement" tab={tab} setTab={setTab} label="Statement" Icon={IconStatement} />
+        <TabBtn id="statement" tab={tab} setTab={setTab} label="Week" Icon={IconStatement} />
         <button className="fab" onClick={() => setAdding(true)} aria-label="Log food">
           <IconPlus size={28} />
         </button>

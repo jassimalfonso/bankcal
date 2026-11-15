@@ -1,96 +1,88 @@
 import { useState } from 'react'
 import { fmt } from '../calc'
 
-function greeting() {
+function partOfDay() {
   const h = new Date().getHours()
-  if (h < 12) return 'Good morning'
-  if (h < 17) return 'Good afternoon'
-  return 'Good evening'
+  if (h < 12) return 'Morning'
+  if (h < 17) return 'Afternoon'
+  return 'Evening'
+}
+
+// How much of the tank is still full (0–1).
+export function level(budget, spent) {
+  if (!budget) return 0
+  return Math.max(0, Math.min(1, (budget - spent) / budget))
 }
 
 export default function Today({ profile, todays, budget, removeEntry, openSwitch, goSetup }) {
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const left = budget != null ? budget - spent : null
-  const pct = budget ? Math.min(100, (spent / budget) * 100) : 0
   const over = left != null && left < 0
+  const lvl = level(budget, spent)
+  const date = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
   return (
     <>
-      <header className="top">
-        <div>
-          <p className="muted">{greeting()},</p>
-          <h1 className="hello">{profile.name}</h1>
+      <section className={`tank ${over ? 'is-over' : ''}`}>
+        <div className="tank-fill" style={{ height: `${budget == null ? 0 : lvl * 44}%` }}>
+          <svg className="wave" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0 10 Q 50 0 100 8 T 200 8 T 300 8 T 400 6 V16 H0 Z" />
+          </svg>
         </div>
-        <button className="avatar" onClick={openSwitch} aria-label="Switch profile">
-          {profile.emoji}
-        </button>
-      </header>
 
-      <section className={`card ${over ? 'is-over' : ''}`}>
-        <div className="card-row">
-          <span className="card-label">{over ? 'Overdrawn' : 'Available today'}</span>
-          <span className="chip-date">{new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-        </div>
+        <header className="tank-top">
+          <p>{partOfDay()},<br /><b>{profile.name}</b></p>
+          <button className="avatar" onClick={openSwitch} aria-label="Switch account">{profile.emoji}</button>
+        </header>
 
         {budget == null ? (
-          <div className="card-setup">
-            <p>Set your metrics to open your daily budget.</p>
-            <button className="btn-light" onClick={goSetup}>Set up budget</button>
+          <div className="tank-setup">
+            <p>Your tank is empty until we know your numbers.</p>
+            <button className="btn-fill" onClick={goSetup}>Set my budget</button>
           </div>
         ) : (
-          <>
-            <div className="balance">
-              <span className="num">{over ? '−' : ''}{fmt(Math.abs(left))}</span>
-              <span className="unit">kcal</span>
-            </div>
-            <div className="meter" aria-hidden="true">
-              <div className="meter-fill" style={{ width: `${pct}%` }} />
-            </div>
-            <div className="card-foot">
-              <div><small>Budget</small><b>{fmt(budget)}</b></div>
-              <div><small>Spent</small><b>{fmt(spent)}</b></div>
-              <div><small>Status</small><b className="pill">{over ? 'Surplus' : spent === 0 ? 'Fresh day' : 'In deficit'}</b></div>
-            </div>
-          </>
+          <div className="tank-num">
+            <span className="num">{over ? '−' : ''}{fmt(Math.abs(left))}</span>
+            <span className="unit">{over ? 'kcal over budget' : 'kcal left today'}</span>
+          </div>
         )}
-        <div className="card-name">Account — {profile.name}</div>
+
+        <div className="tank-foot">
+          <span>{date}</span>
+          {budget != null && <span>{fmt(spent)} eaten of {fmt(budget)}</span>}
+        </div>
       </section>
 
       <div className="section-head">
-        <h2>Today’s receipts</h2>
-        {todays.length > 0 && <span className="muted">{todays.length} item{todays.length > 1 ? 's' : ''}</span>}
+        <h2>Eaten today</h2>
+        {todays.length > 0 && <span>{todays.length} {todays.length > 1 ? 'meals' : 'meal'}</span>}
       </div>
 
       {todays.length === 0 ? (
-        <div className="empty">
-          <div className="empty-icon">🧾</div>
-          <p>Nothing spent yet.</p>
-          <p className="muted">Tap <b>+</b> to log what you’re about to eat.</p>
-        </div>
+        <p className="empty">Nothing eaten yet. Tap <b>+</b> before your next bite and watch the tank.</p>
       ) : (
-        <ul className="receipts">
-          {todays.map((e) => <Receipt key={e.id} e={e} onDelete={() => removeEntry(e.id)} />)}
+        <ul className="gallery">
+          {todays.map((e) => <Tile key={e.id} e={e} onDelete={() => removeEntry(e.id)} />)}
         </ul>
       )}
     </>
   )
 }
 
-export function Receipt({ e, onDelete }) {
+export function Tile({ e, onDelete }) {
   const [open, setOpen] = useState(false)
   const time = new Date(e.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   return (
-    <li className={`receipt ${open ? 'open' : ''}`} onClick={() => setOpen((o) => !o)}>
-      {e.photo ? <img className="thumb" src={e.photo} alt="" /> : <div className="thumb ph">{e.name.slice(0, 1).toUpperCase()}</div>}
-      <div className="r-mid">
-        <b>{e.name}</b>
-        <small>{e.meal} · {time}</small>
+    <li className="tile" onClick={() => onDelete && setOpen((o) => !o)}>
+      <div className="tile-img">
+        {e.photo ? <img src={e.photo} alt="" /> : <span>{e.name.slice(0, 1).toUpperCase()}</span>}
+        <b className="tile-kcal">{fmt(e.kcal)}</b>
+        {open && (
+          <button className="tile-del" onClick={(ev) => { ev.stopPropagation(); onDelete() }}>Remove</button>
+        )}
       </div>
-      {open && onDelete ? (
-        <button className="r-del" onClick={(ev) => { ev.stopPropagation(); onDelete() }}>Delete</button>
-      ) : (
-        <span className="r-amt">−{fmt(e.kcal)}</span>
-      )}
+      <p className="tile-name">{e.name}</p>
+      <p className="tile-meta">{e.meal}, {time}</p>
     </li>
   )
 }

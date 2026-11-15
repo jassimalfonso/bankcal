@@ -10,16 +10,13 @@ export default function Me({ pid, profile: p, updateProfile, openSwitch, state, 
 
   return (
     <>
-      <header className="top">
-        <div>
-          <p className="muted">Profile & budget</p>
-          <h1 className="hello">{p.name}</h1>
-        </div>
-        <button className="avatar" onClick={openSwitch} aria-label="Switch profile">{p.emoji}</button>
+      <header className="page-head">
+        <p>Settings for<br /><b>{p.name}</b></p>
+        <button className="avatar" onClick={openSwitch} aria-label="Switch account">{p.emoji}</button>
       </header>
 
       <section className="budget-box">
-        <small>Daily budget</small>
+        <small>Your daily budget</small>
         <div className="balance dark">
           <span className="num">{budget != null ? fmt(budget) : '—'}</span>
           <span className="unit">kcal</span>
@@ -101,7 +98,7 @@ export default function Me({ pid, profile: p, updateProfile, openSwitch, state, 
           <p><b>iPhone:</b> open in Safari → Share → Add to Home Screen.</p>
           <p><b>Android:</b> open in Chrome → ⋮ menu → Install app.</p>
         </div>
-        <p className="foot muted">Cal Bank v0.1 · data stays on this phone</p>
+        <p className="foot muted">Cal Bank v0.1. Your data stays on this phone for now.</p>
       </div>
     </>
   )
