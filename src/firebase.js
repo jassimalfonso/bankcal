@@ -1,13 +1,15 @@
 // Firebase: Google sign-in + Firestore with an on-device cache,
 // so the app keeps working offline and syncs when back online.
 import { initializeApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth'
+import { getAuth, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth'
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'
 
 // These values are public by design — access is protected by firestore.rules.
 const firebaseConfig = {
   apiKey: 'AIzaSyAXkvFgBNjuX181Y0w_mUHT5uxSYO2aM38',
-  authDomain: 'bankcal-2d763.firebaseapp.com',
+  // Sign-in runs through our own domain (proxied to Firebase by vercel.json) so
+  // phone browsers don't block it as a cross-site login.
+  authDomain: location.hostname.endsWith('vercel.app') ? location.host : 'bankcal-2d763.firebaseapp.com',
   projectId: 'bankcal-2d763',
   storageBucket: 'bankcal-2d763.firebasestorage.app',
   messagingSenderId: '799138565904',
@@ -20,13 +22,18 @@ export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
 })
 
+// Phones (and the installed home-screen app) use a full-page redirect;
+// desktops use a popup.
+const preferRedirect =
+  matchMedia('(display-mode: standalone)').matches || navigator.standalone || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
 export async function signIn() {
   const provider = new GoogleAuthProvider()
   provider.setCustomParameters({ prompt: 'select_account' })
+  if (preferRedirect) return signInWithRedirect(auth, provider)
   try {
     await signInWithPopup(auth, provider)
   } catch (e) {
-    // Some installed-app browsers block popups — fall back to a full-page redirect.
     if (e?.code === 'auth/popup-blocked' || e?.code === 'auth/operation-not-supported-in-this-environment') {
       await signInWithRedirect(auth, provider)
     } else {
@@ -34,5 +41,8 @@ export async function signIn() {
     }
   }
 }
+
+// Result of a redirect sign-in (null if there wasn't one). Errors surface on the sign-in screen.
+export const redirectResult = getRedirectResult(auth)
 
 export const logOut = () => signOut(auth)

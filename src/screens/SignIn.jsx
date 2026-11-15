@@ -1,10 +1,14 @@
-import { useState } from 'react'
-import { signIn } from '../firebase'
+import { useEffect, useState } from 'react'
+import { redirectResult, signIn } from '../firebase'
 import Avatar from '../Avatar'
 
 export default function SignIn() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+
+  useEffect(() => {
+    redirectResult.catch((e) => setErr(explain(e)))
+  }, [])
 
   async function go() {
     setBusy(true)
@@ -12,9 +16,7 @@ export default function SignIn() {
     try {
       await signIn()
     } catch (e) {
-      if (e?.code !== 'auth/popup-closed-by-user' && e?.code !== 'auth/cancelled-popup-request') {
-        setErr(navigator.onLine ? 'Sign-in didn’t work. Please try again.' : 'You’re offline. Connect to the internet to sign in the first time.')
-      }
+      if (e?.code !== 'auth/popup-closed-by-user' && e?.code !== 'auth/cancelled-popup-request') setErr(explain(e))
       setBusy(false)
     }
   }
@@ -39,4 +41,12 @@ export default function SignIn() {
       {err && <p className="err">{err}</p>}
     </div>
   )
+}
+
+function explain(e) {
+  if (!navigator.onLine) return 'You’re offline. Connect to the internet to sign in the first time.'
+  const code = e?.code ?? 'unknown'
+  if (code === 'auth/operation-not-allowed') return 'Google sign-in is switched off in Firebase. Turn it on in Authentication → Sign-in method.'
+  if (code === 'auth/unauthorized-domain') return 'This web address isn’t on Firebase’s Authorized domains list yet.'
+  return `Sign-in didn’t work (${code}). Please try again.`
 }
