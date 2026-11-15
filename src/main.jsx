@@ -1,7 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import '@fontsource-variable/nunito/wght.css'
+import '@fontsource-variable/jost/wght.css'
 import './styles.css'
+import './bauhaus.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
