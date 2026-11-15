@@ -1,7 +1,19 @@
 import { useState } from 'react'
-import Character, { CHARACTERS } from '../Character'
+import Avatar, { AVATARS } from '../Avatar'
 
 export const THEMES = ['moss', 'plum', 'sky', 'sun']
+
+export function AvatarGrid({ value, onChange }) {
+  return (
+    <div className="avatar-grid">
+      {AVATARS.map((a) => (
+        <button key={a.id} className={`avatar-choice ${value === a.id ? 'on' : ''}`} onClick={() => onChange(a.id)} aria-label={a.label} aria-pressed={value === a.id}>
+          <Avatar id={a.id} size={48} />
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export default function Onboarding({ profile, updateProfile }) {
   const [name, setName] = useState(profile.name || '')
@@ -12,9 +24,9 @@ export default function Onboarding({ profile, updateProfile }) {
   return (
     <div className={`app theme-${theme}`}>
       <div className="onboard">
-        <div className="preview"><Character kind={character} size={150} className="bob" /></div>
+        <div className="preview"><Avatar id={character} size={150} className="bob" /></div>
         <h1>Make it yours</h1>
-        <p>Pick a name and a little buddy. They’ll react to how your day is going.</p>
+        <p>Pick a name and a buddy. Their mood follows how your day is going.</p>
 
         <label className="field">
           <span>Your name in the app</span>
@@ -22,14 +34,7 @@ export default function Onboarding({ profile, updateProfile }) {
         </label>
 
         <h2 className="group-title">Buddy</h2>
-        <div className="choice-row">
-          {CHARACTERS.map((c) => (
-            <button key={c.id} className={`choice ${character === c.id ? 'on' : ''}`} onClick={() => setCharacter(c.id)}>
-              <Character kind={c.id} size={64} />
-              {c.label}
-            </button>
-          ))}
-        </div>
+        <AvatarGrid value={character} onChange={setCharacter} />
 
         <h2 className="group-title">Colour</h2>
         <div className="swatches">

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { fmt } from '../calc'
-import Character, { moodFor } from '../Character'
+import Avatar, { moodFor } from '../Avatar'
 
 function message(name, budget, spent) {
   if (budget == null) return `${name} is asleep until you set a daily budget.`
@@ -63,13 +63,13 @@ export default function Today({ profile, mine, todays, budget, addEntry, removeE
           <h1>Hi, {profile.name}</h1>
         </div>
         <button className="char-btn" onClick={goSetup} aria-label="Settings">
-          <Character kind={profile.character} mood={mood} size={44} />
+          <Avatar id={profile.character} size={40} />
         </button>
       </header>
 
       <section className={`card hero ${over ? 'is-over' : ''}`}>
         <Ring value={budget ? (over ? 1 : left / budget) : 0}>
-          <Character kind={profile.character} mood={mood} size={112} className="bob" />
+          <Avatar id={profile.character} mood={mood} size={124} className="bob" />
         </Ring>
 
         {budget == null ? (

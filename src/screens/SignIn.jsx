@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { signIn } from '../firebase'
-import Character from '../Character'
+import Avatar from '../Avatar'
 
 export default function SignIn() {
   const [busy, setBusy] = useState(false)
@@ -22,8 +22,8 @@ export default function SignIn() {
   return (
     <div className="signin">
       <div className="pair">
-        <span className="theme-moss"><Character kind="cloud" size={96} /></span>
-        <span className="theme-plum"><Character kind="rat" size={96} /></span>
+        <Avatar id="poo" size={104} />
+        <Avatar id="mouse" size={104} />
       </div>
       <h1>BankCal</h1>
       <p>Your daily calories, kept like a bank balance. Spend them wisely.</p>
