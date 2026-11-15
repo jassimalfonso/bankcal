@@ -3,6 +3,7 @@ import { GOOD_REFS, OVER_REFS, pick, useVerse } from '../quotes'
 import { BOUNCE_BACK, GOOD_DAY } from '../motivation'
 import { useEffect, useState } from 'react'
 import Character from '../Character'
+import BankCard from './BankCard'
 import { useEscape } from '../motion'
 
 // The verse and its reflection are one card: tap the verse to unfold the reflection.
@@ -47,7 +48,7 @@ const helloFor = (h = new Date().getHours()) => (h < 12 ? 'Good morning' : h < 1
 const longDate = () => new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
 // First open of the day: a calm, two-step welcome. Greeting first, then today's word, then the app.
-export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose, sleep, onSleep }) {
+export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose, sleep, onSleep, budget }) {
   useEscape(onClose)
   const [step, setStep] = useState(0)
   const now = new Date()
@@ -57,6 +58,7 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
   const usual = profile.wakeTime ?? DEFAULT_WAKE
   const [wake, setWake] = useState(sleep?.wake ?? (nowHM < usual && nowHM > '03:00' ? nowHM : usual))
   const hrs = sleepHours({ bed, wake })
+  const [editSleep, setEditSleep] = useState(false)
   const next = () => { onSleep?.({ bed, wake }); setStep(1) }
   const skip = () => { onSleep?.({ bed, wake }); onClose() }
   return (
@@ -66,25 +68,29 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
 
       {step === 0 ? (
         <div className="dawn-step" key="greet">
-          <Character kind={profile.character} mood="happy" size={120} className="bob" />
-          <p className="dawn-date">{longDate()}</p>
+          <BankCard value={budget} holder={profile.name.toUpperCase()} buddies={[{ kind: profile.character, theme: profile.theme }]} />
           <h1>{birthday ? `Happy birthday, ${profile.name}! 🎂` : `${helloFor()}, ${profile.name}`}</h1>
           <p className="dawn-line">
             {birthday ? 'Enjoy your day. Cake counts, and one day won’t undo your progress.'
               : yesterday ? (yesterday.net >= 0 ? `Yesterday you saved ${fmt(yesterday.net)} kcal. Well done.` : 'Yesterday went over, and that’s okay. Today is a fresh start.')
               : 'A new day, a full balance.'}
+            {streakDays > 1 && <><br /><span className="dawn-streak">🔥 {streakDays} days in a row</span></>}
           </p>
-          {streakDays > 1 && <p className="dawn-streak">🔥 {streakDays} days in a row within budget</p>}
-          <div className="dawn-sleep">
-            <span className="ds-title">How did you sleep?</span>
-            <div className="ds-row">
-              <label><span>Went to bed</span><input type="time" value={bed} onChange={(e) => setBed(e.target.value)} /></label>
-              <label><span>Woke up</span><input type="time" value={wake} onChange={(e) => setWake(e.target.value)} /></label>
+          {!editSleep ? (
+            <button className="sleep-chip" onClick={() => setEditSleep(true)}>
+              😴 <b>{hrs != null && hrs <= 14 ? fmtSleep(hrs) : '—'}</b> of sleep <span>Edit</span>
+            </button>
+          ) : (
+            <div className="dawn-sleep">
+              <div className="ds-row">
+                <label><span>Went to bed</span><input type="time" value={bed} onChange={(e) => setBed(e.target.value)} /></label>
+                <label><span>Woke up</span><input type="time" value={wake} onChange={(e) => setWake(e.target.value)} /></label>
+              </div>
+              <span className={`ds-total ${hrs != null && hrs < SLEEP_TARGET ? 'short' : ''}`}>
+                {hrs != null && hrs > 14 ? 'That looks long. Check the times.' : `${fmtSleep(hrs)} of sleep${hrs != null && hrs < SLEEP_TARGET ? '. Go gently on yourself today.' : ''}`}
+              </span>
             </div>
-            <span className={`ds-total ${hrs != null && hrs < SLEEP_TARGET ? 'short' : ''}`}>
-              {hrs != null && hrs > 14 ? 'That looks long. Check the times.' : `${fmtSleep(hrs)} of sleep${hrs != null && hrs < SLEEP_TARGET ? '. Go a little gentler on yourself today.' : ''}`}
-            </span>
-          </div>
+          )}
           <button className="btn-primary dawn-btn" onClick={next}>Continue</button>
           <button className="dawn-skip" onClick={skip}>Skip to my day</button>
         </div>
@@ -101,14 +107,17 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
   )
 }
 
-// Later opens the same day: a brief greeting that fades into the app.
-export function WelcomeBack({ profile, onDone }) {
-  useEffect(() => { const t = setTimeout(onDone, 1500); return () => clearTimeout(t) }, [onDone])
+// Later opens the same day: the card shows what's left, then fades into the app.
+export function WelcomeBack({ profile, left, onDone }) {
+  useEffect(() => { const t = setTimeout(onDone, 2600); return () => clearTimeout(t) }, [onDone])
   return (
-    <button className={`hello-back theme-${profile.theme}`} onClick={onDone} aria-label="Continue to BankCal">
-      <Character kind={profile.character} mood="happy" size={96} className="bob" />
-      <span className="hb-title">{helloFor()}, {profile.name}</span>
-      <span className="hb-sub">Welcome back</span>
+    <button className={`dawn hello-back theme-${profile.theme}`} onClick={onDone} aria-label="Continue to BankCal">
+      <div className="dawn-glow" aria-hidden="true" />
+      <div className="dawn-step">
+        <BankCard label={left != null && left < 0 ? 'Over today' : 'Left today'} value={left == null ? null : Math.abs(left)} holder={profile.name.toUpperCase()} buddies={[{ kind: profile.character, theme: profile.theme }]} />
+        <h1>Welcome back, {profile.name}</h1>
+        <p className="dawn-line">{helloFor()}. Tap anywhere to continue.</p>
+      </div>
     </button>
   )
 }

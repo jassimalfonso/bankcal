@@ -3,6 +3,7 @@ import { useCountUp, useSwipe } from '../motion'
 import { fmt } from '../calc'
 import Character, { moodFor } from '../Character'
 import { missingFor } from '../calc'
+import { DEFAULT_LAYOUT } from '../layout'
 import Activity from './Activity'
 import { WordsCard } from './DailyCards'
 
@@ -105,36 +106,40 @@ export default function Today(props) {
       </section>
 
 
-      {budget != null && <Activity {...props} />}
-
-      {recent.length > 0 && (
-        <>
-          <h2 className="group-title">Eat again</h2>
-          <div className="quick">
-            {recent.map((r) => (
-              <button key={r.id} className="quick-chip" onClick={() => quickAdd(r)}>
-                {r.photo ? <img src={r.photo} alt="" /> : <span className="q-dot">+</span>}
-                <span className="q-name">{r.name}</span>
-                <span className="q-kcal">{fmt(r.kcal)}</span>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-
-      <h2 className="group-title">Meals</h2>
-      {todays.length === 0 ? (
-        <div className="card empty">
-          <p>No meals yet today.</p>
-          <p className="muted">Tap the + button before you eat.</p>
-        </div>
-      ) : (
-        <ul className="card list">
-          {todays.map((e) => <Row key={e.id} e={e} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo })) }} />)}
-        </ul>
-      )}
-
-      <WordsCard words={words} />
+      {(profile.layout ?? DEFAULT_LAYOUT).map((id) => {
+        if (id === 'words') return <WordsCard key="words" words={words} />
+        if (id === 'deposits') return budget != null ? <section key="deposits" className="block"><Activity {...props} /></section> : null
+        if (id === 'eat') return recent.length > 0 ? (
+          <section key="eat" className="block">
+            <h2 className="group-title">Eat again</h2>
+            <div className="quick">
+              {recent.map((r) => (
+                <button key={r.id} className="quick-chip" onClick={() => quickAdd(r)}>
+                  {r.photo ? <img src={r.photo} alt="" /> : <span className="q-dot">+</span>}
+                  <span className="q-name">{r.name}</span>
+                  <span className="q-kcal">{fmt(r.kcal)}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null
+        if (id === 'meals') return (
+          <section key="meals" className="block">
+            <h2 className="group-title">Meals</h2>
+            {todays.length === 0 ? (
+              <div className="card empty">
+                <p>No meals yet today.</p>
+                <p className="muted">Tap the + button before you eat.</p>
+              </div>
+            ) : (
+              <ul className="card list">
+                {todays.map((e) => <Row key={e.id} e={e} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo })) }} />)}
+              </ul>
+            )}
+          </section>
+        )
+        return null
+      })}
 
     </>
   )

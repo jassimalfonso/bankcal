@@ -1,6 +1,7 @@
 import { useState, Children, cloneElement, isValidElement } from 'react'
 import { ACTIVITY, ageOf, DEFAULT_BED, DEFAULT_WAKE, GOALS, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
 import Character from '../Character'
+import { DEFAULT_LAYOUT, SECTION_NAMES } from '../layout'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
 
@@ -156,6 +157,10 @@ export default function Me({ user, profile: p, updateProfile }) {
       <h2 className="group-title">Buddy</h2>
       <div className="card buddy-card"><BuddyGrid value={p.character} onChange={(id) => set({ character: id })} /></div>
 
+      <h2 className="group-title">Today screen</h2>
+      <LayoutEditor layout={p.layout ?? DEFAULT_LAYOUT} onChange={(layout) => set({ layout })} />
+      <p className="fine">Move sections up or down to set the order under your balance.</p>
+
       <h2 className="group-title">Look and feel</h2>
       <div className="card form-list">
         <Line label="Colour">
@@ -215,5 +220,26 @@ function Num({ value, onChange, unit, ph, decimal, 'aria-label': al }) {
       <input inputMode={decimal ? 'decimal' : 'numeric'} value={value} onChange={onChange} placeholder={ph} aria-label={al} />
       <span>{unit}</span>
     </label>
+  )
+}
+
+function LayoutEditor({ layout, onChange }) {
+  const move = (i, d) => {
+    const next = [...layout]
+    ;[next[i], next[i + d]] = [next[i + d], next[i]]
+    onChange(next)
+  }
+  return (
+    <ol className="card layout-list">
+      {layout.map((id, i) => (
+        <li key={id}>
+          <span>{SECTION_NAMES[id]}</span>
+          <span className="lo-btns">
+            <button onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${SECTION_NAMES[id]} up`}>↑</button>
+            <button onClick={() => move(i, 1)} disabled={i === layout.length - 1} aria-label={`Move ${SECTION_NAMES[id]} down`}>↓</button>
+          </span>
+        </li>
+      ))}
+    </ol>
   )
 }

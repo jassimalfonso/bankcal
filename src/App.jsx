@@ -134,8 +134,8 @@ function Bank({ user }) {
           {toast.undo && <button onClick={() => { toast.undo(); setToast(null) }}>Undo</button>}
         </div>
       )}
-      {!morning && hello && profile.onboarded && <WelcomeBack profile={profile} onDone={doneHello} />}
-      {morning && <MorningCard profile={profile} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
+      {!morning && hello && profile.onboarded && <WelcomeBack profile={profile} left={budget != null ? budget - spent : null} onDone={doneHello} />}
+      {morning && <MorningCard profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
       {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true)} today={today} onClose={() => setResult(false)} />}
 
       {adding && (

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { redirectResult, signIn } from '../firebase'
-import Character from '../Character'
-import { useCountUp } from '../motion'
+import BankCard from './BankCard'
 
 export default function SignIn() {
   const [busy, setBusy] = useState(false)
@@ -22,32 +21,17 @@ export default function SignIn() {
     }
   }
 
-  const [target, setTarget] = useState(0)
-  useEffect(() => { const t = setTimeout(() => setTarget(1840), 500); return () => clearTimeout(t) }, [])
-  const balance = useCountUp(target, 1300)
 
   return (
     <div className="signin">
       <div className="si-sky" aria-hidden="true"><i /><i /><i /></div>
 
-      <div className="si-stage" aria-hidden="true">
-        <div className="si-card">
-          <div className="si-buddies">
-            <span className="theme-moss"><Character kind="egg" size={78} /></span>
-            <span className="theme-plum"><Character kind="avocado" size={78} /></span>
-          </div>
-          <span className="si-label">Today’s balance</span>
-          <b className="si-balance">{Math.round(balance).toLocaleString('en')}<small>kcal</small></b>
-          <div className="si-chip">
-            <span className="si-cardname">BANKCAL</span>
-            <span className="si-dots"><i /><i /></span>
-          </div>
-        </div>
+      <BankCard value={1840} buddies={[{ kind: 'egg', theme: 'moss' }, { kind: 'avocado', theme: 'plum' }]}>
         <ul className="si-tx">
           <li className="in"><span>🚶 10,000 steps</span><b>+259</b></li>
           <li className="out"><span>🍗 Chicken adobo with rice</span><b>−700</b></li>
         </ul>
-      </div>
+      </BankCard>
 
       <div className="si-copy">
         <h1>Spend calories like money.</h1>
