@@ -41,7 +41,8 @@ export function useVerse(ref, cacheTag) {
     try { return JSON.parse(localStorage.getItem(cacheKey)) } catch { return null }
   })
   useEffect(() => {
-    if (!ref || verse?.text || !navigator.onLine) return
+    // re-check once per open if we only have the WEB fallback, so NLT appears as soon as its key is added
+    if (!ref || (verse?.text && verse.version !== 'WEB') || !navigator.onLine) return
     let alive = true
     fetchVerse(ref)
       .then((v) => {
@@ -50,7 +51,7 @@ export function useVerse(ref, cacheTag) {
       })
       .catch(() => {})
     return () => { alive = false }
-  }, [ref, cacheKey, verse?.text])
+  }, [ref, cacheKey]) // eslint-disable-line react-hooks/exhaustive-deps
   return verse ?? { text: null, reference: ref, version: '' }
 }
 
