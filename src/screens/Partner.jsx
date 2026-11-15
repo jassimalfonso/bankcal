@@ -1,66 +1,111 @@
 import { useState } from 'react'
 import Character from '../Character'
+import { IconClose } from '../icons'
+import { useEscape, useSheetDrag } from '../motion'
 
-// Today: how your partner is doing, and a one-tap cheer. Shares effort, never numbers.
+const CHEERS = ['👏 Go you!', '💪 You’ve got this', '❤️ Proud of you', '🙏 Praying for you']
+
+// Today: how your partner is doing. Tap them for the full picture; cheer as often as you like.
 export function PartnerCard({ partner, today, notify, profile, myTicks = 0 }) {
   const { partners, shares, cheer } = partner
-  const [sent, setSent] = useState(() => { try { return JSON.parse(localStorage.getItem(`bankcal:cheered:${today}`) || '[]') } catch { return [] } })
+  const [open, setOpen] = useState(null)
+  const [justSent, setJustSent] = useState(null)
   const list = partners.map((id) => [id, shares[id]]).filter(([, s]) => s)
   if (!list.length) return null
   // Shared weekly goal: each habit on 5 of 7 days, added up across everyone linked
   const habitsAll = (profile?.habits ?? []).length + list.reduce((a, [, s]) => a + (s.habitsTotal ?? 0), 0)
   const team = habitsAll > 0 ? { target: habitsAll * 5, ticks: myTicks + list.reduce((a, [, s]) => a + (s.weekTicks ?? 0), 0) } : null
   if (team) team.done = team.ticks >= team.target
-  const send = async (id, name) => {
+  const send = async (id, name, msg = '👏') => {
     try {
-      await cheer(id)
-      const next = [...sent, id]
-      setSent(next)
-      try { localStorage.setItem(`bankcal:cheered:${today}`, JSON.stringify(next)) } catch { /* ignore */ }
-      notify(`Cheer sent to ${name} 👏`)
+      await cheer(id, msg)
+      setJustSent(id); setTimeout(() => setJustSent((x) => (x === id ? null : x)), 1800)
+      notify(`Sent to ${name}: ${msg}`)
     } catch { notify('Couldn’t send that. Check your connection.') }
   }
+  const today_ = (s) => {
+    const fresh = s.day === today
+    return { fresh, bits: [
+      s.streak > 1 && `🔥 ${s.streak} days`,
+      fresh && s.habitsTotal > 0 && `${s.habitsDone}/${s.habitsTotal} habits`,
+      fresh && s.moved && 'moved today',
+      fresh && s.logged && !s.moved && 'logging today',
+    ].filter(Boolean) }
+  }
+  const sel = open && shares[open]
   return (
     <section className="block">
       <h2 className="group-title">Together</h2>
-      {team && (
-        <div className={`card team ${team.done ? 'done' : ''}`}>
-          <div className="team-top"><span>This week together</span><b>{team.ticks} / {team.target} habit ticks</b></div>
-          <div className="ws-bar"><i style={{ width: `${Math.max(3, Math.min(100, (team.ticks / team.target) * 100))}%` }} /></div>
-          <p className="fine">{team.done ? 'You reached this week’s goal together. Well done, both of you! 🎉' : `${team.target - team.ticks} more to reach this week’s shared goal. Every tick from either of you counts.`}</p>
-        </div>
-      )}
+      {team && <TeamGoal team={team} />}
       <div className="card partner-list">
         {list.map(([id, s]) => {
-          const fresh = s.day === today
-          const bits = [
-            s.streak > 1 && `🔥 ${s.streak} days`,
-            fresh && s.habitsTotal > 0 && `${s.habitsDone}/${s.habitsTotal} habits`,
-            fresh && s.moved && 'moved today',
-            fresh && s.logged && !s.moved && 'logging today',
-          ].filter(Boolean)
-          const week = [
-            s.weekLogged > 0 && `Last 7 days: ${s.weekWithin} of ${s.weekLogged} on budget`,
-            s.weekWorkouts > 0 && `${s.weekWorkouts} workout${s.weekWorkouts > 1 ? 's' : ''}`,
-            s.kgChange != null && s.kgChange !== 0 && `${s.kgChange < 0 ? '−' : '+'}${Math.abs(s.kgChange).toFixed(1)} kg so far`,
-            s.goalPct != null && `${s.goalPct}% to goal`,
-          ].filter(Boolean)
+          const { fresh, bits } = today_(s)
           return (
             <div className={`partner theme-${s.theme}`} key={id}>
-              <Character kind={s.character} mood={fresh ? 'happy' : 'calm'} size={46} />
-              <div className="p-main">
-                <b>{s.name}</b>
-                <small>{bits.length ? bits.join(' · ') : fresh ? 'Starting the day' : 'Hasn’t opened BankCal yet today'}</small>
-                {week.length > 0 && <small className="p-week">{week.join(' · ')}</small>}
-              </div>
-              <button className={`cheer ${sent.includes(id) ? 'done' : ''}`} disabled={sent.includes(id)} onClick={() => send(id, s.name)}>
-                {sent.includes(id) ? 'Cheered' : '👏 Cheer'}
+              <button className="p-open" onClick={() => setOpen(id)} aria-label={`See ${s.name}’s progress`}>
+                <Character kind={s.character} mood={fresh ? 'happy' : 'calm'} size={46} />
+                <span className="p-main">
+                  <b>{s.name}</b>
+                  <small>{bits.length ? bits.join(' · ') : fresh ? 'Starting the day' : 'Hasn’t opened BankCal yet today'}</small>
+                </span>
+                <span className="chev" aria-hidden="true">›</span>
               </button>
+              <button className={`cheer ${justSent === id ? 'done' : ''}`} onClick={() => send(id, s.name)}>{justSent === id ? 'Sent ✓' : '👏 Cheer'}</button>
             </div>
           )
         })}
       </div>
+      {sel && <PartnerSheet s={sel} info={today_(sel)} team={team} myTicks={myTicks} me={profile?.name} onCheer={(msg) => send(open, sel.name, msg)} onClose={() => setOpen(null)} />}
     </section>
+  )
+}
+
+function TeamGoal({ team, split }) {
+  return (
+    <div className={`card team ${team.done ? 'done' : ''}`}>
+      <div className="team-top"><span>This week together</span><b>{team.ticks} / {team.target} habit ticks</b></div>
+      <div className="ws-bar"><i style={{ width: `${Math.max(3, Math.min(100, (team.ticks / team.target) * 100))}%` }} /></div>
+      {split && <p className="team-split">{split}</p>}
+      <p className="fine">{team.done ? 'You reached this week’s goal together. Well done, both of you! 🎉' : `${team.target - team.ticks} more to reach this week’s shared goal. Every tick from either of you counts.`}</p>
+    </div>
+  )
+}
+
+function PartnerSheet({ s, info, team, myTicks, me, onCheer, onClose }) {
+  const drag = useSheetDrag(onClose)
+  useEscape(onClose)
+  const rows = [
+    ['Streak within budget', s.streak > 0 ? `🔥 ${s.streak} day${s.streak > 1 ? 's' : ''}` : 'Not started yet'],
+    ['Habits today', s.habitsTotal > 0 ? (info.fresh ? `${s.habitsDone} of ${s.habitsTotal} ticked` : 'Not yet today') : 'No habits chosen yet'],
+    ['Moved today', info.fresh && s.moved ? 'Yes 💪' : 'Not yet'],
+    ['Last 7 days', s.weekLogged > 0 ? `${s.weekWithin} of ${s.weekLogged} logged days on budget` : 'Nothing logged yet'],
+    ['Workouts, last 7 days', s.weekWorkouts > 0 ? String(s.weekWorkouts) : 'None yet'],
+    s.kgChange != null && ['Weight so far', `${s.kgChange < 0 ? '−' : s.kgChange > 0 ? '+' : ''}${Math.abs(s.kgChange).toFixed(1)} kg${s.goalPct != null ? ` · ${s.goalPct}% to goal` : ''}`],
+  ].filter(Boolean)
+  return (
+    <div className="sheet-wrap" onClick={onClose}>
+      <div className={`sheet partner-sheet theme-${s.theme}`} style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`${s.name}’s progress`}>
+        <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
+        <div className="sheet-head">
+          <div className="psh-who">
+            <Character kind={s.character} mood="happy" size={56} />
+            <div><p className="muted">{info.fresh ? 'Active today' : 'Not in yet today'}</p><h2>{s.name}</h2></div>
+          </div>
+          <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
+        </div>
+
+        <ul className="psh-rows">{rows.map(([k, v]) => <li key={k}><span>{k}</span><b>{v}</b></li>)}</ul>
+        {s.kgChange == null && <p className="fine">{s.name} hasn’t switched on sharing weight progress.</p>}
+
+        {team && <TeamGoal team={team} split={`${me ?? 'You'}: ${myTicks} · ${s.name}: ${s.weekTicks ?? 0}`} />}
+
+        <h3 className="ex-h">Send a cheer</h3>
+        <div className="psh-cheers">
+          {CHEERS.map((c) => <button key={c} className="btn-soft" onClick={() => onCheer(c)}>{c}</button>)}
+        </div>
+        <p className="fine center">Cheer as often as you like. They’ll see it the next time BankCal is open.</p>
+      </div>
+    </div>
   )
 }
 

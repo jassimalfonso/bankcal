@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from './firebase'
 import { useStore } from './store'
-import { useDemoStore } from './demoStore'
+import { useDemoStore, demoPartner } from './demoStore'
 import { BUDDIES, Buddy } from './buddies'
 
 const DEMO = import.meta.env.MODE === 'demo'
@@ -159,10 +159,11 @@ function Bank({ user }) {
   const yEntries = entries.filter((e) => e.day === yKey)
   const yesterday = yEntries.length && budgetFor(yKey) != null ? { net: budgetFor(yKey) - yEntries.reduce((a, e) => a + e.kcal, 0) } : null
   const closeDay = () => { if (budget != null && spent - budget <= 0) store.setDay(today, { closed: true }); setResult(true) }
-  const partner = usePartners({
-    enabled: !DEMO, uid: user.uid, profile, updateProfile: store.updateProfile, notify,
+  const livePartner = usePartners({
+    enabled: !DEMO, uid: user.uid, profile, updateProfile: store.updateProfile, notify, celebrate,
     summary: { day: today, streak: streakDays, habitsDone: (pf.habits ?? []).filter((id) => dayLog.habits?.[id]).length, habitsTotal: (pf.habits ?? []).length, moved: earn.total > 0, logged: todays.length > 0, weekTicks: weekTicks(pf, today), kgChange: null, goalPct: null, ...partnerProgress({ entries, profile: pf, budgetFor, todayKey: today }) },
   })
+  const partner = DEMO && location.search.includes('partner') ? demoPartner(today) : livePartner
 
   // Milestones: save newly reached ones and let the buddy announce them
   const reachedIds = profile?.onboarded ? reached({ entries, profile: pf, streakDays }) : []

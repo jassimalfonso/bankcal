@@ -1146,3 +1146,21 @@ html, body { max-width: 100%; overflow-x: clip; }
 .team.done .ws-bar i { background: var(--pos); }
 
 .ver a { color: inherit; font-weight: 850; text-decoration: underline; text-underline-offset: 2px; padding: 8px 0; }
+
+/* Card titles are the handle for arranging */
+.cards:not(.arranging) .slot-body .group-title::after { content: '⠿'; margin-left: 8px; font-size: 15px; font-weight: 400; color: var(--muted); opacity: 0.45; vertical-align: 2px; }
+/* Partner details */
+.partner { gap: 8px; }
+.p-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left; color: inherit; padding: 2px 0; }
+.p-open .p-main { display: block; }
+.partner-sheet { max-height: 92dvh; overflow-y: auto; }
+.psh-who { display: flex; align-items: center; gap: 12px; }
+.psh-rows { list-style: none; margin: 8px 0 0; padding: 0; }
+.psh-rows li { display: flex; justify-content: space-between; gap: 14px; padding: 12px 2px; border-bottom: 1px solid var(--line); font-size: 15px; }
+.psh-rows span { color: var(--muted); font-weight: 700; }
+.psh-rows b { font-weight: 850; text-align: right; }
+.partner-sheet .team { margin: 14px 0 0; box-shadow: none; background: var(--bg); }
+.team-split { margin: 8px 0 0; font-size: 13.5px; font-weight: 800; color: var(--ink); }
+.psh-cheers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.psh-cheers .btn-soft { padding: 14px 8px; font-size: 14.5px; transition: transform 0.2s var(--spring); }
+.psh-cheers .btn-soft:active { transform: scale(0.94); }

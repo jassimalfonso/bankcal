@@ -7,7 +7,7 @@ import { db } from './firebase'
 
 const code6 = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
 
-export function usePartners({ enabled, uid, profile, updateProfile, summary, notify }) {
+export function usePartners({ enabled, uid, profile, updateProfile, summary, notify, celebrate }) {
   const partners = profile?.partners ?? []
   const [shares, setShares] = useState({})
   const [mineShare, setMineShare] = useState(null)
@@ -43,7 +43,8 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
     const fresh = Object.values(cheers).filter((c) => c.at > seen && Date.now() - c.at < 36 * 3600 * 1000)
     if (!fresh.length) return
     try { localStorage.setItem(`bankcal:cheer:${uid}`, String(Math.max(...fresh.map((c) => c.at)))) } catch { /* ignore */ }
-    notify(`👏 ${fresh.map((c) => c.name).join(' and ')} cheered you on`)
+    const c = fresh.sort((a, b) => b.at - a.at)[0]
+    ;(celebrate ?? notify)(c.msg && c.msg !== '👏' ? `${c.name}: ${c.msg}` : `👏 ${c.name} cheered you on`)
   }, [mineShare?.cheers]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // my pending invite: when the partner accepts, link them here too
@@ -80,8 +81,8 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
 
   const removePartner = useCallback((p) => updateProfile({ partners: partners.filter((x) => x !== p) }), [partners.join(','), updateProfile]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const cheer = useCallback(async (p) => {
-    await updateDoc(doc(db, 'shares', p), { [`cheers.${uid}`]: { at: Date.now(), name: profile.name } })
+  const cheer = useCallback(async (p, msg = '👏') => {
+    await updateDoc(doc(db, 'shares', p), { [`cheers.${uid}`]: { at: Date.now(), name: profile.name, msg: String(msg).slice(0, 40) } })
   }, [uid, profile?.name])
 
   return { partners, shares, createInvite, acceptInvite, removePartner, cheer }

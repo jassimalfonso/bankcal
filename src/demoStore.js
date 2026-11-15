@@ -33,3 +33,10 @@ export function useDemoStore() {
   const resetProgress = useCallback(async () => { setEntries([]); setProfile((p) => ({ ...p, days: {}, badges: undefined, trainPlan: undefined })) }, [])
   return { profile, entries, updateProfile, setDay, addEntry, removeEntry, resetProgress }
 }
+
+// Fake linked partner for screenshot testing (?partner). Never used in production.
+export const demoPartner = (today) => ({
+  partners: ['p1'],
+  shares: { p1: { name: 'Sewer Butt', character: 'avocado', theme: 'plum', day: today, streak: 3, habitsDone: 1, habitsTotal: 2, moved: true, logged: true, weekWithin: 4, weekLogged: 5, weekWorkouts: 2, weekTicks: 6, kgChange: -0.8, goalPct: 16 } },
+  cheer: async () => {}, createInvite: async () => 'ABC123', acceptInvite: async () => 'Sewer Butt', removePartner: () => {},
+})

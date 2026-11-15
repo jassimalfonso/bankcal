@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 // The cards on Today, rearranged right where they are.
-// Hold any card: every card shrinks to a small tile under your finger and you drag it
+// Hold a card's title: every card shrinks to a small tile under your finger and you drag it
 // straight to its new place. Tap Done (or the page background) to finish.
 export default function CardStack({ order, names, icons, render, onChange, arranging, setArranging }) {
   const [drag, setDrag] = useState(null) // { from, dy, to }
@@ -23,7 +23,8 @@ export default function CardStack({ order, names, icons, render, onChange, arran
     if (!slot) return
     const i = +slot.dataset.i
     if (arranging) { startDrag(i, e.clientY, e.pointerId); return }
-    if (e.target.closest('input, textarea, select, .row, .quick, a')) return
+    // only a card's title picks it up, so scrolling over the cards never does
+    if (!e.target.closest('.group-title, .block-head, .deposits-head') || e.target.closest('.link-btn')) return
     clearTimeout(st.current.timer)
     st.current = {
       x: e.clientX, y: e.clientY,
@@ -31,7 +32,7 @@ export default function CardStack({ order, names, icons, render, onChange, arran
         st.current.pending = { i, y: st.current.y, id: e.pointerId }
         navigator.vibrate?.(12)
         setArranging(true)
-      }, 480),
+      }, 550),
     }
   }
   const move = (e) => {
@@ -39,7 +40,7 @@ export default function CardStack({ order, names, icons, render, onChange, arran
     if (s.active) {
       const dy = Math.max(-s.i * s.h, Math.min((order.length - 1 - s.i) * s.h, e.clientY - s.y0))
       setDrag({ from: s.i, dy, to: s.i + Math.round(dy / s.h) })
-    } else if (s.timer && Math.hypot(e.clientX - s.x, e.clientY - s.y) > 8) {
+    } else if (s.timer && Math.hypot(e.clientX - s.x, e.clientY - s.y) > 6) {
       clearTimeout(s.timer); s.timer = null
     }
   }
@@ -81,6 +82,12 @@ export default function CardStack({ order, names, icons, render, onChange, arran
     el.addEventListener('touchmove', block, { passive: false })
     return () => el.removeEventListener('touchmove', block)
   }, [])
+  // any scrolling while a hold is pending cancels it
+  useEffect(() => {
+    const cancel = () => { if (st.current.timer) { clearTimeout(st.current.timer); st.current.timer = null } }
+    addEventListener('scroll', cancel, { passive: true })
+    return () => removeEventListener('scroll', cancel)
+  }, [])
   useEffect(() => {
     if (!arranging) return
     const key = (e) => { if (e.key === 'Escape') setArranging(false) }
@@ -94,6 +101,7 @@ export default function CardStack({ order, names, icons, render, onChange, arran
     <div
       className={`cards ${arranging ? 'arranging' : ''} ${drag ? 'dragging' : ''}`} ref={ref}
       onPointerDown={down} onPointerMove={move} onPointerUp={end} onPointerCancel={end}
+      onPointerLeave={() => { if (st.current.timer) { clearTimeout(st.current.timer); st.current.timer = null } }}
       onContextMenu={(e) => { if (arranging || st.current.timer) e.preventDefault() }}
     >
       {arranging && <p className="arrange-hint">Drag the cards into the order you like.</p>}
