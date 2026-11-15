@@ -4,6 +4,7 @@ import { BOUNCE_BACK, GOOD_DAY } from '../motivation'
 import { useEffect, useState } from 'react'
 import Character from '../Character'
 import BankCard from './BankCard'
+import { VERSION } from '../update'
 import { useEscape } from '../motion'
 
 // The verse and its reflection are one card: tap the verse to unfold the reflection.
@@ -104,6 +105,7 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
       )}
 
       <div className="dawn-dots" aria-hidden="true"><i className={step === 0 ? 'on' : ''} /><i className={step === 1 ? 'on' : ''} /></div>
+      <p className="ver">Version {VERSION}</p>
     </div>
   )
 }
@@ -119,6 +121,7 @@ export function WelcomeBack({ profile, left, onDone, leaving }) {
         <h1>Welcome back, {profile.name}</h1>
         <p className="dawn-line">{helloFor()}. {left == null ? '' : left >= 0 ? 'Your balance is ready when you are.' : 'Go gently for the rest of today.'}</p>
         <button className="btn-primary dawn-btn" onClick={onDone}>Open my day</button>
+        <p className="ver">Version {VERSION}</p>
       </div>
     </div>
   )

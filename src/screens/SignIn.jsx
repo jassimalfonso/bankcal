@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { redirectResult, signIn } from '../firebase'
 import BankCard from './BankCard'
+import { VERSION } from '../update'
 
 export default function SignIn() {
   const [busy, setBusy] = useState(false)
@@ -49,6 +50,7 @@ export default function SignIn() {
       </button>
       {err && <p className="err" role="alert">{err}</p>}
       <p className="si-fine">Free, private to you, and works offline.</p>
+      <p className="ver">Version {VERSION}</p>
     </div>
   )
 }

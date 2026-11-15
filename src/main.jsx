@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import '@fontsource-variable/nunito/wght.css'
 import './styles.css'
 import App from './App.jsx'
+import { startUpdates } from './update'
+
+startUpdates()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

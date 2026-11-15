@@ -1085,3 +1085,7 @@ html, body { max-width: 100%; overflow-x: clip; }
 .p-week { margin-top: 2px; color: var(--accent) !important; font-weight: 750 !important; }
 .ps-share { margin: 0; align-items: flex-start; line-height: 1.4; }
 .ps-share input { flex: none; margin-top: 1px; }
+
+.ver { position: relative; margin: 14px 0 0; font-size: 12px; font-weight: 700; color: var(--muted); opacity: 0.8; text-align: center; font-variant-numeric: tabular-nums; }
+.signin .ver { max-width: none; font-size: 12px; }
+@media (min-width: 860px) { .signin .ver { grid-column: 2; grid-row: 6; text-align: left; align-self: start; } }
