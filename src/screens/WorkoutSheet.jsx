@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { Children, cloneElement, isValidElement, useState } from 'react'
 import { WORKOUTS, fmt, workoutKcal, workoutMinutes } from '../calc'
 import { IconClose } from '../icons'
-import { useSheetDrag } from '../motion'
+import { useEscape, useSheetDrag } from '../motion'
 
 // Pick an exercise, enter amounts, see the calories it earns, deposit.
 export default function WorkoutSheet({ profile, onClose, onSave }) {
   const [type, setType] = useState(null)
   const drag = useSheetDrag(onClose)
+  useEscape(onClose)
   const [f, setF] = useState({ min: '', sec: '', sets: '1', reps: '', kg: '' })
   const def = WORKOUTS.find((w) => w.id === type)
   const entry = def ? { type, min: +f.min, sec: +f.sec, sets: +f.sets || 1, reps: +f.reps, kg: +f.kg } : null
@@ -60,12 +61,13 @@ export default function WorkoutSheet({ profile, onClose, onSave }) {
 }
 
 function Line({ label, children }) {
-  return <div className="line"><span className="line-label">{label}</span>{children}</div>
+  const kids = Children.map(children, (c) => (isValidElement(c) && c.type === In && !c.props['aria-label'] ? cloneElement(c, { 'aria-label': label }) : c))
+  return <div className="line"><span className="line-label">{label}</span>{kids}</div>
 }
-function In({ v, on, ph, unit, decimal }) {
+function In({ v, on, ph, unit, decimal, 'aria-label': al }) {
   return (
     <label className="num-in">
-      <input inputMode={decimal ? 'decimal' : 'numeric'} value={v} onChange={on} placeholder={ph} />
+      <input inputMode={decimal ? 'decimal' : 'numeric'} value={v} onChange={on} placeholder={ph} aria-label={al} />
       {unit && <span>{unit}</span>}
     </label>
   )

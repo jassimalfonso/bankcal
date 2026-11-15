@@ -229,7 +229,7 @@ h1, h2, p { margin: 0; }
 .pick > span:first-child { display: flex; flex-direction: column; }
 .pick b { font-weight: 750; }
 .pick small { font-size: 13px; color: var(--muted); font-weight: 600; }
-.check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); flex: none; transition: all 0.25s var(--spring); }
+.check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); flex: none; transition: background-color 0.25s, border-color 0.25s, transform 0.25s var(--spring); }
 .check.on { border-color: var(--accent); background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 16px no-repeat; }
 .note { margin-top: 26px; padding: 16px 18px; font-size: 14px; color: var(--muted); font-weight: 600; display: grid; gap: 2px; }
 .note b { color: var(--ink); font-size: 16px; font-weight: 800; margin-bottom: 4px; }
@@ -511,3 +511,40 @@ body[data-bg='lavender'] { --bg: #f4f1fa; --line: #e6e0f2; }
 body, .screen, .card, .tabbar, .fab, .tab, .ring-fill { transition: background-color 0.5s var(--ease), color 0.4s, border-color 0.5s, stroke 0.5s; }
 .bg-swatch i { position: absolute; right: 8px; top: 8px; width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 2px #fff; }
 .bg-swatch { position: relative; }
+
+/* ───────── Today's verse and reflection: one card that unfolds ───────── */
+.words-panel { padding: 6px; }
+.words { gap: 0; margin-top: 0; }
+.w-verse { display: block; width: 100%; text-align: left; padding: 16px 14px 14px; border-radius: 18px; color: inherit; transition: background-color 0.25s; }
+.w-verse:active { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.w-quote { display: block; font-size: 19px; line-height: 1.45; font-weight: 700; letter-spacing: -0.01em; text-wrap: pretty; }
+.w-quote.muted { color: var(--muted); font-weight: 600; font-size: 16px; }
+.w-ref { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; font-weight: 800; color: var(--accent); }
+.w-toggle { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-weight: 750; white-space: nowrap; }
+.w-toggle svg { width: 12px; height: 12px; transition: transform 0.35s var(--ease); }
+.w-verse.open .w-toggle svg { transform: rotate(180deg); }
+.w-fold { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.45s var(--ease); }
+.w-fold > div { overflow: hidden; min-height: 0; }
+.w-fold.open { grid-template-rows: 1fr; }
+.w-reflect { margin: 0 14px; padding: 14px 0 16px; border-top: 1px solid var(--line); font-size: 15.5px; line-height: 1.62; font-weight: 500; color: color-mix(in srgb, var(--ink) 80%, var(--muted)); text-wrap: pretty; opacity: 0; transform: translateY(-4px); transition: opacity 0.35s, transform 0.45s var(--ease); }
+.w-fold.open .w-reflect { opacity: 1; transform: none; transition-delay: 0.08s; }
+.w-motive { margin: 0 6px 6px; padding: 12px 10px 10px; border-radius: 14px; background: var(--soft); font-size: 14px; line-height: 1.45; font-weight: 600; color: color-mix(in srgb, var(--ink) 70%, var(--muted)); font-style: italic; text-wrap: pretty; }
+.w-motive span { font-style: normal; font-weight: 700; white-space: nowrap; color: var(--muted); }
+.daily-card .words { margin-top: 14px; text-align: left; }
+.daily-card .w-verse { padding: 0; }
+.daily-card .w-reflect { margin: 0; }
+.daily-card .w-motive { margin: 4px 0 0; }
+
+/* ───────── Interface guidelines pass ───────── */
+button, a, input, .tab, .fab { touch-action: manipulation; }
+h1, h2, .large-title h1, .group-title { text-wrap: balance; }
+p { text-wrap: pretty; }
+.sheet, .sheet-wrap { overscroll-behavior: contain; }
+.group-title[id] { scroll-margin-top: 16px; }
+.date-in { font-size: 16px; }
+@media (hover: hover) {
+  .btn-primary:hover, .fab:hover { filter: brightness(1.06); }
+  .tab:hover:not(.on) { color: var(--ink); }
+  .card button:hover, .w-more:hover { opacity: 0.85; }
+}
+.field input:focus-visible, .num-in:focus-within, .kcal-input:focus-within { box-shadow: 0 0 0 2px var(--accent); border-radius: 12px; }

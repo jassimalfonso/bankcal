@@ -59,3 +59,12 @@ export function useSheetDrag(onClose) {
     },
   }
 }
+
+// Close an overlay with the Escape key (keyboard and hardware keyboards on tablets)
+export function useEscape(onClose) {
+  useEffect(() => {
+    const h = (e) => { if (e.key === 'Escape') onClose?.() }
+    addEventListener('keydown', h)
+    return () => removeEventListener('keydown', h)
+  }, [onClose])
+}

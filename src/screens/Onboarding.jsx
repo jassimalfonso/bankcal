@@ -18,7 +18,7 @@ export default function Onboarding({ profile, updateProfile }) {
 
         <label className="field">
           <span>Your name in the app</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Snack Goblin" maxLength={24} autoComplete="off" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Snack Goblin…" aria-label="Your name" maxLength={24} autoComplete="off" />
         </label>
 
         <h2 className="group-title">Buddy</h2>

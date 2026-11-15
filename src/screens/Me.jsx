@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Children, cloneElement, isValidElement } from 'react'
 import { ACTIVITY, ageOf, DEFAULT_BED, DEFAULT_WAKE, GOALS, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
 import Character from '../Character'
 import { THEMES, BuddyGrid } from './Onboarding'
@@ -199,18 +199,20 @@ export default function Me({ user, profile: p, updateProfile }) {
 }
 
 function Line({ label, children }) {
+  // give a bare input inside the row an accessible name from the row label
+  const kids = Children.map(children, (c) => (isValidElement(c) && (c.type === 'input' || c.type === Num) && !c.props['aria-label'] ? cloneElement(c, { 'aria-label': label }) : c))
   return (
     <div className="line">
       <span className="line-label">{label}</span>
-      {children}
+      {kids}
     </div>
   )
 }
 
-function Num({ value, onChange, unit, ph, decimal }) {
+function Num({ value, onChange, unit, ph, decimal, 'aria-label': al }) {
   return (
     <label className="num-in">
-      <input inputMode={decimal ? 'decimal' : 'numeric'} value={value} onChange={onChange} placeholder={ph} />
+      <input inputMode={decimal ? 'decimal' : 'numeric'} value={value} onChange={onChange} placeholder={ph} aria-label={al} />
       <span>{unit}</span>
     </label>
   )

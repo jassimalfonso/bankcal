@@ -1,28 +1,38 @@
 import { fmt } from '../calc'
 import { GOOD_REFS, OVER_REFS, pick, useVerse } from '../quotes'
 import { BOUNCE_BACK, GOOD_DAY } from '../motivation'
+import { useState } from 'react'
 import Character from '../Character'
+import { useEscape } from '../motion'
 
-export function Words({ words }) {
+// The verse and its reflection are one card: tap the verse to unfold the reflection.
+// The motivation sits quietly underneath.
+export function Words({ words, compact = false }) {
+  const [open, setOpen] = useState(!compact)
+  const hasReflection = !!words.reflection
   return (
     <div className="words">
-      <div className="word">
-        <span className="word-tag">Today’s verse</span>
-        {words.verse.text ? <p className="word-text">“{words.verse.text}”</p> : <p className="word-text muted">Connect to the internet to load today’s verse.</p>}
-        <span className="word-ref">{words.verse.reference}{words.verse.version ? ` · ${words.verse.version}` : ''}</span>
-      </div>
-      {words.reflection && (
-        <div className="word reflection">
-          <span className="word-tag">Reflection</span>
-          <p className="word-text">{words.reflection}</p>
+      <button
+        className={`w-verse ${open ? 'open' : ''}`}
+        onClick={() => hasReflection && setOpen((o) => !o)}
+        aria-expanded={hasReflection ? open : undefined}
+        aria-controls="today-reflection"
+      >
+        {words.verse.text
+          ? <span className="w-quote">“{words.verse.text}”</span>
+          : <span className="w-quote muted">Connect to the internet to load today’s verse.</span>}
+        <span className="w-ref">
+          <span>{words.verse.reference}{words.verse.version ? ` · ${words.verse.version}` : ''}</span>
+          {hasReflection && <span className="w-toggle">{open ? 'Hide reflection' : 'Read reflection'}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>}
+        </span>
+      </button>
+      {hasReflection && (
+        <div className={`w-fold ${open ? 'open' : ''}`} id="today-reflection" aria-hidden={!open}>
+          <div><p className="w-reflect">{words.reflection}</p></div>
         </div>
       )}
       {words.motivation && (
-        <div className="word">
-          <span className="word-tag">Today’s motivation</span>
-          <p className="word-text">“{words.motivation.text}”</p>
-          <span className="word-ref">{words.motivation.by}</span>
-        </div>
+        <p className="w-motive">“{words.motivation.text}” <span>— {words.motivation.by}</span></p>
       )}
     </div>
   )
@@ -30,6 +40,7 @@ export function Words({ words }) {
 
 // Shown once each morning: greeting, yesterday's result, streak, today's words.
 export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose }) {
+  useEscape(onClose)
   const h = new Date().getHours()
   const hello = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
   return (
@@ -55,6 +66,7 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
 
 // "Close my day": celebration when within budget, encouragement when over.
 export function DayResult({ profile, budget, spent, earn, streakDays, today, onClose }) {
+  useEscape(onClose)
   const net = budget - spent
   const good = net >= 0
   const verse = useVerse(pick(good ? GOOD_REFS : OVER_REFS, today), today)
@@ -104,8 +116,8 @@ export function DayResult({ profile, budget, spent, earn, streakDays, today, onC
 export function WordsCard({ words }) {
   return (
     <section className="today-words">
-      <h2 className="group-title">Today’s word</h2>
-      <Words words={words} />
+      <h2 className="group-title">Today’s verse and reflection</h2>
+      <div className="card words-panel"><Words words={words} compact /></div>
     </section>
   )
 }

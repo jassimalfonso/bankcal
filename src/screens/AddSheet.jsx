@@ -4,6 +4,7 @@ import { fmt, mealFor } from '../calc'
 import { searchFoods } from '../foods'
 import { askFood } from '../ai'
 import { IconCamera, IconClose } from '../icons'
+import { useEscape } from '../motion'
 import { useSheetDrag } from '../motion'
 
 export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
@@ -14,6 +15,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
   const [ai, setAi] = useState({ busy: false, err: '', results: null, items: null, confidence: '' })
   const fileRef = useRef(null)
   const drag = useSheetDrag(onClose)
+  useEscape(onClose)
   const meal = mealFor()
 
   // One-tap repeats: last distinct foods this person logged.
@@ -134,7 +136,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
 
         <label className="field">
           <span>Food</span>
-          <input value={name} onChange={(e) => { setName(e.target.value); setPicked(false) }} placeholder="Search or type, e.g. shawarma" autoComplete="off" enterKeyHint="search" />
+          <input value={name} onChange={(e) => { setName(e.target.value); setPicked(false) }} placeholder="Search or type, e.g. shawarma…" aria-label="Food name" autoComplete="off" enterKeyHint="search" />
         </label>
 
         {(suggestions.length > 0 || (name.trim().length >= 2 && !picked)) && (
@@ -163,7 +165,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
         <div className="kcal-row">
           <button className="step" onClick={() => bump(-50)}>−50</button>
           <label className="kcal-input">
-            <input inputMode="numeric" pattern="[0-9]*" value={kcal} onChange={(e) => setKcal(e.target.value.replace(/\D/g, ''))} placeholder="0" />
+            <input inputMode="numeric" pattern="[0-9]*" value={kcal} onChange={(e) => setKcal(e.target.value.replace(/\D/g, ''))} placeholder="0" aria-label="Calories" />
             <span>kcal</span>
           </label>
           <button className="step" onClick={() => bump(50)}>+50</button>
