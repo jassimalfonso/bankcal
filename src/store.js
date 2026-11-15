@@ -8,12 +8,12 @@ import { dayKey } from './calc'
 
 // You two are set up automatically; everyone else picks their own.
 const PRESETS = {
-  'jassim.alfonso@gmail.com': { name: 'Fart Monster', character: 'poo', theme: 'moss', sex: 'm', onboarded: true },
-  'christinenantonio@gmail.com': { name: 'Sewer Butt', character: 'mouse', theme: 'plum', sex: 'f', onboarded: true },
+  'jassim.alfonso@gmail.com': { name: 'Fart Monster', character: 'koala', theme: 'moss', sex: 'm', onboarded: true },
+  'christinenantonio@gmail.com': { name: 'Sewer Butt', character: 'panda', theme: 'plum', sex: 'f', onboarded: true },
 }
 
 const BLANK = {
-  name: '', character: 'panda', theme: 'sky', sex: 'm', age: '', height: '', weight: '',
+  name: '', character: 'bunny', theme: 'sky', sex: 'm', age: '', height: '', weight: '',
   activity: 'sedentary', goal: 'lose025', customBudget: '', mode: 'auto', onboarded: false,
 }
 

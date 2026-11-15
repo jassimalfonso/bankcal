@@ -22,8 +22,8 @@ export default function SignIn() {
   return (
     <div className="signin">
       <div className="pair">
-        <Avatar id="poo" size={104} />
-        <Avatar id="mouse" size={104} />
+        <Avatar id="koala" size={104} />
+        <Avatar id="panda" size={104} />
       </div>
       <h1>BankCal</h1>
       <p>Your daily calories, kept like a bank balance. Spend them wisely.</p>
