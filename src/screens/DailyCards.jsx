@@ -6,11 +6,6 @@ import Character from '../Character'
 function Words({ words }) {
   return (
     <div className="words">
-      <div className="word">
-        <span className="word-tag">Today’s verse</span>
-        {words.verse.text ? <p className="word-text">“{words.verse.text}”</p> : <p className="word-text muted">Connect to the internet to load today’s verse.</p>}
-        <span className="word-ref">{words.verse.reference}{words.verse.version ? ` · ${words.verse.version}` : ''}</span>
-      </div>
       {words.motivation && (
         <div className="word">
           <span className="word-tag">Today’s motivation</span>
@@ -18,6 +13,11 @@ function Words({ words }) {
           <span className="word-ref">{words.motivation.by}</span>
         </div>
       )}
+      <div className="word">
+        <span className="word-tag">Today’s verse</span>
+        {words.verse.text ? <p className="word-text">“{words.verse.text}”</p> : <p className="word-text muted">Connect to the internet to load today’s verse.</p>}
+        <span className="word-ref">{words.verse.reference}{words.verse.version ? ` · ${words.verse.version}` : ''}</span>
+      </div>
     </div>
   )
 }
@@ -96,9 +96,9 @@ export function DayResult({ profile, budget, spent, earn, streakDays, today, onC
 export function WordsCard({ words, onOpen }) {
   return (
     <button className="card words-card" onClick={onOpen}>
-      <span className="word-tag">Today’s verse</span>
-      <p>{words.verse.text ? `“${words.verse.text}”` : words.verse.reference}</p>
-      <small>{words.verse.reference} · tap for today’s motivation</small>
+      <span className="word-tag">Today’s motivation</span>
+      <p>{words.motivation ? `“${words.motivation.text}”` : ''}</p>
+      <small>{words.motivation?.by} · tap for today’s verse</small>
     </button>
   )
 }
