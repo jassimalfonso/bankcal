@@ -348,3 +348,54 @@ h1, h2, p { margin: 0; }
 .plan-btns { display: grid; gap: 8px; margin-top: 14px; }
 .plan-btns .btn-primary { margin-top: 0; }
 .btn-soft { height: 50px; border-radius: 18px; background: var(--soft); color: var(--accent); font-weight: 850; text-align: center; }
+
+/* ───────── Daily cards ───────── */
+.sheet-wrap.center { align-items: center; padding: 18px; }
+.daily-card { position: relative; overflow: hidden; width: 100%; max-width: 420px; max-height: 90dvh; overflow-y: auto; padding: 26px 22px 20px; border-radius: 28px; background: var(--bg); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; animation: pop 0.45s var(--spring); }
+.daily-card h2 { font-size: 26px; font-weight: 900; letter-spacing: -0.02em; }
+.daily-card .btn-primary { margin-top: 16px; }
+.yday { font-weight: 800; margin-top: 4px; }
+.streak-line { font-weight: 800; color: var(--accent); }
+.words { width: 100%; display: grid; gap: 10px; margin-top: 12px; text-align: left; }
+.word { padding: 14px 16px; border-radius: 18px; background: var(--card); box-shadow: var(--shadow); }
+.word-tag { font-size: 12px; font-weight: 850; color: var(--accent); }
+.word-text { margin-top: 4px; font-size: 16px; line-height: 1.45; font-weight: 600; }
+.word-ref { display: block; margin-top: 6px; font-size: 12.5px; color: var(--muted); font-weight: 700; }
+.words-card { width: 100%; margin-top: 14px; padding: 14px 16px; text-align: left; display: grid; gap: 4px; }
+.words-card p { font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.words-card small { color: var(--muted); font-weight: 700; font-size: 12.5px; }
+.streak-chip { margin-left: 8px; padding: 2px 8px; border-radius: 99px; background: var(--soft); color: var(--accent); font-weight: 850; }
+.close-day { width: 100%; margin-top: 14px; height: 44px; }
+.big-net { font-size: 46px; font-weight: 900; letter-spacing: -0.03em; }
+.result.good .big-net { color: var(--pos); }
+.result.over .big-net { color: var(--neg); }
+.big-net span { font-size: 17px; color: var(--muted); font-weight: 750; letter-spacing: 0; }
+.tips { text-align: left; width: 100%; }
+.tips ul { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6px; color: var(--muted); font-weight: 600; }
+.confetti { position: absolute; inset: 0; pointer-events: none; }
+.confetti i { position: absolute; top: -10px; left: calc(var(--i) * 5.5%); width: 8px; height: 12px; border-radius: 2px; background: hsl(calc(var(--i) * 40) 85% 60%); animation: fall 2.2s calc(var(--i) * 0.07s) ease-in forwards; }
+@keyframes fall { to { transform: translateY(110vh) rotate(540deg); opacity: 0.6; } }
+
+.word-text.small { font-size: 14.5px; color: var(--muted); }
+.word-link { display: inline-block; margin-top: 8px; color: var(--accent); font-weight: 850; font-size: 14px; text-decoration: none; }
+.result-verse { width: 100%; margin-top: 12px; text-align: left; }
+
+/* goal-date recommendations */
+.recs { margin-top: 12px; }
+.recs-title { font-size: 14px; font-weight: 800; color: var(--muted); margin: 0 4px 8px; }
+.recs-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.rec { display: flex; flex-direction: column; gap: 2px; padding: 12px 10px; border-radius: 18px; background: var(--card); box-shadow: var(--shadow); border: 2.5px solid transparent; text-align: left; }
+.rec b { font-weight: 850; }
+.rec span { font-weight: 750; font-size: 13.5px; }
+.rec small { font-size: 11.5px; color: var(--muted); font-weight: 650; line-height: 1.25; }
+.rec.best b::after { content: ' ★'; color: var(--accent); }
+.rec.on { border-color: var(--accent); background: var(--soft); }
+
+/* progress */
+.progress { padding: 16px 16px 12px; }
+.progress-top { display: flex; justify-content: space-between; align-items: baseline; }
+.progress-top b { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; }
+.progress-top span { font-weight: 750; color: var(--muted); font-size: 13.5px; }
+.progress svg { width: 100%; height: 130px; margin-top: 8px; overflow: visible; }
+.progress .eta { margin-top: 8px; font-size: 14.5px; font-weight: 650; color: var(--muted); }
+.progress .eta b { color: var(--ink); }

@@ -6,7 +6,9 @@ import { useDemoStore } from './demoStore'
 import { BUDDIES, Buddy } from './buddies'
 
 const DEMO = import.meta.env.MODE === 'demo'
-import { dailyBudget, dayKey, earned } from './calc'
+import { dailyBudget, dayKey, earned, streak } from './calc'
+import { useDailyWords } from './quotes'
+import { MorningCard, DayResult } from './screens/DailyCards'
 import Today from './screens/Today'
 import Statement from './screens/Statement'
 import Me from './screens/Me'
@@ -44,6 +46,11 @@ function Bank({ user }) {
 
   const today = dayKey()
   const todays = useMemo(() => entries.filter((e) => e.day === today), [entries, today])
+  const words = useDailyWords(today)
+  const seenKey = `bankcal:morning:${user.uid}:${today}`
+  const [morning, setMorning] = useState(() => { try { return !localStorage.getItem(seenKey) } catch { return false } })
+  const closeMorning = () => { try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } setMorning(false) }
+  const [result, setResult] = useState(false)
 
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
@@ -53,7 +60,14 @@ function Bank({ user }) {
   const earn = earned(dayLog, profile.weight)
   const budget = base != null ? base + earn.total : null // activity is a deposit into today's budget
   const budgetFor = (key) => (base != null ? base + earned(profile.days?.[key], profile.weight).total : null)
-  const ctx = { ...store, user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, goSetup: () => setTab('me') }
+  const spent = todays.reduce((a, e) => a + e.kcal, 0)
+  const closed = !!dayLog.closed
+  const streakDays = streak(entries, budgetFor, today, closed)
+  const yKey = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d) })()
+  const yEntries = entries.filter((e) => e.day === yKey)
+  const yesterday = yEntries.length && budgetFor(yKey) != null ? { net: budgetFor(yKey) - yEntries.reduce((a, e) => a + e.kcal, 0) } : null
+  const closeDay = () => { if (budget != null && spent - budget <= 0) store.setDay(today, { closed: true }); setResult(true) }
+  const ctx = { ...store, user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: () => setTab('me') }
 
   return (
     <div className={`app theme-${profile.theme}`}>
@@ -72,6 +86,9 @@ function Bank({ user }) {
         <TabBtn id="week" tab={tab} setTab={setTab} label="Week" Icon={IconStatement} />
         <TabBtn id="me" tab={tab} setTab={setTab} label="Settings" Icon={IconMe} />
       </nav>
+
+      {morning && <MorningCard profile={profile} words={words} yesterday={yesterday} streakDays={streakDays} onClose={closeMorning} />}
+      {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true)} today={today} onClose={() => setResult(false)} />}
 
       {adding && (
         <AddSheet

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { dayKey, fmt, KCAL_PER_KG } from '../calc'
 import { Row } from './Today'
 import BodyCard from './BodyCard'
+import Progress from './Progress'
 
 export default function Statement(props) {
   const { mine, base: budget, budgetFor } = props
@@ -58,6 +59,9 @@ export default function Statement(props) {
           <b>{logged.length}<small> of 7</small></b>
         </div>
       </div>
+
+      <h2 className="group-title">Progress</h2>
+      <Progress {...props} />
 
       <h2 className="group-title">Your body</h2>
       <BodyCard {...props} />

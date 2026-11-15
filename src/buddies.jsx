@@ -58,7 +58,7 @@ export const BUDDIES = {
     {g('b-avo', '#7ec850', '#3f8f3a')}
     <path d="M60 8 C80 8 92 34 100 60 C108 90 90 112 60 112 C30 112 12 90 20 60 C28 34 40 8 60 8 Z" fill="url(#b-avo)" />
     <path d="M60 18 C76 18 86 40 92 62 C98 86 84 104 60 104 C36 104 22 86 28 62 C34 40 44 18 60 18 Z" fill="#f2f5b8" />
-    <circle cx="60" cy="84" r="15" fill="#a8723f" /><circle cx="55" cy="79" r="4" fill="#fff" opacity="0.3" />
+    <circle cx="60" cy="90" r="13" fill="#a8723f" /><circle cx="55.5" cy="85.5" r="3.5" fill="#fff" opacity="0.3" />
     <Face mood={m} y={52} gap={13} my={68} cheeks="#ff9f9f" />
   </>) },
   onigiri: { label: 'Onigiri', draw: (m) => (<>

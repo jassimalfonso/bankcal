@@ -168,3 +168,35 @@ export function bmiInfo(weightKg, heightCm) {
     weeksToHealthy: Math.ceil(toHealthy / 0.5), weeksToIdeal: Math.ceil(toIdeal / 0.5),
   }
 }
+
+// ───────── Goal-date recommendations ─────────
+export function recommendDates(currentKg, targetKg, from = new Date()) {
+  const toLose = (+currentKg || 0) - (+targetKg || 0)
+  if (!(toLose > 0)) return []
+  return [
+    { id: 'gentle', label: 'Gentle', rate: 0.25, note: 'Easiest to keep' },
+    { id: 'steady', label: 'Steady', rate: 0.5, note: 'Recommended', best: true },
+    { id: 'faster', label: 'Faster', rate: 0.75, note: 'Needs discipline' },
+  ].map((o) => {
+    const weeks = Math.ceil(toLose / o.rate)
+    const d = new Date(from); d.setDate(d.getDate() + weeks * 7)
+    return { ...o, weeks, date: dayKey(d) }
+  })
+}
+
+// ───────── Streak: days in a row within budget (before today, plus today once closed) ─────────
+export function streak(entries, budgetFor, todayKey, includeToday) {
+  const byDay = {}
+  for (const e of entries) byDay[e.day] = (byDay[e.day] || 0) + e.kcal
+  let n = 0
+  const d = parseDay(todayKey)
+  if (!includeToday) d.setDate(d.getDate() - 1)
+  for (let i = 0; i < 365; i++) {
+    const k = dayKey(d)
+    const b = budgetFor(k)
+    if (!(k in byDay) || b == null || byDay[k] > b) break
+    n++
+    d.setDate(d.getDate() - 1)
+  }
+  return n
+}

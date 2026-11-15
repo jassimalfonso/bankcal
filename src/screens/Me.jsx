@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ACTIVITY, GOALS, breakdown, dailyBudget, dayKey, fmt, prettyDate } from '../calc'
+import { ACTIVITY, GOALS, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
 import Character from '../Character'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
@@ -88,6 +88,20 @@ export default function Me({ user, profile: p, updateProfile }) {
         <Line label="Start date"><input className="date-in" type="date" value={p.startDate ?? dayKey()} onChange={(e) => set({ startDate: e.target.value })} /></Line>
         <Line label="Reach it by"><input className="date-in" type="date" value={p.endDate ?? ''} min={dayKey()} onChange={(e) => set({ endDate: e.target.value })} /></Line>
       </div>
+      {+p.targetWeight > 0 && +p.weight > +p.targetWeight && (
+        <div className="recs">
+          <p className="recs-title">When to aim for {p.targetWeight} kg</p>
+          <div className="recs-row">
+            {recommendDates(p.weight, p.targetWeight).map((r) => (
+              <button key={r.id} className={`rec ${p.endDate === r.date ? 'on' : ''} ${r.best ? 'best' : ''}`} onClick={() => set({ endDate: r.date, startDate: dayKey() })}>
+                <b>{r.label}</b>
+                <span>{prettyDate(r.date)}</span>
+                <small>{r.rate} kg/week · {r.note}</small>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {bd?.plan && (
         <div className={`card plan-note ${bd.plan.tooFast ? 'warn' : ''}`}>
           {bd.plan.reached ? (
