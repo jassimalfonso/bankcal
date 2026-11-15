@@ -5,6 +5,8 @@ import Character, { moodFor } from '../Character'
 import { missingFor } from '../calc'
 import { fullLayout } from '../layout'
 import { HabitsCard, JournalCard } from './Habits'
+import { WeeklyCard } from './DailyCards'
+import { PartnerCard } from './Partner'
 import Activity from './Activity'
 import { WordsCard } from './DailyCards'
 
@@ -37,6 +39,11 @@ export function Ring({ value, size = 220, stroke = 20, children }) {
 
 export default function Today(props) {
   const { profile, mine, todays, budget, base, earn, addEntry, removeEntry, goSetup, words, streakDays, closeDay, openWords, windDown, notify } = props
+  // Weekly check-in appears on Sundays until hidden
+  const weekKey = `bankcal:week:${props.today}`
+  const [weekHidden, setWeekHidden] = useState(() => { try { return !!localStorage.getItem(weekKey) } catch { return false } })
+  const showWeek = new Date(props.today + 'T12:00').getDay() === 0 && !weekHidden
+  const hideWeek = () => { try { localStorage.setItem(weekKey, '1') } catch { /* ignore */ } setWeekHidden(true) }
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const left = budget != null ? budget - spent : null
   const over = left != null && left < 0
@@ -107,9 +114,11 @@ export default function Today(props) {
       </section>
 
 
+      {showWeek && <WeeklyCard {...props} onClose={hideWeek} />}
       {fullLayout(profile.layout).map((id) => {
         if (id === 'words') return <WordsCard key="words" words={words} />
         if (id === 'habits') return <HabitsCard key="habits" {...props} />
+        if (id === 'partner') return props.partner ? <PartnerCard key="partner" partner={props.partner} today={props.today} notify={notify} /> : null
         if (id === 'journal') return <JournalCard key="journal" {...props} />
         if (id === 'deposits') return budget != null ? <section key="deposits" className="block"><Activity {...props} /></section> : null
         if (id === 'eat') return recent.length > 0 ? (

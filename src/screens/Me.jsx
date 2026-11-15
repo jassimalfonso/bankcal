@@ -3,6 +3,7 @@ import { maintainStatus, targetCheck, KCAL_PER_KG, ageOf, DEFAULT_BED, DEFAULT_W
 import Character from '../Character'
 import { SECTION_NAMES, fullLayout } from '../layout'
 import { HabitPicker } from './Habits'
+import { PartnerSettings, ScaleSync } from './Partner'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
 
@@ -14,7 +15,7 @@ const BACKGROUNDS = [
 ]
 
 // Height is stored in cm (for the maths) but entered in feet + inches.
-const toFtIn = (cm) => {
+export const toFtIn = (cm) => {
   if (!(cm > 0)) return { ft: '', inch: '' }
   const total = cm / 2.54
   let ft = Math.floor(total / 12)
@@ -22,9 +23,9 @@ const toFtIn = (cm) => {
   if (inch === 12) { ft += 1; inch = 0 }
   return { ft: String(ft), inch: String(inch) }
 }
-const toCm = (ft, inch) => (+ft > 0 ? Math.round(((+ft || 0) * 12 + (+inch || 0)) * 2.54) : '')
+export const toCm = (ft, inch) => (+ft > 0 ? Math.round(((+ft || 0) * 12 + (+inch || 0)) * 2.54) : '')
 
-export default function Me({ user, profile: p, updateProfile, resetProgress }) {
+export default function Me({ user, profile: p, updateProfile, resetProgress, partner, scale, notify }) {
   const [confirmReset, setConfirmReset] = useState(false)
   const set = updateProfile
   const num = (k) => (e) => set({ [k]: e.target.value.replace(/[^\d.]/g, '') })
@@ -144,8 +145,6 @@ export default function Me({ user, profile: p, updateProfile, resetProgress }) {
       )}
 
 
-      <HabitPicker profile={p} updateProfile={set} />
-
       <h2 className="group-title" id="about">About you</h2>
       <div className="card form-list">
         <Line label="Sex">
@@ -156,7 +155,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress }) {
         </Line>
         <Line label="Birthday">
           <span className="bday">
-            <input className="date-in" type="date" value={p.birthDate ?? ''} max={dayKey()} onChange={(e) => set({ birthDate: e.target.value })} />
+            <input className="date-in" type="date" aria-label="Birthday" value={p.birthDate ?? ''} max={dayKey()} onChange={(e) => set({ birthDate: e.target.value })} />
             {ageOf(p) && <small>{ageOf(p)} yrs</small>}
           </span>
         </Line>
@@ -175,6 +174,10 @@ export default function Me({ user, profile: p, updateProfile, resetProgress }) {
         <Line label="Bedtime"><input className="date-in" type="time" value={p.bedTime ?? DEFAULT_BED} onChange={(e) => set({ bedTime: e.target.value })} /></Line>
       </div>
       <p className="fine">Your morning card appears when your day starts. An hour before bed, “Close my day” appears, and at bedtime BankCal offers to close it for you. Late-night snacks after midnight still count to the day you’re in.</p>
+
+      <HabitPicker profile={p} updateProfile={set} />
+
+      {partner && <PartnerSettings partner={partner} profile={p} />}
 
       <h2 className="group-title">Buddy</h2>
       <div className="card buddy-card"><BuddyGrid value={p.character} onChange={(id) => set({ character: id })} /></div>
@@ -226,6 +229,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress }) {
           <Line label="Fixed daily budget"><Num value={p.customBudget ?? ''} onChange={num('customBudget')} unit="kcal" ph="Off" /></Line>
         </div>
         <p className="fine">Only if a doctor or dietitian gave you a number. It replaces your goal.</p>
+        {scale && <ScaleSync scale={scale} profile={p} notify={notify} />}
         <h3 className="more-h">Start fresh</h3>
         {!confirmReset ? (
           <>

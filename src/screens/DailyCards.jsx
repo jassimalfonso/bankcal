@@ -1,4 +1,4 @@
-import { fmt, fmtSleep, sleepHours, SLEEP_TARGET, DEFAULT_BED, DEFAULT_WAKE } from '../calc'
+import { weekSummary, fmt, fmtSleep, sleepHours, SLEEP_TARGET, DEFAULT_BED, DEFAULT_WAKE } from '../calc'
 import { GOOD_REFS, OVER_REFS, pick, useVerse } from '../quotes'
 import { BOUNCE_BACK, GOOD_DAY } from '../motivation'
 import { useEffect, useState } from 'react'
@@ -177,6 +177,37 @@ export function WordsCard({ words }) {
     <section className="today-words">
       <h2 className="group-title">Today’s verse and reflection</h2>
       <div className="card words-panel"><Words words={words} compact /></div>
+    </section>
+  )
+}
+
+// Sunday: a calm look back at the week. Encouraging, never a report card.
+export function WeeklyCard({ profile, mine, budgetFor, today, onClose }) {
+  const w = weekSummary({ entries: mine, profile, budgetFor, todayKey: today })
+  if (w.logged === 0 && w.habitDone === 0 && w.workouts === 0) return null
+  const line = w.logged < 3 ? 'A lighter week of logging, and that’s okay. Each new week is a fresh page.'
+    : w.within >= 5 ? 'A strong, steady week. This is exactly how lasting change is built.'
+    : w.within >= 3 ? 'More days on track than off. That’s real progress.'
+    : 'Some weeks are harder. You kept showing up, and that’s what counts.'
+  const d = (k) => new Date(k + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  return (
+    <section className="block">
+      <div className="block-head">
+        <h2 className="group-title">Your week</h2>
+        <button className="link-btn" onClick={onClose}>Hide</button>
+      </div>
+      <div className="card weekly">
+        <p className="wk-range">{d(w.from)} – {d(w.to)}</p>
+        <p className="wk-line">{line}</p>
+        <div className="wk-grid">
+          {w.logged > 0 && <div><b className={w.saved >= 0 ? 'pos' : ''}>{fmt(Math.abs(w.saved))}</b><span>kcal {w.saved >= 0 ? 'saved' : 'over'}</span></div>}
+          {w.logged > 0 && <div><b>{w.within}<small>/{w.logged}</small></b><span>days within budget</span></div>}
+          {w.weightChange != null && <div><b>{w.weightChange > 0 ? '+' : w.weightChange < 0 ? '−' : ''}{Math.abs(w.weightChange).toFixed(1)}<small> kg</small></b><span>weight trend</span></div>}
+          {w.habitPossible > 0 && <div><b>{w.habitDone}<small>/{w.habitPossible}</small></b><span>habit ticks</span></div>}
+          {w.workouts > 0 && <div><b>{w.workouts}</b><span>workout{w.workouts > 1 ? 's' : ''}</span></div>}
+          {w.sleepAvg != null && <div><b>{fmtSleep(w.sleepAvg)}</b><span>average sleep</span></div>}
+        </div>
+      </div>
     </section>
   )
 }

@@ -139,6 +139,25 @@ test('habits week dots and layout upgrade', async () => {
   const days = { '2026-11-15': { habits: { walk: true } }, '2026-11-13': { habits: { walk: true } } }
   assert.deepEqual(h.habitDays(days, 'walk', '2026-11-15'), [false, false, false, false, true, false, true])
   assert.deepEqual(h.habitDays(days, 'walk', '2026-12-01', 3), [false, false, false]) // crosses month
-  assert.deepEqual(l.fullLayout(['meals', 'words', 'deposits', 'eat']), ['meals', 'habits', 'words', 'deposits', 'eat', 'journal'])
+  assert.deepEqual(l.fullLayout(['meals', 'words', 'deposits', 'eat']), ['meals', 'habits', 'partner', 'words', 'deposits', 'eat', 'journal'])
   assert.equal(h.suggestHabits('maintain').length, 3)
+})
+
+test('weight trend is a 7-day average', () => {
+  const D = 86400000, t0 = new Date(2026, 10, 1).getTime()
+  const pts = [84, 85, 83, 84, 83.5].map((w, i) => ({ k: `2026-11-0${i + 1}`, t: t0 + i * D, w }))
+  const tr = c.weightTrend(pts)
+  assert.equal(tr[0].trend, 84)
+  assert.equal(tr[4].trend, 83.9) // (84+85+83+84+83.5)/5
+  const far = c.weightTrend([{ t: t0, w: 90 }, { t: t0 + 10 * D, w: 80 }])
+  assert.equal(far[1].trend, 80) // older than 7 days is left out
+})
+
+test('weekly summary covers the 7 days before today', () => {
+  const entries = [{ day: '2026-11-14', kcal: 1500 }, { day: '2026-11-13', kcal: 2000 }, { day: '2026-11-15', kcal: 999 }, { day: '2026-11-07', kcal: 999 }]
+  const profile = { habits: ['walk'], days: { '2026-11-14': { habits: { walk: true }, workouts: [{}, {}], sleep: { bed: '23:00', wake: '06:00' } }, '2026-11-09': { weight: 84 }, '2026-11-14x': {} } }
+  const w = c.weekSummary({ entries, profile, budgetFor: () => 1800, todayKey: '2026-11-15' })
+  assert.equal(w.from, '2026-11-08'); assert.equal(w.to, '2026-11-14')
+  assert.equal(w.logged, 2); assert.equal(w.within, 1); assert.equal(w.saved, 100)
+  assert.equal(w.workouts, 2); assert.equal(w.sleepAvg, 7); assert.equal(w.habitDone, 1); assert.equal(w.habitPossible, 7)
 })

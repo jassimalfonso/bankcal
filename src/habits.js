@@ -41,3 +41,16 @@ export const JOURNAL_PROMPTS = [
   'Where did you see God’s grace today?',
 ]
 export const MOODS = [{ id: 1, e: '😔', label: 'Low' }, { id: 2, e: '😐', label: 'Okay' }, { id: 3, e: '🙂', label: 'Good' }, { id: 4, e: '😄', label: 'Great' }]
+
+// Starter lines for the journal, so there's never a blank page. The first ones come
+// from how the day actually went; the rest are gentle openers. Tapping one starts the note.
+export function journalStarters({ dayLog = {}, left, mealsLogged, habitsDone = 0, sleepH }) {
+  const out = []
+  if (mealsLogged > 0 && left != null && left >= 0) out.push('I stayed within my budget today. What helped was ')
+  if (mealsLogged > 0 && left != null && left < 0) out.push('Today went over, and that’s okay. Next time I could ')
+  if (habitsDone > 0) out.push(`I kept ${habitsDone === 1 ? 'my habit' : `${habitsDone} habits`} today. It felt `)
+  if ((dayLog.workouts ?? []).length > 0 || +dayLog.steps >= 8000) out.push('I moved my body today, and afterwards I felt ')
+  if (sleepH != null && sleepH < 7) out.push('I was short on sleep, so today I noticed ')
+  out.push('Today I’m thankful for ', 'One small win today: ', 'Something I want to remember: ', 'Lord, today I need help with ')
+  return out.slice(0, 4)
+}

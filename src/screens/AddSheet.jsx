@@ -7,7 +7,11 @@ import { IconCamera, IconClose } from '../icons'
 import { useEscape } from '../motion'
 import { useSheetDrag } from '../motion'
 
-export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
+export default function AddSheet({ mine, todays, budget, onClose, onSave, profile, updateProfile }) {
+  const myFoods = profile?.myFoods ?? []
+  const [keep, setKeep] = useState(false)
+  const [editMine, setEditMine] = useState(false)
+  const removeMine = (id) => updateProfile({ myFoods: myFoods.filter((f) => f.id !== id) })
   const [photo, setPhoto] = useState(null)
   const [name, setName] = useState('')
   const [kcal, setKcal] = useState('')
@@ -36,10 +40,12 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
   const suggestions = useMemo(() => {
     const t = name.trim().toLowerCase()
     if (picked || t.length < 2) return []
-    const own = recent.filter((r) => r.name.toLowerCase().includes(t)).map((r) => ({ name: r.name, kcal: r.kcal, portion: 'your usual' }))
+    const saved = myFoods.filter((f) => f.name.toLowerCase().includes(t)).map((f) => ({ name: f.name, kcal: f.kcal, portion: f.portion || 'my food' }))
+    const past = recent.filter((r) => r.name.toLowerCase().includes(t) && !saved.some((s) => s.name.toLowerCase() === r.name.toLowerCase())).map((r) => ({ name: r.name, kcal: r.kcal, portion: 'your usual' }))
+    const own = [...saved, ...past]
     const built = searchFoods(name).filter((f) => !own.some((o) => o.name.toLowerCase() === f.name.toLowerCase()))
     return [...own, ...built].slice(0, 6)
-  }, [name, recent, picked])
+  }, [name, recent, picked, myFoods])
 
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const n = Math.max(0, parseInt(kcal, 10) || 0)
@@ -86,7 +92,11 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
 
   function save() {
     if (!valid) return
-    onSave({ name: name.trim(), kcal: n, meal, photo })
+    const nm = name.trim()
+    if (keep && !myFoods.some((f) => f.name.toLowerCase() === nm.toLowerCase())) {
+      updateProfile({ myFoods: [{ id: String(Date.now()), name: nm, kcal: n, portion: 'my food' }, ...myFoods].slice(0, 60) })
+    }
+    onSave({ name: nm, kcal: n, meal, photo })
   }
 
   return (
@@ -121,6 +131,19 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
               <span key={i}>{it.name}{it.portion ? `, ${it.portion}` : ''} <b>{fmt(it.kcal)}</b></span>
             ))}
             {ai.confidence === 'low' && <small>Low confidence. Check the number below.</small>}
+          </div>
+        )}
+
+        {myFoods.length > 0 && !name && (
+          <div className="myfoods">
+            <div className="mf-head"><b>My foods</b><button className="link-btn" onClick={() => setEditMine((x) => !x)}>{editMine ? 'Done' : 'Edit'}</button></div>
+            <div className="recent">
+              {myFoods.map((f) => editMine ? (
+                <button key={f.id} className="chip mine edit" onClick={() => removeMine(f.id)} aria-label={`Remove ${f.name}`}>{f.name} <span>✕</span></button>
+              ) : (
+                <button key={f.id} className="chip mine" onClick={() => choose(f)}>⭐ {f.name} <span>{fmt(f.kcal)}</span></button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -175,6 +198,13 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
           <p className={`after ${after < 0 ? 'neg' : ''}`}>
             {after < 0 ? `This takes you ${fmt(-after)} kcal over` : `${fmt(after)} kcal left after this`}
           </p>
+        )}
+
+        {valid && !myFoods.some((f) => f.name.toLowerCase() === name.trim().toLowerCase()) && (
+          <label className="keep-food">
+            <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
+            <span>Save to <b>My foods</b> for next time</span>
+          </label>
         )}
 
         <button className="btn-primary" disabled={!valid} onClick={save}>

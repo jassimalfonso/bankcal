@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
-import { HABITS, JOURNAL_PROMPTS, MOODS, habitById, habitDays, suggestHabits } from '../habits'
+import { useRef, useState } from 'react'
+import { HABITS, JOURNAL_PROMPTS, MOODS, habitById, habitDays, journalStarters, suggestHabits } from '../habits'
+import { sleepHours } from '../calc'
+import { IconClose } from '../icons'
+import { useEscape, useSheetDrag } from '../motion'
 
 // Today: tick tiny habits. No streak pressure — just a quiet row of dots for the week.
 export function HabitsCard({ profile, updateProfile, dayLog, setDay, today, goSetup }) {
@@ -72,35 +75,88 @@ export function HabitPicker({ profile, updateProfile }) {
   )
 }
 
-// Today: an optional note. Private, saved as you type.
-export function JournalCard({ dayLog, setDay, today }) {
+// Today: a compact journal card. Tapping it opens a calm writing sheet.
+export function JournalCard({ dayLog, setDay, today, profile, todays = [], budget }) {
   const j = dayLog.journal ?? {}
-  const [text, setText] = useState(j.text ?? '')
-  const [open, setOpen] = useState(!!j.text || !!j.mood)
-  const timer = useRef()
-  useEffect(() => { setText(dayLog.journal?.text ?? '') }, [today]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [open, setOpen] = useState(false)
   const prompt = JOURNAL_PROMPTS[+today.slice(8) % JOURNAL_PROMPTS.length]
-  const save = (patch) => setDay(today, { journal: { ...j, text, ...patch } })
-  const onType = (v) => { setText(v); clearTimeout(timer.current); timer.current = setTimeout(() => save({ text: v }), 800) }
+  const mood = MOODS.find((m) => m.id === j.mood)
+  const has = !!(j.text?.trim() || j.mood)
   return (
     <section className="block">
       <h2 className="group-title">Journal</h2>
-      <div className="card journal">
-        <p className="j-prompt">{prompt}</p>
+      <button className={`card journal-card ${has ? 'has' : ''}`} onClick={() => setOpen(true)}>
+        {has ? (
+          <>
+            <span className="jc-top"><b>{mood ? `${mood.e} ${mood.label}` : 'Today’s note'}</b><em>Edit</em></span>
+            {j.text?.trim() && <span className="jc-text">{j.text.trim()}</span>}
+          </>
+        ) : (
+          <>
+            <span className="jc-prompt">{prompt}</span>
+            <span className="jc-cta">✍️ Write today’s note</span>
+            <span className="jc-fine">Optional, takes a minute, and only you can see it.</span>
+          </>
+        )}
+      </button>
+      {open && <JournalSheet {...{ j, prompt, setDay, today, dayLog, profile, todays, budget }} onClose={() => setOpen(false)} />}
+    </section>
+  )
+}
+
+function JournalSheet({ j, prompt, setDay, today, dayLog, profile, todays, budget, onClose }) {
+  const [text, setText] = useState(j.text ?? '')
+  const [mood, setMood] = useState(j.mood ?? null)
+  const [saved, setSaved] = useState(false)
+  const area = useRef()
+  const timer = useRef()
+  const drag = useSheetDrag(() => close())
+  const persist = (t = text, m = mood) => { setDay(today, { journal: { text: t, mood: m, at: Date.now() } }); setSaved(true) }
+  const close = () => { clearTimeout(timer.current); if (text !== (j.text ?? '') || mood !== (j.mood ?? null)) persist(); onClose() }
+  useEscape(close)
+  const onType = (v) => { setText(v); setSaved(false); clearTimeout(timer.current); timer.current = setTimeout(() => persist(v, mood), 900) }
+  const starters = journalStarters({
+    dayLog, mealsLogged: todays.length, left: budget != null ? budget - todays.reduce((a, e) => a + e.kcal, 0) : null,
+    habitsDone: (profile?.habits ?? []).filter((id) => dayLog.habits?.[id]).length, sleepH: sleepHours(dayLog.sleep),
+  })
+  const start = (line) => {
+    const v = text.trim() ? `${text.trimEnd()}\n${line}` : line
+    onType(v)
+    setTimeout(() => { const el = area.current; if (el) { el.focus(); el.setSelectionRange(v.length, v.length) } }, 60)
+  }
+  return (
+    <div className="sheet-wrap" onClick={close}>
+      <div className="sheet journal-sheet" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Journal">
+        <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
+        <div className="sheet-head">
+          <div>
+            <p className="muted">{new Date(today + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+            <h2>{prompt}</h2>
+          </div>
+          <button className="icon-btn" onClick={close} aria-label="Close"><IconClose /></button>
+        </div>
+
         <div className="j-moods" role="radiogroup" aria-label="How was today?">
           {MOODS.map((m) => (
-            <button key={m.id} role="radio" aria-checked={j.mood === m.id} className={j.mood === m.id ? 'on' : ''} onClick={() => { save({ mood: m.id }); setOpen(true) }}>
+            <button key={m.id} role="radio" aria-checked={mood === m.id} className={mood === m.id ? 'on' : ''} onClick={() => { const next = mood === m.id ? null : m.id; setMood(next); persist(text, next) }}>
               <span>{m.e}</span><small>{m.label}</small>
             </button>
           ))}
         </div>
-        {open ? (
-          <textarea value={text} onChange={(e) => onType(e.target.value)} onBlur={() => save({ text })} rows={3} placeholder="Write as much or as little as you like…" aria-label="Journal note" />
-        ) : (
-          <button className="link-btn" onClick={() => setOpen(true)}>Write a note</button>
+
+        <textarea ref={area} value={text} onChange={(e) => onType(e.target.value)} rows={6} maxLength={3000} placeholder="Write as much or as little as you like…" aria-label="Journal note" />
+        <p className="j-status" role="status">{saved ? 'Saved ✓' : text.trim() ? 'Saving…' : ' '}</p>
+
+        {text.trim().length < 40 && (
+          <div className="j-starters">
+            <span>Not sure where to begin? Tap one to start:</span>
+            {starters.map((s) => <button key={s} onClick={() => start(s)}>{s.trim().replace(/:$/, '')}…</button>)}
+          </div>
         )}
-        <p className="fine">Optional, and only you can see it.</p>
+
+        <button className="btn-primary" onClick={close}>Done</button>
+        <p className="fine center">Private to you. You can read past notes in Progress → Calendar.</p>
       </div>
-    </section>
+    </div>
   )
 }

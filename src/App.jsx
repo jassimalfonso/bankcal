@@ -13,6 +13,7 @@ import Today from './screens/Today'
 import Statement from './screens/Statement'
 import Me from './screens/Me'
 import Train from './screens/Train'
+import { usePartners, useScaleSync } from './partner'
 import AddSheet from './screens/AddSheet'
 import SignIn from './screens/SignIn'
 import Onboarding from './screens/Onboarding'
@@ -123,14 +124,14 @@ function Bank({ user }) {
     }
   }, [profile, today, entries, morning, bedKey])
 
-  if (!profile) return <div className="loading" />
-  if (!profile.onboarded) return <Onboarding {...store} />
 
-  const base = dailyBudget(profile)
-  const dayLog = profile.days?.[today] ?? {}
-  const earn = earned(dayLog, profile.weight)
+  // (calculations tolerate a profile that hasn't loaded yet so the hooks below always run in the same order)
+  const pf = profile ?? {}
+  const base = profile ? dailyBudget(profile) : null
+  const dayLog = pf.days?.[today] ?? {}
+  const earn = earned(dayLog, pf.weight)
   const budget = base != null ? base + earn.total : null // activity is a deposit into today's budget
-  const budgetFor = (key) => { const b = key === today ? base : (profile.days?.[key]?.base ?? base); return b != null ? b + earned(profile.days?.[key], profile.weight).total : null }
+  const budgetFor = (key) => { const b = key === today ? base : (pf.days?.[key]?.base ?? base); return b != null ? b + earned(pf.days?.[key], pf.weight).total : null }
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const closed = !!dayLog.closed
   const streakDays = streak(entries, budgetFor, today, closed)
@@ -138,7 +139,19 @@ function Bank({ user }) {
   const yEntries = entries.filter((e) => e.day === yKey)
   const yesterday = yEntries.length && budgetFor(yKey) != null ? { net: budgetFor(yKey) - yEntries.reduce((a, e) => a + e.kcal, 0) } : null
   const closeDay = () => { if (budget != null && spent - budget <= 0) store.setDay(today, { closed: true }); setResult(true) }
-  const ctx = { ...store, notify, addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: (section) => {
+  const partner = usePartners({
+    enabled: !DEMO, uid: user.uid, profile, updateProfile: store.updateProfile, notify,
+    summary: { day: today, streak: streakDays, habitsDone: (pf.habits ?? []).filter((id) => dayLog.habits?.[id]).length, habitsTotal: (pf.habits ?? []).length, moved: earn.total > 0, logged: todays.length > 0 },
+  })
+  const scale = useScaleSync({
+    enabled: !DEMO, uid: user.uid, profile, updateProfile: store.updateProfile,
+    onWeight: (kg, at) => { store.setDay(today, { weight: kg }); store.updateProfile({ weight: kg, lastSyncAt: at }); notify(`⚖️ ${kg} kg received from your scale`) },
+  })
+
+  if (!profile) return <div className="loading" />
+  if (!profile.onboarded) return <Onboarding {...store} />
+
+  const ctx = { ...store, partner, scale, notify, addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }

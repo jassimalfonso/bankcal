@@ -329,3 +329,46 @@ export function targetCheck(targetKg, heightCm) {
   const bmi = t / (h * h)
   return { bmi: Math.round(bmi * 10) / 10, tooLow: bmi < 18.5, lowest: Math.ceil(18.5 * h * h * 10) / 10 }
 }
+
+// ───────── Weight trend ─────────
+// Daily weight swings 1–2 kg from water and salt. The trend is the average of the
+// weigh-ins in the 7 days up to each point, which shows the real direction.
+export function weightTrend(pts) {
+  const DAY = 86400000
+  return pts.map((p) => {
+    const win = pts.filter((q) => q.t <= p.t && q.t > p.t - 7 * DAY)
+    return { ...p, trend: Math.round((win.reduce((a, q) => a + q.w, 0) / win.length) * 100) / 100 }
+  })
+}
+
+const addDays = (key, n) => { const [y, m, d] = key.split('-').map(Number); return dayKey(new Date(y, m - 1, d + n)) }
+
+// ───────── Weekly check-in ─────────
+// Summary of the 7 days before todayKey (so Sunday morning reviews the week just finished).
+export function weekSummary({ entries, profile, budgetFor, todayKey }) {
+  const keys = Array.from({ length: 7 }, (_, i) => addDays(todayKey, i - 7))
+  const days = profile.days ?? {}
+  let logged = 0, within = 0, saved = 0, workouts = 0, sleepSum = 0, sleepN = 0, habitDone = 0
+  for (const k of keys) {
+    const items = entries.filter((e) => e.day === k)
+    if (items.length) {
+      logged++
+      const net = (budgetFor(k) ?? 0) - items.reduce((a, e) => a + e.kcal, 0)
+      saved += net
+      if (net >= 0) within++
+    }
+    workouts += days[k]?.workouts?.length ?? 0
+    const sh = sleepHours(days[k]?.sleep)
+    if (sh != null) { sleepSum += sh; sleepN++ }
+    habitDone += (profile.habits ?? []).filter((id) => days[k]?.habits?.[id]).length
+  }
+  const pts = Object.entries(days).filter(([, d]) => +d?.weight > 0).map(([k, d]) => ({ k, t: parseDay(k).getTime(), w: +d.weight })).sort((a, b) => a.t - b.t)
+  const tr = weightTrend(pts)
+  const end = tr.filter((p) => p.k < todayKey).at(-1), start = tr.filter((p) => p.k < keys[0]).at(-1) ?? tr.find((p) => p.k >= keys[0])
+  const weightChange = end && start && end.k !== start.k ? Math.round((end.trend - start.trend) * 10) / 10 : null
+  return {
+    from: keys[0], to: keys[6], logged, within, saved: Math.round(saved), workouts,
+    sleepAvg: sleepN ? sleepSum / sleepN : null, weightChange,
+    habitDone, habitPossible: (profile.habits ?? []).length * 7,
+  }
+}

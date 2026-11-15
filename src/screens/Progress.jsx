@@ -1,14 +1,14 @@
-import { fmt, maintainStatus, plan, prettyDate } from '../calc'
+import { fmt, maintainStatus, plan, prettyDate, weightTrend } from '../calc'
 
 const DAY = 86400000
 const toDate = (k) => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d) }
 
 // Weight trend from daily weigh-ins, target line, and an estimated finish date.
 export default function Progress({ profile, goSetup }) {
-  const pts = Object.entries(profile.days ?? {})
+  const pts = weightTrend(Object.entries(profile.days ?? {})
     .filter(([, d]) => +d?.weight > 0)
     .map(([k, d]) => ({ k, t: toDate(k).getTime(), w: +d.weight }))
-    .sort((a, b) => a.t - b.t)
+    .sort((a, b) => a.t - b.t))
     .slice(-60)
   const target = +profile.targetWeight || null
   const pl = plan(profile, profile.weight)
@@ -31,7 +31,7 @@ export default function Progress({ profile, goSetup }) {
   }
   const last = pts[pts.length - 1]
   const first = pts[0]
-  const change = last.w - first.w
+  const change = last.trend - first.trend
   let etaText = null
   if (target && last.w > target) {
     if (slope != null && slope < -0.005) {
@@ -58,19 +58,20 @@ export default function Progress({ profile, goSetup }) {
   const t0 = pts[0].t, t1 = Math.max(pts[pts.length - 1].t, t0 + DAY)
   const x = (t) => pad + ((t - t0) / (t1 - t0)) * (W - 2 * pad)
   const y = (w) => pad + ((hi - w) / (hi - lo)) * (H - 2 * pad)
-  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)} ${y(p.w).toFixed(1)}`).join(' ')
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)} ${y(p.trend).toFixed(1)}`).join(' ')
 
   return (
     <div className="card progress">
       <div className="progress-top">
-        <b>{last.w} kg</b>
+        <b>{pts.length > 2 ? last.trend.toFixed(1) : last.w} kg{pts.length > 2 && <small> trend</small>}</b>
         <span>{pts.length > 1 ? `${change <= 0 ? '−' : '+'}${Math.abs(change).toFixed(1)} kg since ${toDate(first.k).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : 'First weigh-in'}</span>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-label="Weight trend">
         {target && <line x1={0} x2={W} y1={y(target)} y2={y(target)} stroke="var(--pos)" strokeDasharray="5 5" strokeWidth="1.5" />}
         {pts.length > 1 && <path d={line} fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
-        {pts.map((p) => <circle key={p.k} cx={x(p.t)} cy={y(p.w)} r="3.5" fill="var(--accent)" />)}
+        {pts.map((p) => <circle key={p.k} cx={x(p.t)} cy={y(p.w)} r="2.5" fill="var(--accent)" opacity="0.35" />)}
       </svg>
+      {pts.length > 2 && <p className="fine trend-note">The line is your 7-day average; the dots are daily weigh-ins (today: {last.w} kg). Daily ups and downs of 1–2 kg are just water and salt.</p>}
       {etaText && <p className="eta">{etaText}</p>}
       {!target && <button className="link-btn" onClick={goSetup}>Set a target weight</button>}
     </div>
