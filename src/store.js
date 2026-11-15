@@ -9,7 +9,7 @@ import { dayKey } from './calc'
 // You two are set up automatically; everyone else picks their own.
 const PRESETS = {
   'jassim.alfonso@gmail.com': { name: 'Fart Monster', character: 'cloud', theme: 'moss', sex: 'm', onboarded: true },
-  'christinenantonio@gmail.com': { name: 'Sewer Butt', character: 'roo', theme: 'plum', sex: 'f', onboarded: true },
+  'christinenantonio@gmail.com': { name: 'Sewer Butt', character: 'dog', theme: 'plum', sex: 'f', onboarded: true },
 }
 
 const BLANK = {

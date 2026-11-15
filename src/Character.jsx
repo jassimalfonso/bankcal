@@ -83,53 +83,44 @@ function FartMonster({ mood }) {
   )
 }
 
-function Kangaroo({ mood }) {
+function GoldenRetriever({ mood }) {
   return (
     <>
       <defs>
-        <linearGradient id="kg-body" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" style={{ stopColor: 'var(--accent-2)' }} />
-          <stop offset="1" style={{ stopColor: 'var(--accent)' }} />
+        <linearGradient id="gr-body" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f8d48a" />
+          <stop offset="1" stopColor="#e0a24a" />
         </linearGradient>
       </defs>
-      {/* pointed ears, angled out */}
-      <path d="M44 42 C26 34 18 14 24 4 C36 6 46 22 50 38 Z" style={{ fill: 'var(--accent)' }} />
-      <path d="M76 42 C94 34 102 14 96 4 C84 6 74 22 70 38 Z" style={{ fill: 'var(--accent)' }} />
-      <path d="M42 36 C32 30 27 18 29 11 C36 13 42 24 45 34 Z" fill="#fff" opacity="0.5" />
-      <path d="M78 36 C88 30 93 18 91 11 C84 13 78 24 75 34 Z" fill="#fff" opacity="0.5" />
-      {/* body */}
-      <rect x="20" y="34" width="80" height="76" rx="38" fill="url(#kg-body)" />
-      {/* long light muzzle */}
-      <ellipse cx="60" cy="80" rx="17" ry="15" fill="#fff" opacity="0.45" />
-      <ellipse cx="36" cy="80" rx="7" ry="4.5" fill="#ff6f91" opacity="0.35" />
-      <ellipse cx="84" cy="80" rx="7" ry="4.5" fill="#ff6f91" opacity="0.35" />
-      <Eyes mood={mood} y={60} gap={16} />
-      <ellipse cx="60" cy="73" rx="5.5" ry="3.8" fill="#2b2b30" opacity="0.8" />
-      <Mouth mood={mood} y={86} />
-      {/* pouch with a joey peeking out */}
-      <g>
-        <ellipse cx="54" cy="96" rx="3" ry="6" transform="rotate(-15 54 96)" style={{ fill: 'var(--accent)' }} />
-        <ellipse cx="66" cy="96" rx="3" ry="6" transform="rotate(15 66 96)" style={{ fill: 'var(--accent)' }} />
-        <circle cx="60" cy="103" r="8" style={{ fill: 'var(--accent-2)' }} />
-        <circle cx="57" cy="102" r="1.5" fill="#2b2b30" /><circle cx="63" cy="102" r="1.5" fill="#2b2b30" />
-        <ellipse cx="60" cy="105.5" rx="1.8" ry="1.2" fill="#2b2b30" opacity="0.7" />
-        <path d="M42 104 q18 10 36 0 v6 h-36 z" style={{ fill: 'var(--accent)' }} />
-        <path d="M42 104 q18 10 36 0" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" opacity="0.55" />
-      </g>
+      {/* head */}
+      <rect x="22" y="26" width="76" height="82" rx="38" fill="url(#gr-body)" />
+      {/* soft fluffy top */}
+      <circle cx="50" cy="30" r="9" fill="#f8d48a" /><circle cx="62" cy="27" r="9" fill="#f8d48a" /><circle cx="73" cy="31" r="8" fill="#f8d48a" />
+      {/* floppy ears */}
+      <path d="M30 36 C12 40 8 70 16 86 C22 94 32 88 34 76 C36 62 38 46 30 36 Z" fill="#c9862f" />
+      <path d="M90 36 C108 40 112 70 104 86 C98 94 88 88 86 76 C84 62 82 46 90 36 Z" fill="#c9862f" />
+      {/* cream muzzle */}
+      <ellipse cx="60" cy="82" rx="19" ry="15" fill="#fde9c4" />
+      <ellipse cx="38" cy="78" rx="6.5" ry="4" fill="#ff8f8f" opacity="0.35" />
+      <ellipse cx="82" cy="78" rx="6.5" ry="4" fill="#ff8f8f" opacity="0.35" />
+      <Eyes mood={mood} y={58} gap={15} />
+      <path d="M53 71 h14 a4 4 0 0 1 -3 6 l-4 3 l-4 -3 a4 4 0 0 1 -3 -6 z" fill="#2b2b30" />
+      <Mouth mood={mood} y={88} />
+      {mood === 'happy' && <ellipse cx="60" cy="96" rx="5" ry="6" fill="#ff7d93" />}
     </>
   )
 }
 
-// kind: 'cloud' (the Fart Monster shape) or 'roo' (the Sewer Butt kangaroo)
+// kind: 'cloud' (the Fart Monster shape) or 'dog' (the Sewer Butt golden retriever)
 export const CHARACTERS = [
   { id: 'cloud', label: 'Cloud monster' },
-  { id: 'roo', label: 'Kangaroo' },
+  { id: 'dog', label: 'Golden retriever' },
 ]
 
 export default function Character({ kind, mood = 'happy', size = 64, className = '' }) {
   return (
     <svg className={`character ${className}`} width={size} height={size} viewBox="0 0 120 120" aria-hidden="true">
-      {kind === 'roo' || kind === 'rat' ? <Kangaroo mood={mood} /> : <FartMonster mood={mood} />}
+      {kind === 'dog' || kind === 'roo' || kind === 'rat' ? <GoldenRetriever mood={mood} /> : <FartMonster mood={mood} />}
     </svg>
   )
 }
