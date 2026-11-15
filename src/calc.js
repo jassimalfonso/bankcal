@@ -151,6 +151,10 @@ export const WORKOUTS = [
   { id: 'squats', label: 'Squats', emoji: '🦵', kind: 'reps', met: 5.0, secPerRep: 3 },
   { id: 'pushups', label: 'Push-ups', emoji: '💪', kind: 'reps', met: 8.0, secPerRep: 2.5 },
   { id: 'situps', label: 'Sit-ups', emoji: '🔄', kind: 'reps', met: 3.8, secPerRep: 3 },
+  // whole-session values from the Compendium: resistance training (rests included) 3.5, moderate circuit training 4.3
+  { id: 'strength', label: 'Strength training', emoji: '🏋️', kind: 'min', met: 3.5 },
+  { id: 'circuit', label: 'Circuit training', emoji: '⚡', kind: 'min', met: 4.3 },
+  { id: 'bridge', label: 'Glute bridges', emoji: '🍑', kind: 'reps', met: 3.8, secPerRep: 3 },
   { id: 'lunges', label: 'Lunges', emoji: '🚶', kind: 'reps', met: 3.8, secPerRep: 3 },
   { id: 'burpees', label: 'Burpees', emoji: '🔥', kind: 'reps', met: 8.0, secPerRep: 5 },
   { id: 'dumbbells', label: 'Dumbbells', emoji: '🏋️', kind: 'weights', met: 3.5, secPerRep: 3 },
@@ -187,6 +191,7 @@ export function workoutKcal(w, weightKg) {
 export function describeWorkout(w) {
   const def = WORKOUTS.find((x) => x.id === w.type)
   if (!def) return ''
+  if (w.note) return w.note
   if (def.kind === 'min') return `${w.min} min`
   if (def.kind === 'sec') return `${w.sets > 1 ? `${w.sets} × ` : ''}${w.sec} s`
   if (def.kind === 'weights') return `${w.sets} × ${w.reps} reps @ ${w.kg} kg`

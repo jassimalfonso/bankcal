@@ -68,7 +68,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
           return (
             <div className="act-row" key={w.id}>
               <span className="w-emoji small">{def?.emoji}</span>
-              <div className="act-head"><b>{def?.label}</b><small>{describeWorkout(w)}</small></div>
+              <div className="act-head"><b>{w.label ?? def?.label}</b><small>{describeWorkout(w)}</small></div>
               <button className="w-del" onClick={() => removeWorkout(w.id)} aria-label={`Remove ${def?.label}`}>×</button>
               <span className="act-kcal">+{fmt(workoutKcal(w, profile.weight))}</span>
             </div>

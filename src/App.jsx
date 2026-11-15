@@ -12,10 +12,11 @@ import { MorningCard, DayResult, WelcomeBack } from './screens/DailyCards'
 import Today from './screens/Today'
 import Statement from './screens/Statement'
 import Me from './screens/Me'
+import Train from './screens/Train'
 import AddSheet from './screens/AddSheet'
 import SignIn from './screens/SignIn'
 import Onboarding from './screens/Onboarding'
-import { IconMe, IconPlus, IconStatement, IconToday } from './icons'
+import { IconMe, IconTrain, IconPlus, IconStatement, IconToday } from './icons'
 
 function useMode(mode) {
   useEffect(() => {
@@ -42,7 +43,7 @@ function Bank({ user }) {
   const { profile, entries } = store
   const [tab, setTabRaw] = useState('today')
   const [dir, setDir] = useState('none') // slide direction for page transitions
-  const ORDER = ['today', 'week', 'me']
+  const ORDER = ['today', 'week', 'train', 'me']
   const setTab = (next) => {
     if (next === tab) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
     setDir(ORDER.indexOf(next) > ORDER.indexOf(tab) ? 'left' : 'right')
@@ -147,6 +148,7 @@ function Bank({ user }) {
       <main className={`screen slide-${dir}`} key={tab}>
         {tab === 'today' && <Today {...ctx} />}
         {tab === 'week' && <Statement {...ctx} />}
+        {tab === 'train' && <Train {...ctx} />}
         {tab === 'me' && <Me {...ctx} />}
       </main>
 
@@ -157,6 +159,7 @@ function Bank({ user }) {
       <nav className="tabbar">
         <TabBtn id="today" tab={tab} setTab={setTab} label="Today" Icon={IconToday} />
         <TabBtn id="week" tab={tab} setTab={setTab} label="Progress" Icon={IconStatement} />
+        <TabBtn id="train" tab={tab} setTab={setTab} label="Train" Icon={IconTrain} />
         <TabBtn id="me" tab={tab} setTab={setTab} label="Settings" Icon={IconMe} />
       </nav>
 

@@ -120,3 +120,15 @@ test('weekly loss rate and pace', () => {
   assert.equal(c.targetCheck(50, 173).tooLow, true)
   assert.equal(c.targetCheck(50, 173).lowest, 55.4)
 })
+
+test('strength sessions count rests (Compendium whole-session values)', async () => {
+  const t = await import('../src/training.js')
+  const g = t.exerciseById.goblet // intermediate: 3 × 8–12, 90 s rest → 3 × (24 + 90) s = 5.7 min
+  assert.equal(Math.round(t.exerciseMinutes(g, 'intermediate') * 10) / 10, 5.7)
+  const w = t.toWorkout(g, 'intermediate', 12)
+  assert.equal(w.type, 'strength')
+  assert.equal(c.workoutKcal(w, 84), 21) // (3.5−1) × 84 × 6/60
+  const plan = t.PLANS.find((p) => p.id === 'dumbbell')
+  const s = t.toSession(plan, plan.sessions[0], 'intermediate')
+  assert.ok(s.min >= 25 && s.min <= 45, `session ${s.min} min`)
+})

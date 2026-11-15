@@ -23,6 +23,11 @@ export const IconMe = (p) => (
     <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
   </S>
 )
+export const IconTrain = (p) => (
+  <S {...p}>
+    <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" />
+  </S>
+)
 export const IconPlus = (p) => (
   <S {...p}>
     <path d="M12 5v14M5 12h14" />
