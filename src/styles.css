@@ -492,11 +492,11 @@ body[data-bg='lavender'] { background: linear-gradient(180deg, #ebe3ff 0%, #f6e8
   width: 56px; height: 56px; box-shadow: 0 8px 18px -6px var(--accent);
 }
 /* fade content out as it scrolls behind the dock */
-body::after {
+body:has(.app)::after {
   content: ''; position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--safe-b) + 96px); z-index: 9; pointer-events: none;
   background: linear-gradient(to top, var(--bg) 35%, transparent);
 }
-body[data-bg]:not([data-bg='plain'])::after { background: linear-gradient(to top, color-mix(in srgb, var(--bg) 92%, transparent) 30%, transparent); }
+body[data-bg]:not([data-bg='plain']):has(.app)::after { background: linear-gradient(to top, color-mix(in srgb, var(--bg) 92%, transparent) 30%, transparent); }
 .toast { bottom: calc(var(--safe-b) + 92px); }
 
 /* Each background tints the page base and lines so cards, sheets and the dock blend in */
@@ -548,3 +548,74 @@ p { text-wrap: pretty; }
   .card button:hover, .w-more:hover { opacity: 0.85; }
 }
 .field input:focus-visible, .num-in:focus-within, .kcal-input:focus-within { box-shadow: 0 0 0 2px var(--accent); border-radius: 12px; }
+
+/* ───────── Opening page: a living calorie card ───────── */
+.signin { position: relative; overflow: hidden; justify-content: flex-end; gap: 0; padding-top: calc(var(--safe-t) + 24px);
+  background: linear-gradient(180deg, #dff5d6 0%, #eef8e8 38%, var(--bg) 70%); }
+:root[data-mode='dark'] .signin { background: linear-gradient(180deg, #12261a 0%, #0b140e 40%, #000 72%); }
+.si-sky i { position: absolute; border-radius: 50%; filter: blur(40px); opacity: 0.55; }
+.si-sky i:nth-child(1) { width: 240px; height: 240px; background: #a6e3a1; top: -60px; left: -70px; }
+.si-sky i:nth-child(2) { width: 220px; height: 220px; background: #ffc6d6; top: 40px; right: -90px; }
+.si-sky i:nth-child(3) { width: 180px; height: 180px; background: #ffe39e; top: 260px; left: 30%; opacity: 0.35; }
+
+.si-stage { position: relative; width: 100%; max-width: 340px; margin: auto 0 28px; }
+.si-card {
+  position: relative; margin: 54px auto 0; width: 100%; aspect-ratio: 1.6; border-radius: 26px; padding: 22px 22px 18px;
+  display: flex; flex-direction: column; text-align: left; color: #fff;
+  background: radial-gradient(120% 90% at 0% 0%, #7fd98a 0%, transparent 55%), linear-gradient(135deg, #3fae5c 0%, #2b8f57 55%, #1f6f4f 100%);
+  box-shadow: 0 30px 50px -22px rgba(31, 111, 79, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transform: rotate(-4deg); animation: si-rise 0.9s var(--ease) both;
+}
+.si-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.28) 50%, transparent 65%); background-size: 250% 100%; animation: si-shine 1.4s 0.7s var(--ease) both; }
+@keyframes si-rise { from { opacity: 0; transform: translateY(40px) rotate(-10deg) scale(0.94); } }
+@keyframes si-shine { from { background-position: 120% 0; } to { background-position: -40% 0; } }
+.si-buddies { position: absolute; top: -58px; right: 18px; display: flex; gap: 0; }
+.si-buddies > span { display: block; animation: si-hop 0.6s var(--spring) both; }
+.si-buddies > span:nth-child(1) { animation-delay: 0.55s; }
+.si-buddies > span:nth-child(2) { animation-delay: 0.7s; margin-left: -14px; }
+.si-buddies .character { animation: bob 3.2s ease-in-out 1.4s infinite; }
+.si-buddies > span:nth-child(2) .character { animation-delay: 2s; }
+@keyframes si-hop { from { opacity: 0; transform: translateY(30px) scale(0.6); } }
+.si-label { font-size: 13px; font-weight: 800; opacity: 0.85; }
+.si-balance { margin-top: 2px; font-size: 46px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.si-balance small { font-size: 17px; font-weight: 800; margin-left: 6px; opacity: 0.85; letter-spacing: 0; }
+.si-chip { margin-top: auto; display: flex; justify-content: space-between; align-items: center; }
+.si-cardname { font-size: 13px; font-weight: 900; letter-spacing: 0.18em; opacity: 0.9; }
+.si-dots { display: flex; }
+.si-dots i { width: 26px; height: 26px; border-radius: 50%; background: #ffd34d; }
+.si-dots i + i { margin-left: -10px; background: #ff8fb0; mix-blend-mode: multiply; }
+
+.si-tx { list-style: none; margin: 18px 6px 0; padding: 0; display: grid; gap: 8px; }
+.si-tx li { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border-radius: 16px;
+  background: color-mix(in srgb, var(--card) 88%, transparent); box-shadow: var(--shadow); font-size: 14.5px; font-weight: 750;
+  animation: si-slide 0.6s var(--ease) both; }
+.si-tx li:nth-child(1) { animation-delay: 1s; }
+.si-tx li:nth-child(2) { animation-delay: 1.15s; }
+.si-tx b { font-variant-numeric: tabular-nums; font-weight: 900; }
+.si-tx .in b { color: var(--pos); }
+.si-tx .out b { color: var(--neg); }
+@keyframes si-slide { from { opacity: 0; transform: translateX(-24px); } }
+
+.si-copy { position: relative; text-align: left; width: 100%; max-width: 340px; animation: fade 0.8s 0.3s both; }
+.signin .si-copy h1 { font-size: 34px; line-height: 1.08; text-wrap: balance; }
+.signin .si-copy p { margin-top: 8px; max-width: none; font-size: 16px; line-height: 1.45; }
+.signin .btn-google { position: relative; margin-top: 22px; width: 100%; max-width: 340px; justify-content: center; }
+.si-fine { position: relative; margin-top: 12px; font-size: 13px !important; color: var(--muted); }
+.signin .err { position: relative; margin-top: 12px; }
+@media (min-height: 760px) { .si-stage { margin-bottom: 40px; } }
+
+.signin .si-fine { max-width: none; }
+:root[data-mode='dark'] .si-sky i { opacity: 0.18; }
+@media (max-height: 720px) {
+  .si-stage { max-width: 300px; margin-bottom: 18px; }
+  .si-card { margin-top: 46px; padding: 18px; }
+  .si-balance { font-size: 38px; }
+  .si-buddies .character { width: 64px !important; height: 64px !important; }
+  .si-buddies { top: -48px; }
+  .si-tx { margin-top: 12px; gap: 6px; }
+  .si-tx li { padding: 8px 12px; font-size: 13.5px; }
+  .signin .si-copy h1 { font-size: 28px; }
+  .signin .si-copy p { font-size: 15px; }
+  .signin .btn-google { margin-top: 16px; padding: 14px 22px; }
+}

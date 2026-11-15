@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { redirectResult, signIn } from '../firebase'
 import Character from '../Character'
+import { useCountUp } from '../motion'
 
 export default function SignIn() {
   const [busy, setBusy] = useState(false)
@@ -21,14 +22,38 @@ export default function SignIn() {
     }
   }
 
+  const [target, setTarget] = useState(0)
+  useEffect(() => { const t = setTimeout(() => setTarget(1840), 500); return () => clearTimeout(t) }, [])
+  const balance = useCountUp(target, 1300)
+
   return (
     <div className="signin">
-      <div className="pair">
-        <span className="theme-moss"><Character kind="egg" size={96} /></span>
-        <span className="theme-plum"><Character kind="avocado" size={96} /></span>
+      <div className="si-sky" aria-hidden="true"><i /><i /><i /></div>
+
+      <div className="si-stage" aria-hidden="true">
+        <div className="si-card">
+          <div className="si-buddies">
+            <span className="theme-moss"><Character kind="egg" size={78} /></span>
+            <span className="theme-plum"><Character kind="avocado" size={78} /></span>
+          </div>
+          <span className="si-label">Today’s balance</span>
+          <b className="si-balance">{Math.round(balance).toLocaleString('en')}<small>kcal</small></b>
+          <div className="si-chip">
+            <span className="si-cardname">BANKCAL</span>
+            <span className="si-dots"><i /><i /></span>
+          </div>
+        </div>
+        <ul className="si-tx">
+          <li className="in"><span>🚶 10,000 steps</span><b>+259</b></li>
+          <li className="out"><span>🌯 Chicken shawarma</span><b>−520</b></li>
+        </ul>
       </div>
-      <h1>BankCal</h1>
-      <p>Your daily calories, kept like a bank balance. Spend them wisely.</p>
+
+      <div className="si-copy">
+        <h1>Spend calories like money.</h1>
+        <p>Set a daily budget, log what you eat, earn more when you move. Watch your savings add up.</p>
+      </div>
+
       <button className="btn-google" onClick={go} disabled={busy}>
         <svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true">
           <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
@@ -38,7 +63,8 @@ export default function SignIn() {
         </svg>
         {busy ? 'Signing in…' : 'Continue with Google'}
       </button>
-      {err && <p className="err">{err}</p>}
+      {err && <p className="err" role="alert">{err}</p>}
+      <p className="si-fine">Free, private to you, and works offline.</p>
     </div>
   )
 }
