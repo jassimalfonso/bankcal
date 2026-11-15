@@ -67,8 +67,18 @@ function Bank({ user }) {
   const words = useDailyWords(today)
   const seenKey = `bankcal:morning:${user.uid}:${today}`
   const [morning, setMorning] = useState(() => { try { return !localStorage.getItem(seenKey) } catch { return false } })
-  const [hello, setHello] = useState(() => { try { return !sessionStorage.getItem('bankcal:hello') } catch { return false } })
-  const doneHello = useCallback(() => { try { sessionStorage.setItem('bankcal:hello', '1') } catch { /* ignore */ } setHello(false) }, [])
+  // Welcome back on every fresh open, and again after being away for 30+ minutes
+  const [hello, setHello] = useState(true)
+  const doneHello = useCallback(() => setHello(false), [])
+  useEffect(() => {
+    let away = 0
+    const onVis = () => {
+      if (document.hidden) away = Date.now()
+      else if (away && Date.now() - away > 30 * 60 * 1000) setHello(true)
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
   const closeMorning = () => { doneHello(); try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } setMorning(false) }
   const [result, setResult] = useState(false)
   // One toast for the whole app, with optional Undo.
@@ -124,7 +134,7 @@ function Bank({ user }) {
 
       <nav className="tabbar">
         <TabBtn id="today" tab={tab} setTab={setTab} label="Today" Icon={IconToday} />
-        <TabBtn id="week" tab={tab} setTab={setTab} label="Week" Icon={IconStatement} />
+        <TabBtn id="week" tab={tab} setTab={setTab} label="Progress" Icon={IconStatement} />
         <TabBtn id="me" tab={tab} setTab={setTab} label="Settings" Icon={IconMe} />
       </nav>
 

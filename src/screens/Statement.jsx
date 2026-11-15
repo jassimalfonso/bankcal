@@ -1,3 +1,4 @@
+import Calendar from './Calendar'
 import { useState } from 'react'
 import { dayKey, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
 import { Row } from './Today'
@@ -16,6 +17,7 @@ export default function Statement(props) {
     return { key, d, items, spent, net: b != null && items.length ? b - spent : null }
   })
   const [pick, setPick] = useState(days[6].key)
+  const [view, setView] = useState('week')
   const sel = days.find((d) => d.key === pick)
   const logged = days.filter((d) => d.net != null)
   const weekNet = logged.reduce((a, d) => a + d.net, 0)
@@ -26,10 +28,15 @@ export default function Statement(props) {
     <>
       <header className="large-title">
         <div>
-          <p className="date">Last 7 days</p>
-          <h1>Week</h1>
+          <p className="date">{view === 'week' ? 'Last 7 days' : 'Day by day'}</p>
+          <h1>Progress</h1>
         </div>
       </header>
+      <div className="seg view-seg">
+        <button className={view === 'week' ? 'on' : ''} onClick={() => setView('week')}>Week</button>
+        <button className={view === 'month' ? 'on' : ''} onClick={() => setView('month')}>Calendar</button>
+      </div>
+      {view === 'month' ? <Calendar {...props} /> : <>
 
       <section className="card chart">
         <div className="bars">
@@ -61,6 +68,7 @@ export default function Statement(props) {
       </div>
 
       <SleepWeek days={days} log={props.profile?.days ?? {}} />
+      </>}
 
       <h2 className="group-title">Progress</h2>
       <Progress {...props} />

@@ -763,3 +763,33 @@ button.hello-back { text-align: center; width: 100%; color: var(--ink); backgrou
 .deposits-head .group-title { margin: 0; }
 
 .si-sky { position: absolute; inset: 0; pointer-events: none; }
+
+button.hello-back, .hello-back { animation: fade 0.5s var(--ease) both; }
+
+/* ───────── Progress: week / calendar ───────── */
+.view-seg { display: grid; grid-template-columns: 1fr 1fr; margin: 0 0 18px; }
+.cal { padding: 16px 14px 14px; }
+.cal-head { display: flex; justify-content: space-between; align-items: center; padding: 0 4px 12px; }
+.cal-head b { font-size: 17px; font-weight: 850; }
+.cal-head button { width: 36px; height: 36px; border-radius: 12px; background: var(--bg); font-size: 22px; font-weight: 800; color: var(--ink); line-height: 1; }
+.cal-head button:disabled { opacity: 0.3; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-wd { text-align: center; font-size: 12px; font-weight: 800; color: var(--muted); padding-bottom: 4px; }
+.cal-day { aspect-ratio: 1; border-radius: 12px; display: grid; place-items: center; font-size: 15px; font-weight: 800; color: var(--ink); background: var(--bg); font-variant-numeric: tabular-nums; transition: transform 0.2s var(--spring), background-color 0.3s; }
+.cal-day:disabled { opacity: 0.35; background: none; }
+.cal-day.good { background: color-mix(in srgb, var(--pos) 22%, var(--card)); color: color-mix(in srgb, var(--pos) 70%, var(--ink)); }
+.cal-day.over { background: color-mix(in srgb, var(--neg) 18%, var(--card)); color: color-mix(in srgb, var(--neg) 75%, var(--ink)); }
+.cal-day.today { box-shadow: inset 0 0 0 2px var(--accent); }
+.cal-day.on { transform: scale(1.08); box-shadow: 0 0 0 2px var(--ink); }
+.cal-legend { display: flex; gap: 14px; justify-content: center; margin-top: 14px; font-size: 12.5px; font-weight: 700; color: var(--muted); flex-wrap: wrap; }
+.cal-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; background: var(--bg); box-shadow: inset 0 0 0 1px var(--line); }
+.cal-legend i.good { background: color-mix(in srgb, var(--pos) 35%, var(--card)); box-shadow: none; }
+.cal-legend i.over { background: color-mix(in srgb, var(--neg) 30%, var(--card)); box-shadow: none; }
+.tiles.two { grid-template-columns: 1fr 1fr; }
+.cal-detail { margin-top: 12px; padding: 18px; display: grid; gap: 6px; }
+.cal-detail > b { font-size: 16px; font-weight: 850; }
+.cal-detail p { margin: 0; font-weight: 750; }
+.cal-detail ul { list-style: none; margin: 6px 0 0; padding: 0; }
+.cal-detail li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; font-size: 15px; font-weight: 650; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.cal-detail li.sum { font-weight: 850; }
+.cal-extra { margin-top: 6px !important; font-size: 14px; color: var(--muted); white-space: pre-wrap; }

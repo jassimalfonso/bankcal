@@ -109,16 +109,17 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
 
 // Later opens the same day: the card shows what's left, then fades into the app.
 export function WelcomeBack({ profile, left, onDone }) {
-  useEffect(() => { const t = setTimeout(onDone, 2600); return () => clearTimeout(t) }, [onDone])
+  useEscape(onDone)
   return (
-    <button className={`dawn hello-back theme-${profile.theme}`} onClick={onDone} aria-label="Continue to BankCal">
+    <div className={`dawn hello-back theme-${profile.theme}`} role="dialog" aria-label="Welcome back">
       <div className="dawn-glow" aria-hidden="true" />
       <div className="dawn-step">
         <BankCard label={left != null && left < 0 ? 'Over today' : 'Left today'} value={left == null ? null : Math.abs(left)} holder={profile.name.toUpperCase()} buddies={[{ kind: profile.character, theme: profile.theme }]} />
         <h1>Welcome back, {profile.name}</h1>
-        <p className="dawn-line">{helloFor()}. Tap anywhere to continue.</p>
+        <p className="dawn-line">{helloFor()}. {left == null ? '' : left >= 0 ? 'Your balance is ready when you are.' : 'Go gently for the rest of today.'}</p>
+        <button className="btn-primary dawn-btn" onClick={onDone}>Open my day</button>
       </div>
-    </button>
+    </div>
   )
 }
 
