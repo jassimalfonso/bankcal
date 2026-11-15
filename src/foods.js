@@ -35,7 +35,11 @@ export const FOODS = [
   ['Afritada (chicken)', '1 serving', 350], ['Mechado', '1 serving', 420], ['Chicken curry (Filipino)', '1 serving', 420], ['Humba', '1 serving', 550],
   ['Pork binagoongan', '1 serving', 550], ['Lechon (roast pork)', '150 g', 600], ['Lechon manok', '1/4 chicken', 400], ['Liempo (grilled)', '150 g', 580],
   ['Pork BBQ skewer', '1 stick', 180], ['Isaw', '3 sticks', 150], ['Kwek-kwek', '5 pieces', 250], ['Fishball', '10 pieces', 150],
-  ['Tokneneng', '3 pieces', 220], ['Siomai', '4 pieces', 200], ['Siopao asado', '1 piece', 320], ['Siopao bola-bola', '1 piece', 340],
+  ['Tokneneng', '3 pieces', 220], ['Dynamite (cheese chili lumpia)', '3 pieces', 270], ['Calamares', '1 serving', 350],
+  ['Kamote cue', '1 stick', 250], ['Maruya (banana fritter)', '1 piece', 200], ['Proben', '1 cup', 280], ['Chicken skin (fried)', '1 cup', 400],
+  ['Balut', '1 egg', 190], ['Penoy', '1 egg', 160], ['Cheese sticks (lumpia)', '3 pieces', 240], ['Lumpiang toge', '1 piece', 180],
+  ['Siomai rice', '1 serving', 450], ['Betamax (grilled blood)', '2 sticks', 120], ['Adidas (chicken feet)', '3 sticks', 200], ['Hotdog on stick', '1 piece', 220],
+  ['Fried siomai', '4 pieces', 260], ['Squid balls', '10 pieces', 180], ['Kikiam', '5 pieces', 220], ['Corndog (Korean style)', '1 piece', 350], ['Siomai', '4 pieces', 200], ['Siopao asado', '1 piece', 320], ['Siopao bola-bola', '1 piece', 340],
   ['Embutido', '2 slices', 280], ['Hamonado / tocino', '100 g', 330], ['Longganisa', '2 pieces', 300], ['Skinless longganisa', '3 pieces', 280],
   ['Corned beef (ginisa)', '1 serving', 300], ['Daing na bangus', '1/2 fish', 380], ['Fried tilapia', '1 piece', 280], ['Tuyo', '3 pieces', 150],
   ['Sardinas with egg', '1 serving', 250], ['Fried egg', '1 egg', 90], ['Sinangag (garlic rice)', '1 cup', 280], ['White rice', '1 cup', 205],
@@ -64,7 +68,7 @@ export const FOODS = [
 ].map(([name, portion, kcal]) => ({ name, portion, kcal }))
 
 // Words people type that should find the same dish
-const ALIASES = { talong: 'eggplant', okoy: 'ukoy', ukoy: 'okoy', pansit: 'pancit', pancit: 'pansit', sinangag: 'garlic rice', longsilog: 'longganisa', siopao: 'bun' }
+const ALIASES = { talong: 'eggplant', okoy: 'ukoy', ukoy: 'okoy', pansit: 'pancit', pancit: 'pansit', sinangag: 'garlic rice', longsilog: 'longganisa', siopao: 'bun', dinamita: 'dynamite', dynamite: 'dinamita', sili: 'chili', camote: 'kamote', kamote: 'camote' }
 const norm = (x) => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()
 
 // one typo allowed for words of 5+ letters
