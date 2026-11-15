@@ -1069,3 +1069,19 @@ html, body { max-width: 100%; overflow-x: clip; }
 .weigh-row { grid-template-columns: minmax(0, 1fr) auto; }
 .weigh-in { min-width: 0; }
 .weigh-in input { width: 100%; }
+
+/* Hold and drag to arrange */
+.drag-list { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.drag-list li { position: relative; background: var(--card); transition: transform 0.22s var(--ease), box-shadow 0.2s; gap: 10px; cursor: grab; }
+.drag-list li.lifted { box-shadow: 0 10px 24px -8px rgba(30, 30, 60, 0.35); border-radius: 14px; border-color: transparent; cursor: grabbing; }
+.drag-list.dragging li + li { border-top-color: transparent; }
+.grip { flex: none; width: 34px; height: 40px; margin: -6px 0 -6px -8px; display: grid; place-items: center; font-size: 20px; color: var(--muted); touch-action: none; }
+.lo-name { flex: 1; min-width: 0; }
+.cards .group-title { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+.arrange-link { display: block; margin: 28px auto 0; padding: 12px 16px; font-weight: 800; font-size: 14.5px; color: var(--muted); }
+.arrange-done { width: 100%; margin-top: 16px; }
+.sheet .drag-list { box-shadow: none; background: var(--bg); }
+.sheet .drag-list li { background: var(--bg); }
+.p-week { margin-top: 2px; color: var(--accent) !important; font-weight: 750 !important; }
+.ps-share { margin: 0; align-items: flex-start; line-height: 1.4; }
+.ps-share input { flex: none; margin-top: 1px; }

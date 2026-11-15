@@ -3,6 +3,7 @@ import { maintainStatus, targetCheck, KCAL_PER_KG, ageOf, DEFAULT_BED, DEFAULT_W
 import Character from '../Character'
 import { SECTION_NAMES, fullLayout } from '../layout'
 import { HabitPicker } from './Habits'
+import DragList from './DragList'
 import { PartnerSettings } from './Partner'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
@@ -177,14 +178,14 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
 
       <HabitPicker profile={p} updateProfile={set} />
 
-      {partner && <PartnerSettings partner={partner} profile={p} />}
+      {partner && <PartnerSettings partner={partner} profile={p} updateProfile={set} />}
 
       <h2 className="group-title">Buddy</h2>
       <div className="card buddy-card"><BuddyGrid value={p.character} onChange={(id) => set({ character: id })} /></div>
 
       <h2 className="group-title">Today screen</h2>
-      <LayoutEditor layout={fullLayout(p.layout)} onChange={(layout) => set({ layout })} />
-      <p className="fine">Move sections up or down to set the order under your balance.</p>
+      <DragList items={fullLayout(p.layout2)} names={SECTION_NAMES} onChange={(layout2) => set({ layout2 })} />
+      <p className="fine">Hold a row and drag it to change the order of the cards on Today. You can also hold any card on Today to do this.</p>
 
       <h2 className="group-title">Look and feel</h2>
       <div className="card form-list">
@@ -271,27 +272,6 @@ function Num({ value, onChange, unit, ph, decimal, 'aria-label': al }) {
       <input inputMode={decimal ? 'decimal' : 'numeric'} value={value} onChange={onChange} placeholder={ph} aria-label={al} />
       <span>{unit}</span>
     </label>
-  )
-}
-
-function LayoutEditor({ layout, onChange }) {
-  const move = (i, d) => {
-    const next = [...layout]
-    ;[next[i], next[i + d]] = [next[i + d], next[i]]
-    onChange(next)
-  }
-  return (
-    <ol className="card layout-list">
-      {layout.map((id, i) => (
-        <li key={id}>
-          <span>{SECTION_NAMES[id]}</span>
-          <span className="lo-btns">
-            <button onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${SECTION_NAMES[id]} up`}>↑</button>
-            <button onClick={() => move(i, 1)} disabled={i === layout.length - 1} aria-label={`Move ${SECTION_NAMES[id]} down`}>↓</button>
-          </span>
-        </li>
-      ))}
-    </ol>
   )
 }
 

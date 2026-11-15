@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useCountUp, useSwipe } from '../motion'
 import { fmt } from '../calc'
 import Character, { moodFor } from '../Character'
 import { missingFor } from '../calc'
-import { fullLayout } from '../layout'
+import { SECTION_NAMES, fullLayout } from '../layout'
+import DragList from './DragList'
 import { HabitsCard, JournalCard } from './Habits'
 import { WeeklyCard } from './DailyCards'
 import { PartnerCard } from './Partner'
@@ -45,6 +46,17 @@ export default function Today(props) {
   const [weekHidden, setWeekHidden] = useState(() => { try { return !!localStorage.getItem(weekKey) } catch { return false } })
   const showWeek = new Date(props.today + 'T12:00').getDay() === 0 && !weekHidden
   const hideWeek = () => { try { localStorage.setItem(weekKey, '1') } catch { /* ignore */ } setWeekHidden(true) }
+  // Hold any card for a moment to arrange the cards
+  const [arranging, setArrangingRaw] = useState(false)
+  const arrangedAt = useRef(0)
+  const hold = useRef({})
+  const setArranging = (v) => { if (v) arrangedAt.current = Date.now(); setArrangingRaw(v) }
+  const holdStart = (e) => {
+    if (e.target.closest('input, textarea, .row, .quick, a')) return
+    hold.current = { x: e.clientX, y: e.clientY, t: setTimeout(() => { navigator.vibrate?.(12); setArranging(true) }, 550) }
+  }
+  const holdMove = (e) => { const h = hold.current; if (h.t && Math.hypot(e.clientX - h.x, e.clientY - h.y) > 8) { clearTimeout(h.t); h.t = null } }
+  const holdEnd = () => { clearTimeout(hold.current.t); hold.current.t = null }
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const left = budget != null ? budget - spent : null
   const over = left != null && left < 0
@@ -116,7 +128,8 @@ export default function Today(props) {
 
 
       {showWeek && <WeeklyCard {...props} onClose={hideWeek} />}
-      {fullLayout(profile.layout).map((id) => {
+      <div className="cards" onPointerDown={holdStart} onPointerMove={holdMove} onPointerUp={holdEnd} onPointerCancel={holdEnd} onContextMenu={(e) => { if (e.pointerType !== 'mouse' && e.target.closest('.group-title')) e.preventDefault() }}>
+      {fullLayout(profile.layout2).map((id) => {
         if (id === 'words') return <WordsCard key="words" words={words} />
         if (id === 'weigh') return budget != null ? <WeighCard key="weigh" {...props} /> : null
         if (id === 'habits') return <HabitsCard key="habits" {...props} />
@@ -154,6 +167,19 @@ export default function Today(props) {
         )
         return null
       })}
+      </div>
+      <button className="arrange-link" onClick={() => setArranging(true)}>Arrange cards</button>
+      {arranging && (
+        <div className="sheet-wrap" onClick={() => Date.now() - arrangedAt.current > 500 && setArranging(false)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Arrange cards">
+            <div className="sheet-head">
+              <div><p className="muted">Hold a row and drag it</p><h2>Arrange cards</h2></div>
+            </div>
+            <DragList items={fullLayout(profile.layout2)} names={SECTION_NAMES} onChange={(layout2) => props.updateProfile({ layout2 })} />
+            <button className="btn-primary arrange-done" onClick={() => setArranging(false)}>Done</button>
+          </div>
+        </div>
+      )}
 
     </>
   )

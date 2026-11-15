@@ -28,12 +28,19 @@ export function PartnerCard({ partner, today, notify }) {
             fresh && s.moved && 'moved today',
             fresh && s.logged && !s.moved && 'logging today',
           ].filter(Boolean)
+          const week = [
+            s.weekLogged > 0 && `Last 7 days: ${s.weekWithin} of ${s.weekLogged} on budget`,
+            s.weekWorkouts > 0 && `${s.weekWorkouts} workout${s.weekWorkouts > 1 ? 's' : ''}`,
+            s.kgChange != null && s.kgChange !== 0 && `${s.kgChange < 0 ? '−' : '+'}${Math.abs(s.kgChange).toFixed(1)} kg so far`,
+            s.goalPct != null && `${s.goalPct}% to goal`,
+          ].filter(Boolean)
           return (
             <div className={`partner theme-${s.theme}`} key={id}>
               <Character kind={s.character} mood={fresh ? 'happy' : 'calm'} size={46} />
               <div className="p-main">
                 <b>{s.name}</b>
                 <small>{bits.length ? bits.join(' · ') : fresh ? 'Starting the day' : 'Hasn’t opened BankCal yet today'}</small>
+                {week.length > 0 && <small className="p-week">{week.join(' · ')}</small>}
               </div>
               <button className={`cheer ${sent.includes(id) ? 'done' : ''}`} disabled={sent.includes(id)} onClick={() => send(id, s.name)}>
                 {sent.includes(id) ? 'Cheered' : '👏 Cheer'}
@@ -47,7 +54,7 @@ export function PartnerCard({ partner, today, notify }) {
 }
 
 // Settings: link a partner with a code.
-export function PartnerSettings({ partner, profile }) {
+export function PartnerSettings({ partner, profile, updateProfile }) {
   const { partners, shares, createInvite, acceptInvite, removePartner } = partner
   const [code, setCode] = useState('')
   const [msg, setMsg] = useState('')
@@ -77,8 +84,12 @@ export function PartnerSettings({ partner, profile }) {
           <button className="btn-soft" disabled={busy || code.length !== 6}>Link</button>
         </form>
         {msg && <p className="ps-msg" role="status">{msg}</p>}
+        <label className="keep-food ps-share">
+          <input type="checkbox" checked={!!profile.shareWeight} onChange={(e) => updateProfile({ shareWeight: e.target.checked })} />
+          <span>Also share my <b>weight progress</b> (kg lost so far and % to goal, not my actual weight)</span>
+        </label>
       </div>
-      <p className="fine">Partners see only your streak, how many habits you ticked and whether you moved today. Never your calories, weight or journal.</p>
+      <p className="fine">Partners always see your streak, habits ticked, whether you moved today, and how many of the last 7 days were on budget. Never your calories, meals, actual weight or journal.</p>
     </>
   )
 }

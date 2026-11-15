@@ -139,7 +139,8 @@ test('habits week dots and layout upgrade', async () => {
   const days = { '2026-11-15': { habits: { walk: true } }, '2026-11-13': { habits: { walk: true } } }
   assert.deepEqual(h.habitDays(days, 'walk', '2026-11-15'), [false, false, false, false, true, false, true])
   assert.deepEqual(h.habitDays(days, 'walk', '2026-12-01', 3), [false, false, false]) // crosses month
-  assert.deepEqual(l.fullLayout(['meals', 'words', 'deposits', 'eat']), ['weigh', 'meals', 'habits', 'partner', 'words', 'deposits', 'eat', 'journal'])
+  assert.deepEqual(l.fullLayout(['meals', 'words', 'deposits', 'eat']), ['meals', 'partner', 'habits', 'weigh', 'words', 'deposits', 'eat', 'journal'])
+  assert.deepEqual(l.fullLayout(undefined).slice(0, 4), ['words', 'partner', 'habits', 'weigh'])
   assert.equal(h.suggestHabits('maintain').length, 3)
 })
 
@@ -175,4 +176,13 @@ test('weigh-in report judges the trend, not the day', () => {
   assert.match(c.weighInReport(mk([79, 78]), '2026-11-02').headline, /reached 78/)
   const keep = c.weighInReport(mk([70, 70.4], { goal: 'maintain', maintainWeight: 70, targetWeight: null }), '2026-11-02')
   assert.match(keep.headline, /Holding steady/); assert.equal(keep.target, null)
+})
+
+test('partner summary shares weight progress only when switched on', () => {
+  const days = { '2026-11-01': { weight: 84 }, '2026-11-10': { weight: 82 } }
+  const base = { entries: [], budgetFor: () => 1800, todayKey: '2026-11-15' }
+  const off = c.partnerProgress({ ...base, profile: { days, targetWeight: 78 } })
+  assert.equal(off.kgChange, undefined)
+  const on = c.partnerProgress({ ...base, profile: { days, targetWeight: 78, shareWeight: true } })
+  assert.equal(on.kgChange, -2); assert.equal(on.goalPct, 33)
 })

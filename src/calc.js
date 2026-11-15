@@ -432,3 +432,19 @@ export function weighInReport(profile, todayKey) {
   }
   return { w: now.w, trend: now.trend, count: pts.length, prevW: prev?.w ?? null, sincePrev, total, since: first.k, perWeek, target, toGo, done, eta, ms, bmi, headline, tip, tone, budget: dailyBudget({ ...profile, weight: now.w }) }
 }
+
+// What a linked partner can see. Effort always; weight progress only if you switch it on,
+// and then only the change and % to goal, never the weight itself.
+export function partnerProgress({ entries, profile, budgetFor, todayKey }) {
+  const w = weekSummary({ entries, profile, budgetFor, todayKey })
+  const out = { weekWithin: w.within, weekLogged: w.logged, weekWorkouts: w.workouts }
+  if (profile.shareWeight) {
+    const pts = weightTrend(Object.entries(profile.days ?? {}).filter(([, d]) => +d?.weight > 0).map(([k, d]) => ({ k, t: parseDay(k).getTime(), w: +d.weight })).sort((a, b) => a.t - b.t))
+    if (pts.length > 1) {
+      const first = pts[0], last = pts.at(-1), target = profile.goal !== 'maintain' ? +profile.targetWeight : 0
+      out.kgChange = Math.round((last.trend - first.trend) * 10) / 10
+      out.goalPct = target > 0 && first.w > target ? Math.round(Math.min(1, Math.max(0, (first.w - last.w) / (first.w - target))) * 100) : null
+    }
+  }
+  return out
+}
