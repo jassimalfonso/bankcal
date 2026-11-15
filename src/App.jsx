@@ -3,6 +3,7 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from './firebase'
 import { useStore } from './store'
 import { useDemoStore } from './demoStore'
+import { BUDDIES, Buddy } from './buddies'
 
 const DEMO = import.meta.env.MODE === 'demo'
 import { dailyBudget, dayKey } from './calc'
@@ -27,6 +28,7 @@ export default function App() {
   useEffect(() => onAuthStateChanged(auth, setUser), [])
   useMode('auto')
 
+  if (DEMO && location.search.includes('buddies')) return <BuddySheet />
   if (DEMO && !location.search.includes('signin')) return <Bank user={{ uid: 'demo', email: 'demo@example.com' }} />
   if (user === undefined) return <div className="loading" />
   if (!user) return <SignIn />
@@ -89,5 +91,17 @@ function TabBtn({ id, tab, setTab, label, Icon }) {
       <Icon />
       <span>{label}</span>
     </button>
+  )
+}
+
+function BuddySheet() {
+  return (
+    <div style={{ padding: 14, display: 'grid', gridTemplateColumns: '120px repeat(4, 1fr)', gap: 6, alignItems: 'center', fontFamily: 'Nunito Variable, sans-serif' }}>
+      <div />{['On track', 'Nearly out', 'Over', 'Asleep'].map((t) => <b key={t} style={{ fontSize: 13, color: '#8a8a90', textAlign: 'center' }}>{t}</b>)}
+      {Object.entries(BUDDIES).map(([id, b], i) => [
+        <b key={id} style={{ fontSize: 16 }}>{i + 1}. {b.label}</b>,
+        ...['happy', 'ok', 'worried', 'sleepy'].map((m) => <div key={id + m} style={{ display: 'grid', placeItems: 'center' }}><Buddy id={id} mood={m} size={84} /></div>),
+      ])}
+    </div>
   )
 }

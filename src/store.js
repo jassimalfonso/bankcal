@@ -8,12 +8,12 @@ import { dayKey } from './calc'
 
 // You two are set up automatically; everyone else picks their own.
 const PRESETS = {
-  'jassim.alfonso@gmail.com': { name: 'Fart Monster', character: 'koala', theme: 'moss', sex: 'm', onboarded: true },
-  'christinenantonio@gmail.com': { name: 'Sewer Butt', character: 'dog', theme: 'plum', sex: 'f', onboarded: true },
+  'jassim.alfonso@gmail.com': { name: 'Fart Monster', character: 'egg', theme: 'moss', sex: 'm', onboarded: true },
+  'christinenantonio@gmail.com': { name: 'Sewer Butt', character: 'avocado', theme: 'plum', sex: 'f', onboarded: true },
 }
 
 const BLANK = {
-  name: '', character: 'cloud', theme: 'sky', sex: 'm', age: '', height: '', weight: '',
+  name: '', character: 'mochi', theme: 'sky', sex: 'm', age: '', height: '', weight: '',
   activity: 'sedentary', goal: 'lose025', customBudget: '', mode: 'auto', onboarded: false,
 }
 
@@ -27,9 +27,10 @@ export function useStore(user) {
     const unsubProfile = onSnapshot(ref, (snap) => {
       if (snap.exists()) {
         const data = snap.data()
-        // one-time: Fart Monster becomes a koala
-        if (user.email?.toLowerCase() === 'jassim.alfonso@gmail.com' && !data.koalaV1) {
-          setDoc(ref, { character: 'koala', koalaV1: true }, { merge: true })
+        // one-time: Fart Monster becomes the fried egg, Sewer Butt the avocado
+        const preset = PRESETS[user.email?.toLowerCase()]
+        if (preset && !data.buddyV2) {
+          setDoc(ref, { character: preset.character, buddyV2: true }, { merge: true })
         }
         setProfile({ ...BLANK, ...data })
       } else if (!snap.metadata.fromCache) {

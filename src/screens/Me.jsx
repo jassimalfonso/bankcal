@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ACTIVITY, GOALS, breakdown, dailyBudget, fmt } from '../calc'
-import Character, { CHARACTERS } from '../Character'
-import { THEMES } from './Onboarding'
+import Character from '../Character'
+import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
 
 // Height is stored in cm (for the maths) but entered in feet + inches.
@@ -92,15 +92,11 @@ export default function Me({ user, profile: p, updateProfile }) {
         ))}
       </div>
 
+      <h2 className="group-title">Buddy</h2>
+      <div className="card buddy-card"><BuddyGrid value={p.character} onChange={(id) => set({ character: id })} /></div>
+
       <h2 className="group-title">Look and feel</h2>
       <div className="card form-list">
-        <Line label="Buddy">
-          <div className="seg">
-            {CHARACTERS.map((c) => (
-              <button key={c.id} className={p.character === c.id ? 'on' : ''} onClick={() => set({ character: c.id })}>{{ koala: 'Koala', dog: 'Retriever', cloud: 'Cloud' }[c.id]}</button>
-            ))}
-          </div>
-        </Line>
         <Line label="Colour">
           <div className="swatches small">
             {THEMES.map((t) => (

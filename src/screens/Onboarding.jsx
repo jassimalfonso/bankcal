@@ -22,14 +22,7 @@ export default function Onboarding({ profile, updateProfile }) {
         </label>
 
         <h2 className="group-title">Buddy</h2>
-        <div className="choice-row">
-          {CHARACTERS.map((c) => (
-            <button key={c.id} className={`choice ${character === c.id ? 'on' : ''}`} onClick={() => setCharacter(c.id)}>
-              <Character kind={c.id} size={64} />
-              {c.label}
-            </button>
-          ))}
-        </div>
+        <BuddyGrid value={character} onChange={setCharacter} />
 
         <h2 className="group-title">Colour</h2>
         <div className="swatches">
@@ -53,6 +46,19 @@ export default function Onboarding({ profile, updateProfile }) {
           Start my bank
         </button>
       </div>
+    </div>
+  )
+}
+
+export function BuddyGrid({ value, onChange }) {
+  return (
+    <div className="buddy-grid">
+      {CHARACTERS.map((c) => (
+        <button key={c.id} className={`buddy-choice ${value === c.id ? 'on' : ''}`} onClick={() => onChange(c.id)} aria-label={c.label} aria-pressed={value === c.id}>
+          <Character kind={c.id} size={52} />
+          <span>{c.label}</span>
+        </button>
+      ))}
     </div>
   )
 }
