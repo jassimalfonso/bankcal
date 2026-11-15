@@ -6,7 +6,7 @@ import { useDemoStore } from './demoStore'
 import { BUDDIES, Buddy } from './buddies'
 
 const DEMO = import.meta.env.MODE === 'demo'
-import { dailyBudget, dayKey, earned, isBedtime, isWindDown, logicalDayKey, streak } from './calc'
+import { dailyBudget, dayKey, earned, isBedtime, isBirthday, isWindDown, logicalDayKey, streak } from './calc'
 import { useDailyWords } from './quotes'
 import { MorningCard, DayResult } from './screens/DailyCards'
 import Today from './screens/Today'
@@ -97,7 +97,7 @@ function Bank({ user }) {
         <TabBtn id="me" tab={tab} setTab={setTab} label="Settings" Icon={IconMe} />
       </nav>
 
-      {morning && <MorningCard profile={profile} words={words} yesterday={yesterday} streakDays={streakDays} onClose={closeMorning} />}
+      {morning && <MorningCard profile={profile} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
       {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true)} today={today} onClose={() => setResult(false)} />}
 
       {adding && (

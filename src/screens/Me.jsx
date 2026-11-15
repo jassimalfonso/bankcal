@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ACTIVITY, DEFAULT_BED, DEFAULT_WAKE, GOALS, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
+import { ACTIVITY, ageOf, DEFAULT_BED, DEFAULT_WAKE, GOALS, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
 import Character from '../Character'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
@@ -50,7 +50,7 @@ export default function Me({ user, profile: p, updateProfile }) {
         <p>
           {bd
             ? `You burn about ${fmt(bd.tdee)} kcal a day${bd.deficit ? `, minus ${bd.deficit} for your goal` : ''}.${bd.auto === bd.floor ? ` Kept at the safe minimum of ${fmt(bd.floor)}.` : ''}${p.customBudget > 0 ? ' Using your custom number.' : ''}`
-            : 'Fill in your age, height and weight below.'}
+            : 'Fill in your birthday, height and weight below.'}
         </p>
       </section>
 
@@ -62,7 +62,12 @@ export default function Me({ user, profile: p, updateProfile }) {
             <button className={p.sex === 'f' ? 'on' : ''} onClick={() => set({ sex: 'f' })}>Female</button>
           </div>
         </Line>
-        <Line label="Age"><Num value={p.age} onChange={num('age')} unit="yrs" ph="30" /></Line>
+        <Line label="Birthday">
+          <span className="bday">
+            <input className="date-in" type="date" value={p.birthDate ?? ''} max={dayKey()} onChange={(e) => set({ birthDate: e.target.value })} />
+            {ageOf(p) && <small>{ageOf(p)} yrs</small>}
+          </span>
+        </Line>
         <Line label="Height">
           <div className="num-row">
             <Num value={h.ft} onChange={(e) => setHeight({ ft: e.target.value.replace(/\D/g, '').slice(0, 1) })} unit="ft" ph="5" />

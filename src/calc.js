@@ -16,14 +16,30 @@ export const GOALS = [
 export const KCAL_PER_KG = 7700
 const FLOOR = { m: 1500, f: 1200 } // never budget below a safe minimum
 
-export function bmr({ sex, weight, height, age }) {
-  const base = 10 * +weight + 6.25 * +height - 5 * +age
+// Age from birthday (YYYY-MM-DD); falls back to a typed age from older versions.
+export function ageOf(p, now = new Date()) {
+  if (p?.birthDate) {
+    const [y, m, d] = p.birthDate.split('-').map(Number)
+    let a = now.getFullYear() - y
+    if (now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < d)) a--
+    return a > 0 && a < 120 ? a : null
+  }
+  return +p?.age > 0 ? +p.age : null
+}
+
+export function isBirthday(p, key) {
+  if (!p?.birthDate) return false
+  return p.birthDate.slice(5) === key.slice(5)
+}
+
+export function bmr({ sex, weight, height, ...p }) {
+  const base = 10 * +weight + 6.25 * +height - 5 * (ageOf(p) ?? 0)
   return sex === 'm' ? base + 5 : base - 161
 }
 
 // p.weight is the latest weight; a target-weight plan (if set) replaces the simple goal.
 export function breakdown(p) {
-  if (!(p.weight > 0 && p.height > 0 && p.age > 0)) return null
+  if (!(p.weight > 0 && p.height > 0 && ageOf(p) > 0)) return null
   const b = bmr(p)
   const act = ACTIVITY.find((a) => a.id === p.activity) ?? ACTIVITY[0]
   const goal = GOALS.find((g) => g.id === p.goal) ?? GOALS[0]

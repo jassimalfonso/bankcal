@@ -23,7 +23,7 @@ function Words({ words }) {
 }
 
 // Shown once each morning: greeting, yesterday's result, streak, today's words.
-export function MorningCard({ profile, words, yesterday, streakDays, onClose }) {
+export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose }) {
   const h = new Date().getHours()
   const hello = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
   return (
@@ -31,7 +31,9 @@ export function MorningCard({ profile, words, yesterday, streakDays, onClose }) 
       <div className="daily-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Today">
         <Character kind={profile.character} mood="happy" size={92} className="bob" />
         <p className="muted">{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-        <h2>{hello}, {profile.name}</h2>
+        {birthday && <div className="confetti" aria-hidden="true">{Array.from({ length: 18 }, (_, i) => <i key={i} style={{ '--i': i }} />)}</div>}
+        <h2>{birthday ? `Happy birthday, ${profile.name}! 🎂` : `${hello}, ${profile.name}`}</h2>
+        {birthday && <p className="streak-line">Enjoy your day. Cake counts, and one day won’t undo your progress.</p>}
         {yesterday && (
           <p className={`yday ${yesterday.net >= 0 ? 'pos' : 'neg'}`}>
             {yesterday.net >= 0 ? `Yesterday you saved ${fmt(yesterday.net)} kcal. Good job!` : `Yesterday went ${fmt(-yesterday.net)} kcal over. Today is a fresh start.`}
