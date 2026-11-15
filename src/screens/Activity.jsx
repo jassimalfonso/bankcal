@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { BASE_STEPS, fmt } from '../calc'
+import { BASE_STEPS, describeWorkout, fmt, WORKOUTS, workoutKcal } from '../calc'
+import WorkoutSheet from './WorkoutSheet'
 
 // Today's "deposits": steps and treadmill time earn calories back into the budget.
 // Values are typed in (a web app can't read the phone's step counter) and saved on blur.
@@ -8,6 +9,15 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
   const treadGoal = +profile.treadGoalMin || 0
   const steps = +dayLog.steps || 0
   const tread = +dayLog.treadMin || 0
+  const workouts = dayLog.workouts ?? []
+  const [adding, setAdding] = useState(false)
+  const saveWorkout = (w) => {
+    const id = Date.now().toString(36)
+    setDay(today, { workouts: [...workouts, { id, ...w }] })
+    navigator.vibrate?.(12)
+    setAdding(false)
+  }
+  const removeWorkout = (id) => setDay(today, { workouts: workouts.filter((w) => w.id !== id) })
 
   return (
     <>
@@ -36,6 +46,19 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
         </div>
         {treadGoal > 0 && <Bar value={tread / treadGoal} />}
 
+        {workouts.map((w) => {
+          const def = WORKOUTS.find((x) => x.id === w.type)
+          return (
+            <div className="act-row" key={w.id}>
+              <span className="w-emoji small">{def?.emoji}</span>
+              <div className="act-head"><b>{def?.label}</b><small>{describeWorkout(w)}</small></div>
+              <button className="w-del" onClick={() => removeWorkout(w.id)} aria-label={`Remove ${def?.label}`}>×</button>
+              <span className="act-kcal">+{fmt(workoutKcal(w, profile.weight))}</span>
+            </div>
+          )
+        })}
+        <button className="add-workout" onClick={() => setAdding(true)}>+ Add a workout <small>jumping jacks, squats, dumbbells…</small></button>
+
         <div className="act-row">
           <div className="act-head">
             <b>Weight today</b>
@@ -46,6 +69,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
         </div>
       </div>
       <p className="fine">First {fmt(BASE_STEPS)} steps are everyday movement and already in your budget.</p>
+      {adding && <WorkoutSheet profile={profile} onClose={() => setAdding(false)} onSave={saveWorkout} />}
     </>
   )
 }

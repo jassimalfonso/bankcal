@@ -308,3 +308,43 @@ h1, h2, p { margin: 0; }
 .suggest-ai { width: 100%; padding: 12px 16px; text-align: left; color: var(--accent); font-weight: 850; border-top: 1px solid var(--line); }
 .suggest-ai:disabled { opacity: 0.6; }
 .ai-err { margin: 8px 6px 0; color: var(--neg); font-size: 13.5px; font-weight: 700; }
+
+/* ───────── Workouts ───────── */
+.workout-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.workout-choice { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px; border-radius: 18px; background: var(--card); box-shadow: var(--shadow); font-size: 13px; font-weight: 750; text-align: center; transition: transform 0.2s var(--spring); }
+.workout-choice:active { transform: scale(0.94); }
+.w-emoji { font-size: 28px; line-height: 1; }
+.w-emoji.small { font-size: 22px; width: 30px; text-align: center; }
+.w-del { width: 28px; height: 28px; border-radius: 50%; color: var(--muted); font-size: 20px; font-weight: 700; line-height: 1; }
+.add-workout { width: calc(100% - 32px); margin: 6px 16px 8px; padding: 12px; border-radius: 14px; border: 2px dashed var(--line); color: var(--accent); font-weight: 850; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.add-workout small { color: var(--muted); font-weight: 600; font-size: 12px; }
+.earn-line { text-align: center; margin-top: 14px; font-weight: 700; color: var(--muted); }
+.earn-line b { font-size: 22px; font-weight: 900; }
+
+/* ───────── BMI ───────── */
+.body-card { padding: 18px 18px 14px; }
+.body-card.empty { text-align: left; color: var(--muted); font-weight: 600; }
+.bmi-top { display: flex; justify-content: space-between; align-items: flex-end; }
+.bmi-top .muted { font-size: 14px; font-weight: 750; display: block; }
+.bmi-num { font-size: 48px; font-weight: 900; letter-spacing: -0.03em; line-height: 1; }
+.bmi-pill { padding: 6px 12px; border-radius: 99px; font-size: 14px; font-weight: 850; }
+.bmi-pill.pos { background: color-mix(in srgb, var(--pos) 15%, transparent); color: var(--pos); }
+.bmi-pill.neg { background: color-mix(in srgb, var(--neg) 14%, transparent); color: var(--neg); }
+.bmi-pill.warn { background: color-mix(in srgb, #f0952a 18%, transparent); color: #c2700e; }
+.bmi-scale { position: relative; height: 10px; margin: 18px 0 4px; border-radius: 99px; background: linear-gradient(90deg, #f0c36a, #8fd18f 25%, #8fd18f 50%, #f5a35c 60%, #f2553e 85%); }
+.bmi-scale .band { position: absolute; top: -3px; bottom: -3px; border: 2px solid var(--pos); border-radius: 99px; }
+.bmi-scale .pin { position: absolute; top: -6px; width: 6px; height: 22px; margin-left: -3px; border-radius: 3px; background: var(--ink); box-shadow: 0 0 0 2px var(--card); }
+.bmi-ticks { position: relative; height: 16px; font-size: 11px; font-weight: 700; color: var(--muted); }
+.bmi-ticks span { position: absolute; transform: translateX(-50%); }
+.bmi-ticks span:first-child { left: 0; transform: none; }
+.bmi-ticks .end { right: 0; transform: none; }
+.bmi-line { margin-top: 10px; font-size: 14.5px; font-weight: 600; color: var(--muted); }
+.bmi-line b { color: var(--ink); }
+.strategy { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 14.5px; }
+.strategy > b { font-size: 16px; font-weight: 850; display: block; }
+.strategy > small { display: block; color: var(--muted); font-weight: 650; margin-top: 2px; }
+.strategy ol, .strategy ul { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 6px; color: var(--muted); font-weight: 600; }
+.strategy li b { color: var(--ink); }
+.plan-btns { display: grid; gap: 8px; margin-top: 14px; }
+.plan-btns .btn-primary { margin-top: 0; }
+.btn-soft { height: 50px; border-radius: 18px; background: var(--soft); color: var(--accent); font-weight: 850; text-align: center; }

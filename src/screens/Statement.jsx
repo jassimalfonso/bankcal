@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { dayKey, fmt, KCAL_PER_KG } from '../calc'
 import { Row } from './Today'
+import BodyCard from './BodyCard'
 
-export default function Statement({ mine, base: budget, budgetFor }) {
+export default function Statement(props) {
+  const { mine, base: budget, budgetFor } = props
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
@@ -56,6 +58,9 @@ export default function Statement({ mine, base: budget, budgetFor }) {
           <b>{logged.length}<small> of 7</small></b>
         </div>
       </div>
+
+      <h2 className="group-title">Your body</h2>
+      <BodyCard {...props} />
 
       <h2 className="group-title">
         {sel.key === dayKey() ? 'Today' : sel.d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}
