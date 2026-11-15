@@ -1,5 +1,6 @@
 import { fmt } from '../calc'
 import { GOOD_REFS, OVER_REFS, pick, useVerse } from '../quotes'
+import { BOUNCE_BACK, GOOD_DAY } from '../motivation'
 import Character from '../Character'
 
 function Words({ words }) {
@@ -10,18 +11,13 @@ function Words({ words }) {
         {words.verse.text ? <p className="word-text">“{words.verse.text}”</p> : <p className="word-text muted">Connect to the internet to load today’s verse.</p>}
         <span className="word-ref">{words.verse.reference}{words.verse.version ? ` · ${words.verse.version}` : ''}</span>
       </div>
-      <div className="word">
-        <span className="word-tag">Francis Kong</span>
-        {words.kong ? (
-          <>
-            <p className="word-text">“{words.kong.text}”</p>
-            {words.kong.source && <span className="word-ref">{words.kong.source}</span>}
-          </>
-        ) : (
-          <p className="word-text small">Today’s reading from his journal of leadership and life.</p>
-        )}
-        <a className="word-link" href={words.kongLink} target="_blank" rel="noopener noreferrer">Read on franciskong.com ↗</a>
-      </div>
+      {words.motivation && (
+        <div className="word">
+          <span className="word-tag">Today’s motivation</span>
+          <p className="word-text">“{words.motivation.text}”</p>
+          <span className="word-ref">{words.motivation.by}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -54,6 +50,7 @@ export function DayResult({ profile, budget, spent, earn, streakDays, today, onC
   const net = budget - spent
   const good = net >= 0
   const verse = useVerse(pick(good ? GOOD_REFS : OVER_REFS, today), today)
+  const quote = pick(good ? GOOD_DAY : BOUNCE_BACK, today)
   // 30 min brisk walk (5.6 km/h ≈ 4.3 MET, net of resting)
   const walkKcal = Math.round(3.3 * (+profile.weight || 70) * 0.5)
   return (
@@ -78,6 +75,12 @@ export function DayResult({ profile, budget, spent, earn, streakDays, today, onC
             </ul>
           </div>
         )}
+        {quote && (
+          <div className="word result-verse">
+            <p className="word-text">“{quote.text}”</p>
+            <span className="word-ref">{quote.by}</span>
+          </div>
+        )}
         {verse.text && (
           <div className="word result-verse">
             <p className="word-text">“{verse.text}”</p>
@@ -95,7 +98,7 @@ export function WordsCard({ words, onOpen }) {
     <button className="card words-card" onClick={onOpen}>
       <span className="word-tag">Today’s verse</span>
       <p>{words.verse.text ? `“${words.verse.text}”` : words.verse.reference}</p>
-      <small>{words.verse.reference} · tap for today’s Francis Kong reading</small>
+      <small>{words.verse.reference} · tap for today’s motivation</small>
     </button>
   )
 }

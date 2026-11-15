@@ -32,13 +32,13 @@ export function Ring({ value, size = 220, stroke = 20, children }) {
 }
 
 export default function Today(props) {
-  const { profile, mine, todays, budget, base, earn, addEntry, removeEntry, goSetup, words, streakDays, closeDay, openWords } = props
+  const { profile, mine, todays, budget, base, earn, addEntry, removeEntry, goSetup, words, streakDays, closeDay, openWords, windDown } = props
   const [toast, setToast] = useState(null)
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const left = budget != null ? budget - spent : null
   const over = left != null && left < 0
   const mood = moodFor(budget, spent)
-  const date = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+  const date = (() => { const [y, m, d] = props.today.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) })()
 
   const recent = useMemo(() => {
     const seen = new Set()
@@ -87,7 +87,7 @@ export default function Today(props) {
               <span>{over ? 'kcal over' : 'kcal left'}</span>
             </div>
             <p className="hero-msg">{message(profile.name, budget, spent)}</p>
-            {(new Date().getHours() >= 18 || location.search.includes('evening')) && todays.length > 0 && <button className="btn-soft close-day" onClick={closeDay}>Close my day</button>}
+            {(windDown || location.search.includes('evening')) && todays.length > 0 && <button className="btn-soft close-day" onClick={closeDay}>Close my day</button>}
             <div className="hero-stats three">
               <div><b>{fmt(spent)}</b><span>Eaten</span></div>
               <div><b className="pos">+{fmt(earn.total)}</b><span>Earned</span></div>

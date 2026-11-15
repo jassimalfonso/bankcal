@@ -200,3 +200,35 @@ export function streak(entries, budgetFor, todayKey, includeToday) {
   }
   return n
 }
+
+// ───────── Your day: wake-up and bedtime ─────────
+// The "day" rolls over 3 hours before you wake (never later than 5 am), so a
+// late-night snack after midnight still counts towards the day you were in.
+const toMin = (hhmm) => { const [h, m] = String(hhmm || '').split(':').map(Number); return Number.isFinite(h) ? h * 60 + (m || 0) : null }
+const nowMin = (d) => d.getHours() * 60 + d.getMinutes()
+const inWindow = (m, s, e) => (s <= e ? m >= s && m < e : m >= s || m < e)
+export const DEFAULT_WAKE = '06:30'
+export const DEFAULT_BED = '22:30'
+
+function rollover(p) {
+  const wake = toMin(p?.wakeTime) ?? toMin(DEFAULT_WAKE)
+  return Math.min(300, Math.max(0, wake - 180))
+}
+
+export function logicalDayKey(p, now = new Date()) {
+  const d = new Date(now)
+  if (nowMin(now) < rollover(p)) d.setDate(d.getDate() - 1)
+  return dayKey(d)
+}
+
+// From an hour before bedtime until the day rolls over: time to close the day.
+export function isWindDown(p, now = new Date()) {
+  const bed = toMin(p?.bedTime) ?? toMin(DEFAULT_BED)
+  return inWindow(nowMin(now), (bed - 60 + 1440) % 1440, rollover(p))
+}
+
+// From 15 minutes before bedtime: the app offers to close the day by itself.
+export function isBedtime(p, now = new Date()) {
+  const bed = toMin(p?.bedTime) ?? toMin(DEFAULT_BED)
+  return inWindow(nowMin(now), (bed - 15 + 1440) % 1440, rollover(p))
+}

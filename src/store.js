@@ -59,7 +59,7 @@ export function useStore(user) {
   const addEntry = useCallback((e) => {
     const ref = doc(collection(db, 'users', uid, 'entries'))
     const now = new Date()
-    const entry = { ts: now.getTime(), day: dayKey(now), name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo ?? null }
+    const entry = { ts: now.getTime(), day: e.day ?? dayKey(now), name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo ?? null }
     setDoc(ref, entry) // the local cache updates instantly; the cloud catches up when online
     return ref.id
   }, [uid])

@@ -6,7 +6,7 @@ import { useDemoStore } from './demoStore'
 import { BUDDIES, Buddy } from './buddies'
 
 const DEMO = import.meta.env.MODE === 'demo'
-import { dailyBudget, dayKey, earned, streak } from './calc'
+import { dailyBudget, dayKey, earned, isBedtime, isWindDown, logicalDayKey, streak } from './calc'
 import { useDailyWords } from './quotes'
 import { MorningCard, DayResult } from './screens/DailyCards'
 import Today from './screens/Today'
@@ -44,13 +44,23 @@ function Bank({ user }) {
   const [adding, setAdding] = useState(false)
   useMode(profile?.mode ?? 'auto')
 
-  const today = dayKey()
+  const today = logicalDayKey(profile ?? {})
   const todays = useMemo(() => entries.filter((e) => e.day === today), [entries, today])
   const words = useDailyWords(today)
   const seenKey = `bankcal:morning:${user.uid}:${today}`
   const [morning, setMorning] = useState(() => { try { return !localStorage.getItem(seenKey) } catch { return false } })
   const closeMorning = () => { try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } setMorning(false) }
   const [result, setResult] = useState(false)
+  // At bedtime, offer to close the day once (if anything was logged and it isn't closed yet).
+  const bedKey = `bankcal:bedtime:${user.uid}:${today}`
+  useEffect(() => {
+    if (!profile?.onboarded || morning) return
+    const dl = profile.days?.[today]
+    if (isBedtime(profile) && !dl?.closed && entries.some((e) => e.day === today)) {
+      try { if (localStorage.getItem(bedKey)) return; localStorage.setItem(bedKey, '1') } catch { /* ignore */ }
+      setResult(true)
+    }
+  }, [profile, today, entries, morning, bedKey])
 
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
@@ -63,11 +73,11 @@ function Bank({ user }) {
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const closed = !!dayLog.closed
   const streakDays = streak(entries, budgetFor, today, closed)
-  const yKey = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d) })()
+  const yKey = (() => { const [y, m, d] = today.split('-').map(Number); return dayKey(new Date(y, m - 1, d - 1)) })()
   const yEntries = entries.filter((e) => e.day === yKey)
   const yesterday = yEntries.length && budgetFor(yKey) != null ? { net: budgetFor(yKey) - yEntries.reduce((a, e) => a + e.kcal, 0) } : null
   const closeDay = () => { if (budget != null && spent - budget <= 0) store.setDay(today, { closed: true }); setResult(true) }
-  const ctx = { ...store, user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: () => setTab('me') }
+  const ctx = { ...store, addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: () => setTab('me') }
 
   return (
     <div className={`app theme-${profile.theme}`}>
@@ -95,7 +105,7 @@ function Bank({ user }) {
           {...ctx}
           onClose={() => setAdding(false)}
           onSave={(e) => {
-            store.addEntry(e)
+            store.addEntry({ ...e, day: today })
             navigator.vibrate?.(12)
             setAdding(false)
             setTab('today')

@@ -1,8 +1,8 @@
 // Daily words. One Bible verse per day in the NLT (via /api/verse and Tyndale's
 // official NLT API), falling back to the public-domain WEB if the NLT key isn't set.
-// Cached per day so it still shows offline. Plus a daily link to Francis Kong's
-// journal and, if added below, one of your chosen Francis Kong quotes.
+// Cached per day so it still shows offline. Plus one famous motivational saying.
 import { useEffect, useState } from 'react'
+import { MOTIVATION } from './motivation'
 
 const BIBLE_REFS = [
   'Philippians 4:13', 'Isaiah 40:31', 'Joshua 1:9', '1 Corinthians 6:19-20', '1 Corinthians 10:31', 'Galatians 6:9',
@@ -16,15 +16,9 @@ const BIBLE_REFS = [
   'Hebrews 10:23', '1 Corinthians 16:13', 'Psalm 121:1-2', 'Proverbs 13:4', 'Titus 2:11-12', '1 Corinthians 9:24-25',
 ]
 
-// Francis Kong quotes, added by the app owner. Format: { text: '…', source: 'Book or talk (optional)' }
-// Shown one per day, in rotation. Leave empty to show only the Bible verse.
-export const FRANCIS_KONG = []
-
 // Verses used by the good-job and bounce-back screens.
 export const GOOD_REFS = ['Galatians 6:9', 'Psalm 118:24', 'Philippians 1:6', '1 Corinthians 15:58', 'Psalm 16:11', 'Colossians 3:23']
 export const OVER_REFS = ['Lamentations 3:22-23', 'Philippians 3:13-14', 'Proverbs 24:16', 'Isaiah 43:19', '2 Corinthians 12:9', 'Psalm 73:26']
-
-export const KONG_JOURNAL = 'https://franciskong.com/blog'
 
 const dayNumber = (key) => Math.floor(Date.UTC(...key.split('-').map((n, i) => (i === 1 ? +n - 1 : +n))) / 86400000)
 export const pick = (list, key, offset = 0) => (list.length ? list[(dayNumber(key) + offset) % list.length] : null)
@@ -62,5 +56,5 @@ export function useVerse(ref, cacheTag) {
 
 export function useDailyWords(dayKey) {
   const verse = useVerse(pick(BIBLE_REFS, dayKey, 7), dayKey)
-  return { verse, kong: pick(FRANCIS_KONG, dayKey, 3), kongLink: KONG_JOURNAL }
+  return { verse, motivation: pick(MOTIVATION, dayKey, 3) }
 }
