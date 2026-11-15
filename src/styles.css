@@ -1222,3 +1222,13 @@ html, body { max-width: 100%; overflow-x: clip; }
 
 /* Nothing shows through beneath the dock */
 body:has(.app)::after, body[data-bg]:not([data-bg='plain']):has(.app)::after { background: linear-gradient(to top, var(--bg) 0, var(--bg) calc(var(--safe-b) + 46px), transparent); }
+
+/* Dragging a real card on Today */
+.cards.lifting .slot { transition: transform 0.24s var(--ease); }
+.cards.lifting .slot.held { position: relative; z-index: 6; transition: none; }
+.cards.lifting .slot.held > .slot-body { transform: scale(1.025); filter: drop-shadow(0 18px 26px rgba(20, 20, 50, 0.28)); transition: transform 0.2s var(--spring), filter 0.2s; }
+.cards.lifting .slot:not(.held) { opacity: 0.72; }
+.cards.lifting { cursor: grabbing; }
+.slot-body { transition: transform 0.2s var(--spring); }
+.arrange-tip { margin: 28px 4px 0; text-align: center; font-size: 13.5px; font-weight: 650; color: var(--muted); line-height: 1.5; }
+.arrange-tip .arrange-link { display: inline; margin: 0; padding: 6px 2px; font-size: inherit; text-decoration: underline; text-underline-offset: 2px; }

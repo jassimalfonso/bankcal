@@ -162,7 +162,7 @@ export default function Today(props) {
         )
         return null
       }} />
-      {!arranging && <button className="arrange-link" onClick={() => setArranging(true)}>Arrange cards</button>}
+      {!arranging && <p className="arrange-tip">Hold a card’s title (⠿) and drag it to move it. <button className="arrange-link" onClick={() => setArranging(true)}>Or arrange as a list</button></p>}
 
     </>
   )
