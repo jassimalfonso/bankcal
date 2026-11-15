@@ -8,7 +8,7 @@ export const FOODS = [
   ['Chicken machboos', '1 plate', 750], ['Lamb mandi', '1 plate', 900], ['Chicken mandi', '1 plate', 800], ['Chicken biryani', '1 plate', 800],
   ['Mixed grill', '1 plate', 950], ['Shish tawook', '1 skewer', 220], ['Kofta kebab', '2 skewers', 400], ['Grilled hammour', '1 fillet', 300],
   ['Arabic bread', '1 round', 170], ['Luqaimat', '5 pieces', 300], ['Kunafa', '1 slice', 450], ['Umm Ali', '1 bowl', 480],
-  ['Dates', '3 pieces', 70], ['Laban', '1 cup', 120], ['Karak chai', '1 cup', 180], ['Arabic coffee', '1 cup', 5],
+  ['Dates (small)', '3 pieces', 70], ['Medjool dates', '2 pieces', 135], ['Laban', '1 cup', 120], ['Karak chai', '1 cup', 180], ['Arabic coffee', '1 cup', 5],
   // Indian & Pakistani
   ['Butter chicken + rice', '1 plate', 850], ['Dal tadka + rice', '1 plate', 600], ['Chicken tikka', '6 pieces', 300], ['Paratha', '1 piece', 260],
   ['Chapati', '1 piece', 110], ['Samosa', '1 piece', 260], ['Masala dosa', '1 piece', 400], ['Idli', '2 pieces', 120], ['Pani puri', '6 pieces', 250],

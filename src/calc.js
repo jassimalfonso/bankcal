@@ -87,10 +87,12 @@ export function metFor(kmh) {
 export const BASE_STEPS = 3000 // everyday steps already counted in a desk-job budget
 
 // Calories earned today from steps (above the everyday baseline) and treadmill time.
-export function earned(day, weightKg) {
+export function earned(day, weightKg, activity = 'sedentary') {
+  if (activity && activity !== 'sedentary') return { steps: 0, tread: 0, work: 0, total: 0, blocked: true }
   const w = +weightKg || 70
   const steps = Math.max(0, (+day?.steps || 0) - BASE_STEPS)
-  const stepKcal = steps * 0.0005 * w
+  // net walking cost ≈ 2.5 MET × 3.5 ml/kg/min ÷ 200 ≈ 0.044 kcal/kg per minute, ~100 steps a minute
+  const stepKcal = steps * 0.00044 * w
   const tm = +day?.treadMin || 0
   const treadKcal = tm > 0 ? Math.max(0, metFor(+day?.treadSpeed || 5) - 1) * w * (tm / 60) : 0
   const workKcal = (day?.workouts ?? []).reduce((a, x) => a + workoutKcal(x, w), 0)
@@ -128,18 +130,18 @@ export const WORKOUTS = [
   { id: 'squats', label: 'Squats', emoji: '🦵', kind: 'reps', met: 5.0, secPerRep: 3 },
   { id: 'pushups', label: 'Push-ups', emoji: '💪', kind: 'reps', met: 8.0, secPerRep: 2.5 },
   { id: 'situps', label: 'Sit-ups', emoji: '🔄', kind: 'reps', met: 3.8, secPerRep: 3 },
-  { id: 'lunges', label: 'Lunges', emoji: '🚶', kind: 'reps', met: 4.0, secPerRep: 3 },
+  { id: 'lunges', label: 'Lunges', emoji: '🚶', kind: 'reps', met: 3.8, secPerRep: 3 },
   { id: 'burpees', label: 'Burpees', emoji: '🔥', kind: 'reps', met: 8.0, secPerRep: 5 },
   { id: 'dumbbells', label: 'Dumbbells', emoji: '🏋️', kind: 'weights', met: 3.5, secPerRep: 3 },
-  { id: 'hang', label: 'Dead hang', emoji: '🙌', kind: 'sec', met: 3.0 },
+  { id: 'hang', label: 'Dead hang', emoji: '🙌', kind: 'sec', met: 2.8 },
   { id: 'plank', label: 'Plank', emoji: '📏', kind: 'sec', met: 3.8 },
-  { id: 'rope', label: 'Skipping rope', emoji: '🪢', kind: 'min', met: 11.8 },
+  { id: 'rope', label: 'Skipping rope', emoji: '🪢', kind: 'min', met: 12.3 },
   { id: 'hiit', label: 'HIIT', emoji: '⚡', kind: 'min', met: 8.0 },
   { id: 'cycling', label: 'Cycling', emoji: '🚴', kind: 'min', met: 6.8 },
-  { id: 'swim', label: 'Swimming', emoji: '🏊', kind: 'min', met: 6.0 },
+  { id: 'swim', label: 'Swimming', emoji: '🏊', kind: 'min', met: 5.8 },
   { id: 'padel', label: 'Padel / tennis', emoji: '🎾', kind: 'min', met: 6.0 },
   { id: 'football', label: 'Football', emoji: '⚽', kind: 'min', met: 7.0 },
-  { id: 'stairs', label: 'Stairs', emoji: '🪜', kind: 'min', met: 8.8 },
+  { id: 'stairs', label: 'Stairs (brisk)', emoji: '🪜', kind: 'min', met: 8.8 },
   { id: 'yoga', label: 'Yoga / stretching', emoji: '🧘', kind: 'min', met: 2.5 },
   { id: 'dance', label: 'Dancing', emoji: '💃', kind: 'min', met: 5.0 },
 ]
@@ -171,17 +173,24 @@ export function describeWorkout(w) {
 }
 
 // ───────── BMI ─────────
-export function bmiInfo(weightKg, heightCm) {
+// standard: 'who' (international) or 'asian' (WHO expert consultation for Asian populations)
+export function bmiInfo(weightKg, heightCm, standard = 'who') {
   const w = +weightKg, h = +heightCm / 100
   if (!(w > 0 && h > 0)) return null
   const bmi = w / (h * h)
-  const cat = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Healthy' : bmi < 30 ? 'Overweight' : 'Obese'
-  const low = 18.5 * h * h, high = 24.9 * h * h, ideal = 22 * h * h
+  const asian = standard === 'asian'
+  const top = asian ? 22.9 : 24.9
+  // Asian cut-offs are described by WHO as risk levels rather than weight labels
+  const cat = bmi < 18.5 ? 'Underweight' : bmi <= top ? 'Healthy'
+    : asian ? (bmi < 27.5 ? 'Increased risk' : 'High risk')
+    : bmi < 30 ? 'Overweight' : 'Obese'
+  const low = 18.5 * h * h, high = top * h * h, ideal = (asian ? 21 : 22) * h * h
   const toHealthy = Math.max(0, w - high), toIdeal = Math.max(0, w - ideal)
   return {
     bmi: Math.round(bmi * 10) / 10, cat, low: Math.round(low * 10) / 10, high: Math.round(high * 10) / 10,
     ideal: Math.round(ideal * 10) / 10, toHealthy: Math.round(toHealthy * 10) / 10, toIdeal: Math.round(toIdeal * 10) / 10,
     weeksToHealthy: Math.ceil(toHealthy / 0.5), weeksToIdeal: Math.ceil(toIdeal / 0.5),
+    top, idealBmi: asian ? 21 : 22, asian, cuts: asian ? [18.5, 23, 27.5] : [18.5, 25, 30],
   }
 }
 

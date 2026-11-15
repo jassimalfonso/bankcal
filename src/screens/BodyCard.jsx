@@ -10,7 +10,8 @@ const addWeeks = (weeks) => { const d = new Date(); d.setDate(d.getDate() + week
 
 // Current BMI, healthy range for your height, and a plain strategy to get there.
 export default function BodyCard({ profile, updateProfile, goSetup }) {
-  const b = bmiInfo(profile.weight, profile.height)
+  const std = profile.bmiStandard ?? 'who'
+  const b = bmiInfo(profile.weight, profile.height, std)
   if (!b) {
     return (
       <div className="card body-card empty">
@@ -34,22 +35,26 @@ export default function BodyCard({ profile, updateProfile, goSetup }) {
         </div>
         <span className={`bmi-pill ${tone}`}>{b.cat}</span>
       </div>
+      <div className="seg bmi-std">
+        <button className={std === 'who' ? 'on' : ''} onClick={() => updateProfile({ bmiStandard: 'who' })}>International</button>
+        <button className={std === 'asian' ? 'on' : ''} onClick={() => updateProfile({ bmiStandard: 'asian' })}>Asian</button>
+      </div>
 
       <div className="bmi-scale" aria-hidden="true">
-        <span className="band" style={{ left: pos(18.5), width: `calc(${pos(24.9)} - ${pos(18.5)})` }} />
+        <span className="band" style={{ left: pos(18.5), width: `calc(${pos(b.top)} - ${pos(18.5)})` }} />
         <span className="pin" style={{ left: pos(b.bmi) }} />
       </div>
-      <div className="bmi-ticks"><span>15</span><span style={{ left: pos(18.5) }}>18.5</span><span style={{ left: pos(25) }}>25</span><span style={{ left: pos(30) }}>30</span><span className="end">35</span></div>
+      <div className="bmi-ticks"><span>15</span>{b.cuts.map((c) => <span key={c} style={{ left: pos(c) }}>{c}</span>)}<span className="end">35</span></div>
 
       <p className="bmi-line">
-        Healthy weight at {toFtIn(+profile.height)}: <b>{b.low}–{b.high} kg</b>. Ideal (BMI 22): <b>{b.ideal} kg</b>.
+        Healthy weight at {toFtIn(+profile.height)}: <b>{b.low}–{b.high} kg</b>. Ideal (BMI {b.idealBmi}): <b>{b.ideal} kg</b>.
       </p>
 
       {b.cat === 'Healthy' ? (
         <div className="strategy">
           <b>You’re in the healthy range.</b>
           <ul>
-            <li>Keep your daily budget at maintenance, or aim for BMI 22 if you want more margin.</li>
+            <li>Keep your daily budget at maintenance, or aim for BMI {b.idealBmi} if you want more margin.</li>
             <li>Stay active: 8,000–10,000 steps a day and 150 minutes of cardio a week.</li>
             <li>Strength train twice a week to keep muscle.</li>
           </ul>
@@ -66,7 +71,7 @@ export default function BodyCard({ profile, updateProfile, goSetup }) {
       ) : (
         <div className="strategy">
           <b>Strategy: lose {b.toHealthy} kg to reach a healthy BMI</b>
-          <small>About {b.weeksToHealthy} weeks at a steady 0.5 kg a week{b.toIdeal > b.toHealthy ? `, or ${b.weeksToIdeal} weeks to BMI 22` : ''}.</small>
+          <small>About {b.weeksToHealthy} weeks at a steady 0.5 kg a week{b.toIdeal > b.toHealthy ? `, or ${b.weeksToIdeal} weeks to BMI ${b.idealBmi}` : ''}.</small>
           <ol>
             <li><b>Eat about 550 kcal under your burn</b> each day. BankCal sets this for you when you pick a plan below.</li>
             <li><b>Walk 8,000–10,000 steps</b> a day. Steps above 3,000 earn calories back.</li>
@@ -80,7 +85,7 @@ export default function BodyCard({ profile, updateProfile, goSetup }) {
           </div>
         </div>
       )}
-      <p className="fine">BMI is a rough guide and can’t tell muscle from fat. For South and East Asian adults, health risks start rising from a BMI of about 23.</p>
+      <p className="fine">{b.asian ? 'Asian cut-offs follow the WHO expert consultation for Asian populations: healthy 18.5–22.9, increased risk from 23, high risk from 27.5.' : 'International WHO categories: healthy 18.5–24.9, overweight 25–29.9, obese 30+. For people of South, Southeast or East Asian background, the Asian cut-offs may fit better.'} BMI can’t tell muscle from fat, and it isn’t meant for pregnancy or under-18s.</p>
     </div>
   )
 }

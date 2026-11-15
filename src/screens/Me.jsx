@@ -4,6 +4,11 @@ import Character from '../Character'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
 
+const BACKGROUNDS = [
+  { id: 'plain', label: 'Plain' }, { id: 'glow', label: 'Glow' }, { id: 'sunrise', label: 'Sunrise' },
+  { id: 'ocean', label: 'Ocean' }, { id: 'meadow', label: 'Meadow' }, { id: 'lavender', label: 'Lavender' },
+]
+
 // Height is stored in cm (for the maths) but entered in feet + inches.
 const toFtIn = (cm) => {
   if (!(cm > 0)) return { ft: '', inch: '' }
@@ -94,6 +99,8 @@ export default function Me({ user, profile: p, updateProfile }) {
         ))}
       </div>
 
+      <p className="fine">Tip: if you log steps and workouts in Deposits, choose <b>Desk job</b>. Higher levels already include exercise, so BankCal won’t add your logged activity on top.</p>
+
       <h2 className="group-title">Your plan</h2>
       <div className="card form-list">
         <Line label="Target weight"><Num value={p.targetWeight ?? ''} onChange={num('targetWeight')} unit="kg" ph="75" decimal /></Line>
@@ -156,6 +163,16 @@ export default function Me({ user, profile: p, updateProfile }) {
             ))}
           </div>
         </Line>
+        <div className="line bg-line">
+          <span className="line-label">Background</span>
+          <div className="bg-row">
+            {BACKGROUNDS.map((b) => (
+              <button key={b.id} className={`bg-swatch bgs-${b.id} ${(p.bg ?? 'glow') === b.id ? 'on' : ''}`} onClick={() => set({ bg: b.id })} aria-label={b.label} title={b.label}>
+                <span>{b.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
         <Line label="Appearance">
           <div className="seg">
             {['auto', 'light', 'dark'].map((m) => (
@@ -172,6 +189,7 @@ export default function Me({ user, profile: p, updateProfile }) {
         <p>Android: open in Chrome, tap the ⋮ menu, then Install app.</p>
       </div>
       <button className="btn-plain" onClick={logOut}>Sign out</button>
+      <p className="fine disclaimer">BankCal gives estimates from standard methods: the Mifflin-St Jeor equation for calories burned at rest, standard activity multipliers, the Compendium of Physical Activities for exercise, about 7,700 kcal per kg of body fat, and WHO BMI categories. Real results vary from person to person. It isn’t medical advice, so check with a doctor before big changes, especially if you’re pregnant, under 18, or managing a health condition.</p>
       <p className="foot">BankCal 0.2. Synced to your Google account and works offline.</p>
     </>
   )

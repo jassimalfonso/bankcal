@@ -40,9 +40,18 @@ export default function App() {
 function Bank({ user }) {
   const store = DEMO ? useDemoStore() : useStore(user) // eslint-disable-line react-hooks/rules-of-hooks
   const { profile, entries } = store
-  const [tab, setTab] = useState('today')
+  const [tab, setTabRaw] = useState('today')
+  const [dir, setDir] = useState('none') // slide direction for page transitions
+  const ORDER = ['today', 'week', 'me']
+  const setTab = (next) => {
+    if (next === tab) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
+    setDir(ORDER.indexOf(next) > ORDER.indexOf(tab) ? 'left' : 'right')
+    setTabRaw(next)
+    window.scrollTo(0, 0) // every page starts at the top
+  }
   const [adding, setAdding] = useState(false)
   useMode(profile?.mode ?? 'light')
+  useEffect(() => { document.body.dataset.bg = profile?.bg ?? 'glow' }, [profile?.bg])
 
   const today = logicalDayKey(profile ?? {})
   const todays = useMemo(() => entries.filter((e) => e.day === today), [entries, today])
@@ -75,9 +84,9 @@ function Bank({ user }) {
 
   const base = dailyBudget(profile)
   const dayLog = profile.days?.[today] ?? {}
-  const earn = earned(dayLog, profile.weight)
+  const earn = earned(dayLog, profile.weight, profile.activity)
   const budget = base != null ? base + earn.total : null // activity is a deposit into today's budget
-  const budgetFor = (key) => (base != null ? base + earned(profile.days?.[key], profile.weight).total : null)
+  const budgetFor = (key) => (base != null ? base + earned(profile.days?.[key], profile.weight, profile.activity).total : null)
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const closed = !!dayLog.closed
   const streakDays = streak(entries, budgetFor, today, closed)
@@ -89,7 +98,7 @@ function Bank({ user }) {
 
   return (
     <div className={`app theme-${profile.theme}`}>
-      <main className="screen" key={tab}>
+      <main className={`screen slide-${dir}`} key={tab}>
         {tab === 'today' && <Today {...ctx} />}
         {tab === 'week' && <Statement {...ctx} />}
         {tab === 'me' && <Me {...ctx} />}
