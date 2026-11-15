@@ -229,3 +229,9 @@ test('missing wake or bed time falls back to the defaults (06:30, 22:30)', () =>
   assert.equal(c.isWindDown({}, at(21, 45)), true)
   assert.equal(c.isBedtime({}, at(12, 0)), false)
 })
+
+test('after midnight the header explains which day is counting', () => {
+  assert.deepEqual(c.dayEnd({}, new Date(2026, 10, 16, 0, 55)), { late: true, at: '3:30 am' })
+  assert.equal(c.dayEnd({}, new Date(2026, 10, 16, 9, 0)).late, false)
+  assert.equal(c.dayEnd({ wakeTime: '10:00' }, new Date(2026, 10, 16, 1, 0)).at, '5:00 am')
+})

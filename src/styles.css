@@ -1219,3 +1219,7 @@ html, body { max-width: 100%; overflow-x: clip; }
 .effort-list .pick { padding-left: 14px; padding-right: 14px; }
 .custom-actions { display: grid; gap: 8px; margin-top: 18px; }
 .custom-actions .btn-plain { margin: 0; }
+
+/* Nothing shows through beneath the dock */
+body:has(.app)::after, body[data-bg]:not([data-bg='plain']):has(.app)::after { background: linear-gradient(to top, var(--bg) 0, var(--bg) calc(var(--safe-b) + 46px), transparent); }
+.date.late { margin-top: 2px; font-size: 12.5px; font-weight: 700; opacity: 0.85; }

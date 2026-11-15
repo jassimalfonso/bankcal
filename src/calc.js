@@ -451,3 +451,11 @@ export function partnerProgress({ entries, profile, budgetFor, todayKey }) {
   }
   return out
 }
+
+// When the app's day ends, as 'H:MM am', and whether we're in the after-midnight stretch of it.
+export function dayEnd(p, now = new Date()) {
+  const r = rollover(p)
+  const late = dayKey(now) !== logicalDayKey(p, now)
+  const h = Math.floor(r / 60), m = r % 60
+  return { late, at: `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}` }
+}

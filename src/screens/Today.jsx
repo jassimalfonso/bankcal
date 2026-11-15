@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useCountUp, useSwipe } from '../motion'
 import { fmt } from '../calc'
 import Character, { moodFor } from '../Character'
-import { missingFor } from '../calc'
+import { dayEnd, missingFor } from '../calc'
 import { SECTION_ICONS, SECTION_NAMES, fullLayout } from '../layout'
 import CardStack from './CardStack'
 import { HabitsCard, JournalCard } from './Habits'
@@ -78,6 +78,7 @@ export default function Today(props) {
       <header className="large-title">
         <div>
           <p className="date">{date}{streakDays > 0 && <span className="streak-chip">🔥 {streakDays}</span>}</p>
+          {dayEnd(profile).late && <p className="date late">Still counting as {date.split(' ')[0]}. Your new day starts at {dayEnd(profile).at}.</p>}
           <h1>Hi, {profile.name}</h1>
         </div>
         <button className="char-btn" onClick={goSetup} aria-label="Settings">
