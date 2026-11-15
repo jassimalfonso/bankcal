@@ -1,4 +1,4 @@
-import { fmt, plan, prettyDate } from '../calc'
+import { fmt, maintainStatus, plan, prettyDate } from '../calc'
 
 const DAY = 86400000
 const toDate = (k) => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d) }
@@ -44,8 +44,12 @@ export default function Progress({ profile, goSetup }) {
       etaText = <>Keep logging your weight; a pace estimate appears after a week of weigh-ins.</>
     }
   } else if (target && last.w <= target) {
-    etaText = <><b>You’ve reached your target.</b> Switch your plan to maintain in Settings.</>
+    etaText = <><b>🎉 You’ve reached your target.</b> Your budget now keeps you here. Tap <b>Switch to maintain</b> in Settings to lock it in.</>
   }
+  const ms = maintainStatus(profile)
+  if (ms) etaText = ms.status === 'in'
+    ? <>Maintaining <b>{ms.keep} kg</b>. Staying within {ms.low.toFixed(1)}–{ms.high.toFixed(1)} kg counts as on track.</>
+    : <>You’re <b>{Math.abs(ms.diff)} kg {ms.diff > 0 ? 'above' : 'below'}</b> the {ms.keep} kg you’re keeping. See Settings for a gentle reset.</>
 
   // chart scales
   const W = 320, H = 130, pad = 6

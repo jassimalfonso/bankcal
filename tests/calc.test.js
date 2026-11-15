@@ -91,3 +91,19 @@ test('goal-date recommendations', () => {
   assert.deepEqual(r.map((x) => x.weeks), [24, 12, 8])
   assert.equal(r[1].date, '2027-02-07')
 })
+
+test('plan respects its start and end dates, and reaching the target means maintain', () => {
+  const base = { sex: 'm', weight: 84, height: 173, age: 32, activity: 'sedentary', goal: 'lose025', targetWeight: 78 }
+  const maint = Math.round((1766 * 1.2) / 10) * 10
+  assert.equal(c.dailyBudget({ ...base, startDate: '2099-01-01', endDate: '2099-06-01' }), Math.round((1766 * 1.2 - 275) / 10) * 10) // not started → simple goal
+  assert.equal(c.dailyBudget({ ...base, startDate: '2020-01-01', endDate: '2020-06-01' }), Math.round((1766 * 1.2 - 275) / 10) * 10) // ended → simple goal
+  assert.equal(c.dailyBudget({ ...base, targetWeight: 84, endDate: '2099-06-01' }), maint) // reached → maintain
+})
+
+test('maintenance band', () => {
+  const p = { goal: 'maintain', maintainWeight: 70 }
+  assert.equal(c.maintainStatus({ ...p, weight: 71.2 }).status, 'in')
+  assert.equal(c.maintainStatus({ ...p, weight: 72 }).status, 'above')
+  assert.equal(c.maintainStatus({ ...p, weight: 68 }).status, 'below')
+  assert.equal(c.maintainStatus({ goal: 'lose05', maintainWeight: 70, weight: 72 }), null)
+})

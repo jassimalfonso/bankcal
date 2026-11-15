@@ -1,5 +1,5 @@
 import { useState, Children, cloneElement, isValidElement } from 'react'
-import { ACTIVITY, ageOf, DEFAULT_BED, DEFAULT_WAKE, GOALS, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
+import { maintainStatus, ACTIVITY, ageOf, DEFAULT_BED, DEFAULT_WAKE, GOALS, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
 import Character from '../Character'
 import { DEFAULT_LAYOUT, SECTION_NAMES } from '../layout'
 import { THEMES, BuddyGrid } from './Onboarding'
@@ -33,6 +33,9 @@ export default function Me({ user, profile: p, updateProfile }) {
     set({ height: toCm(next.ft, next.inch) })
   }
   const bd = breakdown(p)
+  const ms = maintainStatus(p)
+  // reached the target: stop the plan and keep this weight
+  const keepIt = () => set({ goal: 'maintain', maintainWeight: +p.targetWeight || +p.weight, targetWeight: null, endDate: null })
   const budget = dailyBudget(p)
 
   return (
@@ -125,14 +128,33 @@ export default function Me({ user, profile: p, updateProfile }) {
         </div>
       )}
       {bd?.plan && (
-        <div className={`card plan-note ${bd.plan.tooFast ? 'warn' : ''}`}>
+        <div className={`card plan-note ${bd.plan.tooFast || bd.plan.expired ? 'warn' : ''}`}>
           {bd.plan.reached ? (
-            <p><b>You’re at your target.</b> Your budget is set to maintain.</p>
+            <p><b>🎉 You’ve reached {p.targetWeight} kg.</b> Your budget is now set to maintain this weight.
+              <button className="link-btn" onClick={keepIt}>Switch to maintain</button></p>
+          ) : bd.plan.expired ? (
+            <p><b>Your plan ended on {prettyDate(p.endDate)}</b> with {bd.plan.toLose.toFixed(1)} kg still to go. Your budget is back on your simple goal below until you pick a new date. A realistic one is <b>{prettyDate(bd.plan.realisticEnd)}</b>.
+              <button className="link-btn" onClick={() => set({ endDate: bd.plan.realisticEnd, startDate: dayKey() })}>Use that date</button></p>
+          ) : bd.plan.notStarted ? (
+            <p><b>Your plan starts on {prettyDate(p.startDate)}.</b> Until then your budget follows your simple goal below.</p>
           ) : bd.plan.tooFast ? (
             <p><b>That date is too fast.</b> Losing {bd.plan.toLose.toFixed(1)} kg in {bd.plan.daysLeft} days needs {fmt(bd.plan.needed)} kcal less a day. BankCal caps it at a safe 1,000. A realistic date is <b>{prettyDate(bd.plan.realisticEnd)}</b>.
               <button className="link-btn" onClick={() => set({ endDate: bd.plan.realisticEnd })}>Use that date</button></p>
           ) : (
             <p><b>On plan.</b> {bd.plan.toLose.toFixed(1)} kg to go in {bd.plan.daysLeft} days, so you eat {fmt(bd.plan.deficit)} kcal less than you burn each day.</p>
+          )}
+        </div>
+      )}
+      {ms && (
+        <div className={`card plan-note ${ms.status === 'in' ? '' : 'warn'}`}>
+          {ms.status === 'in' ? (
+            <p><b>Maintaining {ms.keep} kg.</b> You’re {ms.diff === 0 ? 'right on it' : `${Math.abs(ms.diff)} kg ${ms.diff > 0 ? 'above' : 'below'}`}, inside your healthy range of {ms.low.toFixed(1)}–{ms.high.toFixed(1)} kg. Day-to-day swings like this are normal.</p>
+          ) : ms.status === 'above' ? (
+            <p><b>You’re {ms.diff} kg above the {ms.keep} kg you’re keeping.</b> A gentle reset brings it back without strict dieting.
+              <button className="link-btn" onClick={() => set({ goal: 'lose025' })}>Lose 0.25 kg a week for a while</button></p>
+          ) : (
+            <p><b>You’re {Math.abs(ms.diff)} kg below the {ms.keep} kg you’re keeping.</b> If that wasn’t planned, eat a little more, or keep the new weight.
+              <button className="link-btn" onClick={() => set({ maintainWeight: +p.weight })}>Keep {p.weight} kg instead</button></p>
           )}
         </div>
       )}
@@ -144,10 +166,10 @@ export default function Me({ user, profile: p, updateProfile }) {
         <Line label="Treadmill speed"><Num value={p.treadSpeed ?? ''} onChange={num('treadSpeed')} unit="km/h" ph="5" decimal /></Line>
       </div>
 
-      <h2 className="group-title">{bd?.plan ? 'Simple goal (not used while a plan is set)' : 'Or a simple goal'}</h2>
+      <h2 className="group-title">{bd?.plan?.active ? 'Simple goal (not used while your plan runs)' : 'Or a simple goal'}</h2>
       <div className="card form-list">
         {GOALS.map((g) => (
-          <button key={g.id} className="pick" onClick={() => set({ goal: g.id })}>
+          <button key={g.id} className="pick" onClick={() => set(g.id === 'maintain' ? { goal: 'maintain', maintainWeight: p.maintainWeight ?? (+p.weight || null) } : { goal: g.id })}>
             <span><b>{g.label}</b><small>{g.hint}</small></span>
             <span className={`check ${p.goal === g.id ? 'on' : ''}`} aria-hidden="true" />
           </button>

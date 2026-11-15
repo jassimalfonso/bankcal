@@ -53,7 +53,8 @@ export function breakdown(p) {
   const act = ACTIVITY.find((a) => a.id === p.activity) ?? ACTIVITY[0]
   const goal = GOALS.find((g) => g.id === p.goal) ?? GOALS[0]
   const pl = plan(p, p.weight)
-  const deficit = pl ? pl.deficit : goal.perDay
+  // an active plan sets the deficit; reached = maintain; not started or past its date = simple goal
+  const deficit = pl?.active ? pl.deficit : pl?.reached ? 0 : goal.perDay
   const tdee = b * act.f
   const floor = FLOOR[p.sex] ?? 1200
   const auto = Math.max(floor, Math.round((tdee - deficit) / 10) * 10)
@@ -114,18 +115,25 @@ const SAFE_MAX_DEFICIT = 1000 // kcal/day — about 1 kg a week
 const parseDay = (k) => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d) }
 
 export function plan(p, currentWeight, todayKey = dayKey()) {
-  if (!(+p.targetWeight > 0) || !p.endDate) return null
+  if (!(+p.targetWeight > 0)) return null
   const w = +currentWeight || +p.weight
   if (!(w > 0)) return null
+  // at or below target counts as reached, with or without a date
+  if (w <= +p.targetWeight) return { daysLeft: 0, toLose: 0, needed: 0, deficit: 0, tooFast: false, realisticEnd: todayKey, reached: true, notStarted: false, expired: false, active: false }
+  if (!p.endDate) return null
   const today = parseDay(todayKey)
   const end = parseDay(p.endDate)
+  // plan only runs between its start date and its end date
+  const notStarted = !!p.startDate && parseDay(p.startDate) > today
+  const expired = end < today
   const daysLeft = Math.max(1, Math.round((end - today) / DAY))
   const toLose = Math.max(0, w - +p.targetWeight)
   const needed = (toLose * KCAL_PER_KG) / daysLeft
   const tooFast = needed > SAFE_MAX_DEFICIT
   const realisticDays = Math.ceil((toLose * KCAL_PER_KG) / 750)
   const realisticEnd = dayKey(new Date(today.getTime() + realisticDays * DAY))
-  return { daysLeft, toLose, needed: Math.round(needed), deficit: Math.round(Math.min(needed, SAFE_MAX_DEFICIT)), tooFast, realisticEnd, reached: toLose === 0 }
+  const active = !notStarted && !expired && toLose > 0
+  return { daysLeft, toLose, needed: Math.round(needed), deficit: active ? Math.round(Math.min(needed, SAFE_MAX_DEFICIT)) : 0, tooFast: active && tooFast, realisticEnd, reached: toLose === 0, notStarted, expired: expired && toLose > 0, active }
 }
 
 export const prettyDate = (k) => parseDay(k).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -281,4 +289,15 @@ export function fmtSleep(h) {
   if (h == null) return '—'
   const total = Math.round(h * 60)
   return `${Math.floor(total / 60)} h${total % 60 ? ` ${total % 60} min` : ''}`
+}
+
+// ───────── Maintenance ─────────
+// Normal day-to-day weight swings are about ±1–2 kg (water, food, salt), so a
+// maintained weight is judged against a ±1.5 kg band around the weight you chose to keep.
+export const MAINTAIN_BAND = 1.5
+export function maintainStatus(p) {
+  const keep = +p.maintainWeight, w = +p.weight
+  if (p.goal !== 'maintain' || !(keep > 0) || !(w > 0)) return null
+  const diff = Math.round((w - keep) * 10) / 10
+  return { keep, low: keep - MAINTAIN_BAND, high: keep + MAINTAIN_BAND, diff, status: diff > MAINTAIN_BAND ? 'above' : diff < -MAINTAIN_BAND ? 'below' : 'in' }
 }
