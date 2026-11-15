@@ -1,13 +1,11 @@
-// Partner view and scale sync. Both use small documents outside the private users/{uid} area:
+// Partner view. Uses small documents outside the private users/{uid} area:
 //   shares/{uid}   a tiny public-to-partners summary (never calories, weight or journal)
 //   invites/{code} a short-lived pairing code
-//   inbox/{key}    where a phone Shortcut drops the latest weight from a smart scale
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { deleteDoc, doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from './firebase'
 
 const code6 = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
-const key32 = () => Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('')
 
 export function usePartners({ enabled, uid, profile, updateProfile, summary, notify }) {
   const partners = profile?.partners ?? []
@@ -87,28 +85,4 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
   }, [uid, profile?.name])
 
   return { partners, shares, createInvite, acceptInvite, removePartner, cheer }
-}
-
-// Smart-scale sync: a personal key the Shortcut uses to drop the latest weight.
-export function useScaleSync({ enabled, uid, profile, updateProfile, onWeight }) {
-  useEffect(() => {
-    if (!enabled || !profile?.syncKey) return
-    return onSnapshot(doc(db, 'inbox', profile.syncKey), (s) => {
-      const d = s.data()
-      if (!d?.at || d.at === profile.lastSyncAt || !(d.weight > 20 && d.weight < 400)) return
-      onWeight(Math.round(d.weight * 10) / 10, d.at)
-    }, () => {})
-  }, [enabled, profile?.syncKey, profile?.lastSyncAt]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const connect = useCallback(async () => {
-    const key = key32()
-    await setDoc(doc(db, 'inbox', key), { uid, createdAt: Date.now() })
-    updateProfile({ syncKey: key })
-    return key
-  }, [uid, updateProfile])
-  const disconnect = useCallback(async () => {
-    if (profile?.syncKey) await deleteDoc(doc(db, 'inbox', profile.syncKey)).catch(() => {})
-    updateProfile({ syncKey: null })
-  }, [profile?.syncKey, updateProfile])
-  return { connect, disconnect }
 }

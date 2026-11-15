@@ -139,7 +139,7 @@ test('habits week dots and layout upgrade', async () => {
   const days = { '2026-11-15': { habits: { walk: true } }, '2026-11-13': { habits: { walk: true } } }
   assert.deepEqual(h.habitDays(days, 'walk', '2026-11-15'), [false, false, false, false, true, false, true])
   assert.deepEqual(h.habitDays(days, 'walk', '2026-12-01', 3), [false, false, false]) // crosses month
-  assert.deepEqual(l.fullLayout(['meals', 'words', 'deposits', 'eat']), ['meals', 'habits', 'partner', 'words', 'deposits', 'eat', 'journal'])
+  assert.deepEqual(l.fullLayout(['meals', 'words', 'deposits', 'eat']), ['weigh', 'meals', 'habits', 'partner', 'words', 'deposits', 'eat', 'journal'])
   assert.equal(h.suggestHabits('maintain').length, 3)
 })
 
@@ -160,4 +160,19 @@ test('weekly summary covers the 7 days before today', () => {
   assert.equal(w.from, '2026-11-08'); assert.equal(w.to, '2026-11-14')
   assert.equal(w.logged, 2); assert.equal(w.within, 1); assert.equal(w.saved, 100)
   assert.equal(w.workouts, 2); assert.equal(w.sleepAvg, 7); assert.equal(w.habitDone, 1); assert.equal(w.habitPossible, 7)
+})
+
+test('weigh-in report judges the trend, not the day', () => {
+  const mk = (ws, extra = {}) => ({ sex: 'm', height: 173, age: 32, goal: 'lose05', targetWeight: 78, ...extra, days: Object.fromEntries(ws.map((w, i) => [`2026-11-${String(i + 1).padStart(2, '0')}`, { weight: w }])) })
+  assert.equal(c.weighInReport(mk([84]), '2026-11-02'), null) // not weighed today
+  assert.match(c.weighInReport(mk([84]), '2026-11-01').headline, /starting line/)
+  const down = c.weighInReport(mk([85, 84.8, 84.9, 84.5, 84.4, 84.2, 84.0, 83.9, 83.6, 84.0]), '2026-11-10')
+  assert.equal(down.sincePrev, 0.4)
+  assert.ok(down.perWeek < -0.2); assert.match(down.headline, /Up a little today/); assert.equal(down.tone, 'good')
+  assert.equal(down.toGo, 6); assert.ok(down.eta > '2026-11-10')
+  const flat = c.weighInReport(mk(Array(16).fill(84)), '2026-11-16')
+  assert.match(flat.headline, /levelled off/)
+  assert.match(c.weighInReport(mk([79, 78]), '2026-11-02').headline, /reached 78/)
+  const keep = c.weighInReport(mk([70, 70.4], { goal: 'maintain', maintainWeight: 70, targetWeight: null }), '2026-11-02')
+  assert.match(keep.headline, /Holding steady/); assert.equal(keep.target, null)
 })

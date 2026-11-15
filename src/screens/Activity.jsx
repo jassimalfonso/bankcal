@@ -83,15 +83,6 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
               onChange={(e) => setDay(today, { sleep: { bed: profile.bedTime ?? DEFAULT_BED, ...dayLog.sleep, wake: e.target.value } })} />
           </div>
         </div>
-
-        <div className="act-row">
-          <div className="act-head">
-            <b>Weight today</b>
-            <small>{dayLog.weight ? 'Logged. Your budget follows it.' : 'Optional, best in the morning'}</small>
-          </div>
-          <NumField value={dayLog.weight} placeholder={profile.weight || '—'} unit="kg" decimal
-            onCommit={(v) => { if (v > 0) { setDay(today, { weight: v }); updateProfile({ weight: v }) } }} />
-        </div>
       </div>
       <p className="fine">First {fmt(BASE_STEPS)} steps are everyday movement and already in your budget.</p>
       </>}

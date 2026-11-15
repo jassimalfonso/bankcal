@@ -37,15 +37,5 @@ service cloud.firestore {
         && request.resource.data.acceptedBy == me();
       allow delete: if me() == resource.data.uid;
     }
-
-    // Scale sync inbox: the owner creates it; whoever holds the secret key in the
-    // document name (the owner's phone Shortcut) can only set the weight and time.
-    match /inbox/{key} {
-      allow create: if me() != null && request.resource.data.uid == me();
-      allow read, delete: if me() == resource.data.uid;
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['weight', 'at'])
-        && request.resource.data.weight is number
-        && request.resource.data.weight > 20 && request.resource.data.weight < 400;
-    }
   }
 }

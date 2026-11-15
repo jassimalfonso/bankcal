@@ -7,6 +7,7 @@ import { fullLayout } from '../layout'
 import { HabitsCard, JournalCard } from './Habits'
 import { WeeklyCard } from './DailyCards'
 import { PartnerCard } from './Partner'
+import { WeighCard } from './WeighIn'
 import Activity from './Activity'
 import { WordsCard } from './DailyCards'
 
@@ -117,6 +118,7 @@ export default function Today(props) {
       {showWeek && <WeeklyCard {...props} onClose={hideWeek} />}
       {fullLayout(profile.layout).map((id) => {
         if (id === 'words') return <WordsCard key="words" words={words} />
+        if (id === 'weigh') return budget != null ? <WeighCard key="weigh" {...props} /> : null
         if (id === 'habits') return <HabitsCard key="habits" {...props} />
         if (id === 'partner') return props.partner ? <PartnerCard key="partner" partner={props.partner} today={props.today} notify={notify} /> : null
         if (id === 'journal') return <JournalCard key="journal" {...props} />

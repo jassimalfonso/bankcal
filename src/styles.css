@@ -424,7 +424,7 @@ h1, h2, p { margin: 0; }
 @keyframes tabIn { from { opacity: 0; transform: translateY(10px); } }
 @keyframes fromRight { from { opacity: 0; transform: translateX(28px); } }
 @keyframes fromLeft { from { opacity: 0; transform: translateX(-28px); } }
-.screen > * { animation: rise 0.5s var(--ease) both; }
+.screen > * { animation: rise 0.5s var(--ease) backwards; }
 .screen > *:nth-child(2) { animation-delay: 0.03s; } .screen > *:nth-child(3) { animation-delay: 0.06s; }
 .screen > *:nth-child(4) { animation-delay: 0.09s; } .screen > *:nth-child(5) { animation-delay: 0.12s; }
 .screen > *:nth-child(n+6) { animation-delay: 0.15s; }
@@ -804,7 +804,7 @@ button.hello-back, .hello-back { animation: fade 0.5s var(--ease) both; }
 .dawn.leaving .dawn-glow { animation: none; transition: opacity 0.5s; opacity: 0; }
 .app.behind .screen, .app.behind .tabbar, .app.behind .fab { opacity: 0; }
 .app.entering .screen { animation: none; }
-.app.entering .screen > * { animation: app-in 0.7s var(--ease) 0.22s both; }
+.app.entering .screen > * { animation: app-in 0.7s var(--ease) 0.22s backwards; }
 .app.entering .screen > *:nth-child(2) { animation-delay: 0.28s; }
 .app.entering .screen > *:nth-child(3) { animation-delay: 0.36s; }
 .app.entering .screen > *:nth-child(n+4) { animation-delay: 0.44s; }
@@ -965,7 +965,7 @@ button.hello-back, .hello-back { animation: fade 0.5s var(--ease) both; }
 .progress-top b small { font-size: 13px; font-weight: 800; color: var(--muted); }
 .trend-note { margin: 10px 0 0 !important; }
 
-/* Partner and scale sync */
+/* Partner */
 .partner-list { padding: 4px 16px; }
 .partner { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
 .partner + .partner { border-top: 1px solid var(--line); }
@@ -989,9 +989,6 @@ button.hello-back, .hello-back { animation: fade 0.5s var(--ease) both; }
 .ps-enter { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .ps-enter input { min-width: 0; padding: 13px 14px; border: 0; border-radius: 14px; background: var(--bg); color: var(--ink); font: inherit; font-size: 16px; font-weight: 800; letter-spacing: 0.08em; }
 .ps-msg { margin: 0; font-size: 14px; font-weight: 700; color: var(--muted); }
-.scale-steps { margin: 8px 0 12px; padding-left: 20px; display: grid; gap: 8px; font-size: 14px; line-height: 1.5; color: color-mix(in srgb, var(--ink) 80%, var(--muted)); }
-.scale-url { display: block; width: 100%; padding: 12px 14px; border-radius: 14px; background: var(--bg); text-align: left; font-size: 12.5px; font-weight: 650; color: var(--muted); word-break: break-all; line-height: 1.4; }
-.scale-url b { display: block; margin-top: 6px; color: var(--accent); font-size: 14px; font-weight: 850; }
 
 .j-starters { margin-top: 12px; display: grid; gap: 6px; }
 .j-starters span { font-size: 13px; font-weight: 750; color: var(--muted); margin-bottom: 2px; }
@@ -1033,3 +1030,42 @@ html, body { max-width: 100%; overflow-x: clip; }
   .tab span { font-size: 10.5px; }
   .large-title h1 { font-size: 30px; }
 }
+
+/* Weigh-in */
+.weigh { padding: 18px; }
+.weigh-q { margin: 0 0 12px; font-weight: 800; font-size: 16px; }
+.weigh-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+.weigh-in { display: flex; align-items: baseline; gap: 6px; padding: 10px 16px; border-radius: 16px; background: var(--bg); }
+.weigh-in:focus-within { box-shadow: 0 0 0 2px var(--accent); }
+.weigh-in input { flex: 1; min-width: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 28px; font-weight: 900; font-variant-numeric: tabular-nums; outline: none; }
+.weigh-in span { font-weight: 800; color: var(--muted); }
+.weigh .btn-primary { padding: 0 26px; }
+.weigh .fine { margin: 10px 2px 0; }
+.weigh.done { display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; }
+.weigh-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 8px; text-align: left; color: inherit; }
+.weigh-emoji { width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: 13px; background: var(--soft); font-size: 20px; }
+.weigh-txt { flex: 1; min-width: 0; }
+.weigh-txt b { display: block; font-weight: 850; font-size: 16px; }
+.weigh-txt small { display: block; color: var(--muted); font-weight: 650; font-size: 13.5px; line-height: 1.35; }
+.weigh.done .link-btn { padding: 10px 6px; font-size: 14px; }
+.weigh-sheet { max-height: 92dvh; overflow-y: auto; }
+.weigh-sheet h2 { font-size: 34px; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.ws-msg { margin-top: 6px; padding: 16px; border-radius: 18px; background: var(--soft); }
+.ws-msg.care { background: color-mix(in srgb, #f0952a 13%, var(--card)); }
+.ws-msg b { display: block; font-size: 17px; font-weight: 850; line-height: 1.3; text-wrap: balance; }
+.ws-msg p { margin: 6px 0 0; font-size: 15px; line-height: 1.5; color: color-mix(in srgb, var(--ink) 80%, var(--muted)); }
+.ws-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.ws-grid > div { padding: 12px 14px; border-radius: 14px; background: var(--bg); }
+.ws-grid span { display: block; font-size: 12.5px; font-weight: 800; color: var(--muted); }
+.ws-grid b { font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.ws-grid b small { font-size: 12.5px; font-weight: 800; color: var(--muted); }
+.ws-goal { margin-top: 12px; padding: 14px; border-radius: 14px; background: var(--bg); }
+.ws-goal-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 14px; font-weight: 800; color: var(--muted); }
+.ws-goal-top b { color: var(--ink); font-weight: 850; }
+.ws-bar { height: 10px; margin-top: 10px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.ws-bar i { display: block; height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.8s var(--ease); }
+.ws-goal .fine { margin: 8px 0 0; }
+.weigh-sheet .btn-primary { width: 100%; margin-top: 18px; }
+.weigh-row { grid-template-columns: minmax(0, 1fr) auto; }
+.weigh-in { min-width: 0; }
+.weigh-in input { width: 100%; }

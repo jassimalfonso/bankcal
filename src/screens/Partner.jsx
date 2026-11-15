@@ -82,34 +82,3 @@ export function PartnerSettings({ partner, profile }) {
     </>
   )
 }
-
-// More settings: send weight from a smart scale (Zepp, etc.) through an iPhone Shortcut.
-export function ScaleSync({ scale, profile, notify }) {
-  const [busy, setBusy] = useState(false)
-  const url = profile.syncKey ? `${location.origin}/api/weight?k=${profile.syncKey}&kg=` : ''
-  const copy = async () => { try { await navigator.clipboard.writeText(url); notify('Link copied') } catch { notify('Press and hold the link to copy it') } }
-  return (
-    <>
-      <h3 className="more-h">Smart scale (Zepp and others)</h3>
-      {!profile.syncKey ? (
-        <>
-          <p className="fine">Send your morning weight to BankCal automatically from Apple Health, where the Zepp app saves it. Needs an iPhone and a one-time setup in the Shortcuts app.</p>
-          <button className="btn-plain" disabled={busy} onClick={async () => { setBusy(true); try { await scale.connect() } catch { notify('Couldn’t set that up. Check your connection.') } setBusy(false) }}>Set up scale sync</button>
-        </>
-      ) : (
-        <div className="scale">
-          <p className="fine">{profile.lastSyncAt ? `Last weight received ${new Date(profile.lastSyncAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.` : 'Waiting for the first weight.'}</p>
-          <ol className="scale-steps">
-            <li>In <b>Zepp</b>: Profile → Add accounts → <b>Apple Health</b>, and allow <b>Weight</b>.</li>
-            <li>Open the <b>Shortcuts</b> app → <b>Automation</b> → <b>+</b> → <b>Time of Day</b>. Pick a time after your usual weigh-in, Daily, <b>Run Immediately</b>.</li>
-            <li>Add the action <b>Find Health Samples</b>: Type is <b>Weight</b>, sort by <b>Start Date</b>, <b>Latest First</b>, limit <b>1</b>.</li>
-            <li>Add the action <b>Get Contents of URL</b>. Paste your link below, then tap the end of it and insert <b>Health Samples → Value</b>.</li>
-          </ol>
-          <button className="scale-url" onClick={copy} aria-label="Copy my sync link">{url}<b>Copy</b></button>
-          <p className="fine">Keep this link private; it can only add a weight to your account. Apple Health should be set to kilograms.</p>
-          <button className="btn-plain danger" onClick={() => scale.disconnect()}>Turn off scale sync</button>
-        </div>
-      )}
-    </>
-  )
-}

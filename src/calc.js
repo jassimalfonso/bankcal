@@ -372,3 +372,63 @@ export function weekSummary({ entries, profile, budgetFor, todayKey }) {
     habitDone, habitPossible: (profile.habits ?? []).length * 7,
   }
 }
+
+// ───────── Weigh-in check-in ─────────
+// Everything shown after a weigh-in: where you are, how the trend is moving, and one
+// calm next step. Judged on the 7-day trend, never on a single day's number.
+export function weighInReport(profile, todayKey) {
+  const DAY = 86400000
+  const pts = weightTrend(Object.entries(profile.days ?? {}).filter(([k, d]) => +d?.weight > 0 && k <= todayKey)
+    .map(([k, d]) => ({ k, t: parseDay(k).getTime(), w: +d.weight })).sort((a, b) => a.t - b.t))
+  const now = pts.at(-1)
+  if (!now || now.k !== todayKey) return null
+  const prev = pts.at(-2) ?? null, first = pts[0]
+  const r1 = (n) => Math.round(n * 10) / 10
+  const sincePrev = prev ? r1(now.w - prev.w) : null
+  const total = pts.length > 1 ? r1(now.trend - first.trend) : null
+  // pace from the trend over the last 2–4 weeks (needs at least 7 days of history)
+  const base = pts.find((p) => p.t >= now.t - 28 * DAY)
+  const span = (now.t - base.t) / DAY
+  const perWeek = span >= 7 ? Math.round(((now.trend - base.trend) / span) * 7 * 100) / 100 : null
+  const maintaining = profile.goal === 'maintain'
+  const target = !maintaining && +profile.targetWeight > 0 ? +profile.targetWeight : null
+  const toGo = target ? r1(Math.max(0, now.w - target)) : null
+  const startW = first.w
+  const done = target && startW > target ? Math.min(1, Math.max(0, (startW - now.w) / (startW - target))) : null
+  const eta = target && toGo > 0 && perWeek != null && perWeek < -0.05 ? dayKey(new Date(now.t + (toGo / -perWeek) * 7 * DAY)) : null
+  const ms = maintainStatus({ ...profile, weight: now.w })
+  const bmi = bmiInfo(now.w, profile.height, profile.bmiStandard ?? 'who')
+  const pctWeek = perWeek != null ? (-perWeek / now.w) * 100 : 0
+
+  let headline, tip, tone = 'good'
+  if (pts.length === 1) {
+    headline = 'This is your starting line.'
+    tip = 'Weigh in at the same time each morning, after the bathroom and before eating. After a week you’ll see your real trend.'
+  } else if (maintaining && ms) {
+    if (ms.status === 'in') { headline = `Holding steady around ${ms.keep} kg.`; tip = 'Nothing to change. Small ups and downs inside your range are just water and meals.' }
+    else if (ms.status === 'above') { headline = `A little above your range (+${ms.diff} kg).`; tip = 'Check it against the next few mornings first. If it stays, a couple of lighter dinners and a daily walk usually bring it back.'; tone = 'care' }
+    else { headline = `Below your range (${ms.diff} kg).`; tip = 'If this wasn’t planned, eat up to your full budget. Add a snack with protein.'; tone = 'care' }
+  } else if (target && toGo === 0) {
+    headline = `You’ve reached ${target} kg. Well done! 🎉`
+    tip = 'Switch your goal to Maintain in Settings so your budget rises to keep you here.'
+  } else if (perWeek == null) {
+    headline = sincePrev <= 0 ? 'Off to a good start.' : 'Early days. One number means very little.'
+    tip = 'Keep weighing in each morning. Your trend and pace appear after a week.'
+  } else if (pctWeek > 1 && -perWeek > 1) {
+    headline = 'You’re losing quickly.'
+    tip = 'Faster isn’t better. Eat up to your budget, include protein at each meal, and keep your strength sessions so you lose fat, not muscle.'
+    tone = 'care'
+  } else if (perWeek <= -0.2) {
+    headline = sincePrev > 0 ? 'Up a little today, but your trend is still going down.' : 'Your trend is going down. This is working.'
+    tip = sincePrev > 0 ? 'A day-to-day rise like this is water and salt, not fat. Nothing to change.' : 'Keep doing what you’re doing. Steady beats fast.'
+  } else if (perWeek < 0.15) {
+    headline = span >= 14 ? 'Your weight has levelled off for now.' : 'Holding about steady this week.'
+    tip = span >= 14 ? 'Plateaus are a normal part of losing weight. Two things to try: measure your rice and cooking oil for a few days, and add a 10-minute walk after meals.' : 'One flat week is normal. Give it another week before changing anything.'
+    tone = span >= 14 ? 'care' : 'good'
+  } else {
+    headline = 'Your trend has drifted up a little.'
+    tip = 'No need to make up for it. Log everything for the next three days, including drinks and bites, and the picture usually becomes clear.'
+    tone = 'care'
+  }
+  return { w: now.w, trend: now.trend, count: pts.length, prevW: prev?.w ?? null, sincePrev, total, since: first.k, perWeek, target, toGo, done, eta, ms, bmi, headline, tip, tone, budget: dailyBudget({ ...profile, weight: now.w }) }
+}

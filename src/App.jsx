@@ -13,7 +13,7 @@ import Today from './screens/Today'
 import Statement from './screens/Statement'
 import Me from './screens/Me'
 import Train from './screens/Train'
-import { usePartners, useScaleSync } from './partner'
+import { usePartners } from './partner'
 import AddSheet from './screens/AddSheet'
 import SignIn from './screens/SignIn'
 import Onboarding from './screens/Onboarding'
@@ -143,15 +143,11 @@ function Bank({ user }) {
     enabled: !DEMO, uid: user.uid, profile, updateProfile: store.updateProfile, notify,
     summary: { day: today, streak: streakDays, habitsDone: (pf.habits ?? []).filter((id) => dayLog.habits?.[id]).length, habitsTotal: (pf.habits ?? []).length, moved: earn.total > 0, logged: todays.length > 0 },
   })
-  const scale = useScaleSync({
-    enabled: !DEMO, uid: user.uid, profile, updateProfile: store.updateProfile,
-    onWeight: (kg, at) => { store.setDay(today, { weight: kg }); store.updateProfile({ weight: kg, lastSyncAt: at }); notify(`⚖️ ${kg} kg received from your scale`) },
-  })
 
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const ctx = { ...store, partner, scale, notify, addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: (section) => {
+  const ctx = { ...store, partner, notify, addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }

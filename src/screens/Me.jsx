@@ -3,7 +3,7 @@ import { maintainStatus, targetCheck, KCAL_PER_KG, ageOf, DEFAULT_BED, DEFAULT_W
 import Character from '../Character'
 import { SECTION_NAMES, fullLayout } from '../layout'
 import { HabitPicker } from './Habits'
-import { PartnerSettings, ScaleSync } from './Partner'
+import { PartnerSettings } from './Partner'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
 
@@ -25,7 +25,7 @@ export const toFtIn = (cm) => {
 }
 export const toCm = (ft, inch) => (+ft > 0 ? Math.round(((+ft || 0) * 12 + (+inch || 0)) * 2.54) : '')
 
-export default function Me({ user, profile: p, updateProfile, resetProgress, partner, scale, notify }) {
+export default function Me({ user, profile: p, updateProfile, resetProgress, partner }) {
   const [confirmReset, setConfirmReset] = useState(false)
   const set = updateProfile
   const num = (k) => (e) => set({ [k]: e.target.value.replace(/[^\d.]/g, '') })
@@ -229,7 +229,6 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
           <Line label="Fixed daily budget"><Num value={p.customBudget ?? ''} onChange={num('customBudget')} unit="kcal" ph="Off" /></Line>
         </div>
         <p className="fine">Only if a doctor or dietitian gave you a number. It replaces your goal.</p>
-        {scale && <ScaleSync scale={scale} profile={p} notify={notify} />}
         <h3 className="more-h">Start fresh</h3>
         {!confirmReset ? (
           <>
