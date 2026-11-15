@@ -32,6 +32,15 @@ export function isBirthday(p, key) {
   return p.birthDate.slice(5) === key.slice(5)
 }
 
+// What's still needed before a budget can be worked out
+export function missingFor(p) {
+  const m = []
+  if (!(ageOf(p) > 0)) m.push('your birthday')
+  if (!(+p?.height > 0)) m.push('your height')
+  if (!(+p?.weight > 0)) m.push('your weight')
+  return m
+}
+
 export function bmr({ sex, weight, height, ...p }) {
   const base = 10 * +weight + 6.25 * +height - 5 * (ageOf(p) ?? 0)
   return sex === 'm' ? base + 5 : base - 161

@@ -4,9 +4,11 @@ import Character from '../Character'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
 
+// Each background comes with a matching colour; you can still pick another colour after.
 const BACKGROUNDS = [
-  { id: 'plain', label: 'Plain' }, { id: 'glow', label: 'Glow' }, { id: 'sunrise', label: 'Sunrise' },
-  { id: 'ocean', label: 'Ocean' }, { id: 'meadow', label: 'Meadow' }, { id: 'lavender', label: 'Lavender' },
+  { id: 'plain', label: 'Plain', theme: null, dot: null }, { id: 'glow', label: 'Glow', theme: 'moss', dot: '#45b866' },
+  { id: 'sunrise', label: 'Sunrise', theme: 'coral', dot: '#ef6b57' }, { id: 'ocean', label: 'Ocean', theme: 'teal', dot: '#1f9e9a' },
+  { id: 'meadow', label: 'Meadow', theme: 'moss', dot: '#45b866' }, { id: 'lavender', label: 'Lavender', theme: 'violet', dot: '#8a63e6' },
 ]
 
 // Height is stored in cm (for the maths) but entered in feet + inches.
@@ -59,7 +61,7 @@ export default function Me({ user, profile: p, updateProfile }) {
         </p>
       </section>
 
-      <h2 className="group-title">About you</h2>
+      <h2 className="group-title" id="about">About you</h2>
       <div className="card form-list">
         <Line label="Sex">
           <div className="seg">
@@ -167,7 +169,8 @@ export default function Me({ user, profile: p, updateProfile }) {
           <span className="line-label">Background</span>
           <div className="bg-row">
             {BACKGROUNDS.map((b) => (
-              <button key={b.id} className={`bg-swatch bgs-${b.id} ${(p.bg ?? 'glow') === b.id ? 'on' : ''}`} onClick={() => set({ bg: b.id })} aria-label={b.label} title={b.label}>
+              <button key={b.id} className={`bg-swatch bgs-${b.id} ${(p.bg ?? 'glow') === b.id ? 'on' : ''}`} onClick={() => set(b.theme ? { bg: b.id, theme: b.theme } : { bg: b.id })} aria-label={b.label} title={b.label}>
+                {b.dot && <i style={{ background: b.dot }} />}
                 <span>{b.label}</span>
               </button>
             ))}

@@ -51,7 +51,16 @@ function Bank({ user }) {
   }
   const [adding, setAdding] = useState(false)
   useMode(profile?.mode ?? 'light')
-  useEffect(() => { document.body.dataset.bg = profile?.bg ?? 'glow' }, [profile?.bg])
+  useEffect(() => {
+    const bg = profile?.bg ?? 'glow'
+    document.body.dataset.bg = bg
+    // match the phone's status bar to the top of the background
+    const dark = document.documentElement.dataset.mode === 'dark' || (document.documentElement.dataset.mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches)
+    const top = dark
+      ? { sunrise: '#3a2020', ocean: '#10243a', meadow: '#1a2a14', lavender: '#221a3a' }[bg] ?? '#000000'
+      : { sunrise: '#ffe7d6', ocean: '#d8ecff', meadow: '#e6f6d8', lavender: '#ebe3ff' }[bg] ?? '#F2F3F7'
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', top)
+  }, [profile?.bg, profile?.mode])
 
   const today = logicalDayKey(profile ?? {})
   const todays = useMemo(() => entries.filter((e) => e.day === today), [entries, today])
@@ -94,7 +103,10 @@ function Bank({ user }) {
   const yEntries = entries.filter((e) => e.day === yKey)
   const yesterday = yEntries.length && budgetFor(yKey) != null ? { net: budgetFor(yKey) - yEntries.reduce((a, e) => a + e.kcal, 0) } : null
   const closeDay = () => { if (budget != null && spent - budget <= 0) store.setDay(today, { closed: true }); setResult(true) }
-  const ctx = { ...store, notify, addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: () => setTab('me') }
+  const ctx = { ...store, notify, addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: (section) => {
+    setTab('me')
+    if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
+  } }
 
   return (
     <div className={`app theme-${profile.theme}`}>

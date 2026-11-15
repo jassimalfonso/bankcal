@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useCountUp, useSwipe } from '../motion'
 import { fmt } from '../calc'
 import Character, { moodFor } from '../Character'
+import { missingFor } from '../calc'
 import Activity from './Activity'
 import { WordsCard } from './DailyCards'
 
@@ -78,8 +79,13 @@ export default function Today(props) {
 
         {budget == null ? (
           <div className="hero-setup">
-            <p className="hero-msg">{message(profile.name, budget, spent)}</p>
-            <button className="btn-primary" onClick={goSetup}>Set my budget</button>
+            <p className="hero-msg">{(() => {
+              const m = missingFor(profile)
+              if (!m.length) return message(profile.name, budget, spent)
+              const list = m.length > 1 ? `${m.slice(0, -1).join(', ')} and ${m.at(-1)}` : m[0]
+              return `${profile.name} is asleep. Add ${list} so BankCal can work out your daily budget.`
+            })()}</p>
+            <button className="btn-primary" onClick={() => goSetup('about')}>{missingFor(profile).length ? `Add ${missingFor(profile)[0].replace('your ', '')}` : 'Set my budget'}</button>
           </div>
         ) : (
           <>
