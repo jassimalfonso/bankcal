@@ -11,7 +11,7 @@ if (!sha) { try { sha = execSync('git rev-parse --short HEAD').toString().trim()
 const built = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Asia/Dubai' })
 
 export default defineConfig({
-  define: { __APP_VERSION__: JSON.stringify(`${pkg.version} · ${built} · ${sha}`) },
+  define: { __APP_VERSION__: JSON.stringify(pkg.version), __APP_BUILD__: JSON.stringify(`${built}, ${sha}`) },
   plugins: [
     react(),
     VitePWA({

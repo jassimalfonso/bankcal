@@ -2,11 +2,15 @@ import { useState } from 'react'
 import Character from '../Character'
 
 // Today: how your partner is doing, and a one-tap cheer. Shares effort, never numbers.
-export function PartnerCard({ partner, today, notify }) {
+export function PartnerCard({ partner, today, notify, profile, myTicks = 0 }) {
   const { partners, shares, cheer } = partner
   const [sent, setSent] = useState(() => { try { return JSON.parse(localStorage.getItem(`bankcal:cheered:${today}`) || '[]') } catch { return [] } })
   const list = partners.map((id) => [id, shares[id]]).filter(([, s]) => s)
   if (!list.length) return null
+  // Shared weekly goal: each habit on 5 of 7 days, added up across everyone linked
+  const habitsAll = (profile?.habits ?? []).length + list.reduce((a, [, s]) => a + (s.habitsTotal ?? 0), 0)
+  const team = habitsAll > 0 ? { target: habitsAll * 5, ticks: myTicks + list.reduce((a, [, s]) => a + (s.weekTicks ?? 0), 0) } : null
+  if (team) team.done = team.ticks >= team.target
   const send = async (id, name) => {
     try {
       await cheer(id)
@@ -19,6 +23,13 @@ export function PartnerCard({ partner, today, notify }) {
   return (
     <section className="block">
       <h2 className="group-title">Together</h2>
+      {team && (
+        <div className={`card team ${team.done ? 'done' : ''}`}>
+          <div className="team-top"><span>This week together</span><b>{team.ticks} / {team.target} habit ticks</b></div>
+          <div className="ws-bar"><i style={{ width: `${Math.max(3, Math.min(100, (team.ticks / team.target) * 100))}%` }} /></div>
+          <p className="fine">{team.done ? 'You reached this week’s goal together. Well done, both of you! 🎉' : `${team.target - team.ticks} more to reach this week’s shared goal. Every tick from either of you counts.`}</p>
+        </div>
+      )}
       <div className="card partner-list">
         {list.map(([id, s]) => {
           const fresh = s.day === today

@@ -4,7 +4,7 @@ import WorkoutSheet from './WorkoutSheet'
 
 // Today's "deposits": steps and treadmill time earn calories back into the budget.
 // Values are typed in (a web app can't read the phone's step counter) and saved on blur.
-export default function Activity({ profile, dayLog, earn, today, setDay, updateProfile }) {
+export default function Activity({ profile, dayLog, earn, today, setDay, updateProfile, celebrate }) {
   const stepsGoal = +profile.stepsGoal || 8000
   const treadGoal = +profile.treadGoalMin || 0
   const steps = +dayLog.steps || 0
@@ -18,7 +18,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
   const saveWorkout = (w) => {
     const id = Date.now().toString(36)
     setDay(today, { workouts: [...workouts, { id, ...w }] })
-    navigator.vibrate?.(12)
+    celebrate?.(`Nice work! +${fmt(workoutKcal(w, profile.weight))} kcal 💪`)
     setAdding(false)
   }
   const removeWorkout = (id) => setDay(today, { workouts: workouts.filter((w) => w.id !== id) })
@@ -40,7 +40,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
             <b>Steps</b>
             <small>{steps >= stepsGoal ? 'Goal reached 🎉' : `${fmt(Math.max(0, stepsGoal - steps))} to your ${fmt(stepsGoal)} goal`}</small>
           </div>
-          <NumField value={dayLog.steps} placeholder="0" onCommit={(v) => setDay(today, { steps: v })} />
+          <NumField value={dayLog.steps} placeholder="0" onCommit={(v) => { setDay(today, { steps: v }); if (v >= stepsGoal && !(steps >= stepsGoal)) celebrate?.(`${fmt(stepsGoal)} steps reached! 👟`) }} />
           <span className="act-kcal">+{fmt(earn.steps)}</span>
         </div>
         <Bar value={steps / stepsGoal} />

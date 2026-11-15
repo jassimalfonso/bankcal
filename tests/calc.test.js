@@ -186,3 +186,18 @@ test('partner summary shares weight progress only when switched on', () => {
   const on = c.partnerProgress({ ...base, profile: { days, targetWeight: 78, shareWeight: true } })
   assert.equal(on.kgChange, -2); assert.equal(on.goalPct, 33)
 })
+
+test('milestones, week ticks and one thing today', async () => {
+  const m = await import('../src/milestones.js'); const h = await import('../src/habits.js')
+  const days = { '2026-11-09': { weight: 84, habits: { walk: true } }, '2026-11-10': { weight: 81, workouts: [{}], steps: 10400 }, '2026-11-11': { habits: { walk: true } } }
+  const got = m.reached({ entries: [{ day: '2026-11-09' }, { day: '2026-11-10' }, { day: '2026-11-11' }], profile: { days, targetWeight: 80, habits: ['walk'] }, streakDays: 3 })
+  for (const id of ['first-log', 'log-3', 'streak-3', 'weigh-1', 'kg-1', 'move-1', 'steps-10k']) assert.ok(got.includes(id), id)
+  assert.ok(!got.includes('log-7') && !got.includes('goal') && !got.includes('habit-7'))
+  assert.equal(m.reached({ entries: [], profile: {}, streakDays: 0 }).length, 0)
+  assert.equal(h.weekTicks({ days, habits: ['walk'] }, '2026-11-11'), 2) // Mon 9th to Wed 11th
+  assert.equal(h.weekTicks({ days, habits: ['walk'] }, '2026-11-16'), 0) // new week on Monday
+  assert.match(h.oneThing({ profile: {}, todayKey: '2026-11-11' }).text, /Pick one tiny habit/)
+  assert.match(h.oneThing({ profile: { habits: ['walk'], days }, todayKey: '2026-11-11', yesterday: { net: -200 } }).text, /Log each meal/)
+  assert.match(h.oneThing({ profile: { habits: ['walk'], days: {} }, todayKey: '2026-11-11' }).text, /scale/)
+  assert.equal(h.oneThing({ profile: { habits: ['walk', 'water'], days }, todayKey: '2026-11-11', yesterday: { net: 50 } }).text, 'Water with every meal')
+})

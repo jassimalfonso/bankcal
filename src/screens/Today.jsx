@@ -9,6 +9,7 @@ import { HabitsCard, JournalCard } from './Habits'
 import { WeeklyCard } from './DailyCards'
 import { PartnerCard } from './Partner'
 import { WeighCard } from './WeighIn'
+import { weekTicks } from '../habits'
 import Activity from './Activity'
 import { WordsCard } from './DailyCards'
 
@@ -106,6 +107,7 @@ export default function Today(props) {
               <span>{over ? 'kcal over' : 'kcal left'}</span>
             </div>
             <p className="hero-msg">{message(profile.name, budget, spent)}</p>
+            {props.focus && <button className="focus-chip" onClick={() => props.focus.go === 'train' ? props.goTab('train') : props.focus.go === 'habits' ? goSetup('habits') : null}><span>One thing today</span>{props.focus.emoji} {props.focus.text}</button>}
             {(windDown || location.search.includes('evening')) && todays.length > 0 && <button className="btn-soft close-day" onClick={closeDay}>Close my day</button>}
             <div className="hero-stats three">
               <div><b>{fmt(shownSpent)}</b><span>Eaten</span></div>
@@ -123,7 +125,7 @@ export default function Today(props) {
         if (id === 'words') return <WordsCard key="words" words={words} />
         if (id === 'weigh') return budget != null ? <WeighCard key="weigh" {...props} /> : null
         if (id === 'habits') return <HabitsCard key="habits" {...props} />
-        if (id === 'partner') return props.partner ? <PartnerCard key="partner" partner={props.partner} today={props.today} notify={notify} /> : null
+        if (id === 'partner') return props.partner ? <PartnerCard key="partner" partner={props.partner} today={props.today} notify={notify} profile={profile} myTicks={weekTicks(profile, props.today)} /> : null
         if (id === 'journal') return <JournalCard key="journal" {...props} />
         if (id === 'deposits') return budget != null ? <section key="deposits" className="block"><Activity {...props} /></section> : null
         if (id === 'eat') return recent.length > 0 ? (

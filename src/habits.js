@@ -54,3 +54,35 @@ export function journalStarters({ dayLog = {}, left, mealsLogged, habitsDone = 0
   out.push('Today I’m thankful for ', 'One small win today: ', 'Something I want to remember: ', 'Lord, today I need help with ')
   return out.slice(0, 4)
 }
+
+const keyOf = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+
+// Habit ticks so far this week (Monday to today), for the shared weekly goal.
+export function weekTicks(profile, todayKey) {
+  const [y, m, d] = todayKey.split('-').map(Number)
+  const since = (new Date(y, m - 1, d).getDay() + 6) % 7 // days since Monday
+  let n = 0
+  for (let i = 0; i <= since; i++) {
+    const day = profile.days?.[keyOf(new Date(y, m - 1, d - i))]
+    n += (profile.habits ?? []).filter((id) => day?.habits?.[id]).length
+  }
+  return n
+}
+
+// One small focus for the day, chosen from what would help most right now.
+export function oneThing({ profile, todayKey, yesterday, plans }) {
+  const [y, m, d] = todayKey.split('-').map(Number)
+  const ago = (n) => profile.days?.[keyOf(new Date(y, m - 1, d - n))]
+  const habits = (profile.habits ?? []).map((id) => habitById[id]).filter(Boolean)
+  if (!habits.length) return { emoji: '🌱', text: 'Pick one tiny habit to start with', go: 'habits' }
+  if (yesterday && yesterday.net < 0) return { emoji: '📝', text: 'Log each meal before you eat it' }
+  if (![0, 1, 2, 3].some((n) => +ago(n)?.weight > 0)) return { emoji: '⚖️', text: 'Step on the scale this morning' }
+  const plan = plans?.find((p) => p.id === profile.trainPlan?.id)
+  if (plan && profile.trainPlan.last !== todayKey && ![1].some((n) => ago(n)?.workouts?.length)) {
+    const s = plan.sessions[(profile.trainPlan.done ?? 0) % plan.sessions.length]
+    return { emoji: '💪', text: `Do your workout: ${s.name}`, go: 'train' }
+  }
+  // otherwise rotate through your habits, favouring the one ticked least this week
+  const least = [...habits].sort((a, b) => [0, 1, 2, 3, 4, 5, 6].filter((n) => ago(n)?.habits?.[a.id]).length - [0, 1, 2, 3, 4, 5, 6].filter((n) => ago(n)?.habits?.[b.id]).length)[0]
+  return { emoji: least.emoji, text: least.label }
+}

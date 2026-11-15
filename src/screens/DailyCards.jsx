@@ -4,7 +4,7 @@ import { BOUNCE_BACK, GOOD_DAY } from '../motivation'
 import { useEffect, useState } from 'react'
 import Character from '../Character'
 import BankCard from './BankCard'
-import { VERSION } from '../update'
+import VersionLine from './VersionLine'
 import { useEscape } from '../motion'
 
 // The verse and its reflection are one card: tap the verse to unfold the reflection.
@@ -49,7 +49,7 @@ const helloFor = (h = new Date().getHours()) => (h < 12 ? 'Good morning' : h < 1
 const longDate = () => new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
 // First open of the day: a calm, two-step welcome. Greeting first, then today's word, then the app.
-export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose, sleep, onSleep, budget, leaving }) {
+export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose, sleep, onSleep, budget, leaving, focus }) {
   useEscape(onClose)
   const [step, setStep] = useState(0)
   const now = new Date()
@@ -78,6 +78,7 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
               : 'A new day, a full balance.'}
             {streakDays > 1 && <><br /><span className="dawn-streak">🔥 {streakDays} days in a row</span></>}
           </p>
+          {focus && !birthday && <p className="one-thing"><span>One thing today</span>{focus.emoji} {focus.text}</p>}
           {!editSleep ? (
             <button className="sleep-chip" onClick={() => setEditSleep(true)}>
               {sleep ? <>😴 <b>{fmtSleep(sleepHours(sleep))}</b> of sleep <span>Edit</span></> : <>😴 Log last night’s sleep <span>Add</span></>}
@@ -105,7 +106,7 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
       )}
 
       <div className="dawn-dots" aria-hidden="true"><i className={step === 0 ? 'on' : ''} /><i className={step === 1 ? 'on' : ''} /></div>
-      <p className="ver">Version {VERSION}</p>
+      <VersionLine />
     </div>
   )
 }
@@ -121,7 +122,7 @@ export function WelcomeBack({ profile, left, onDone, leaving }) {
         <h1>Welcome back, {profile.name}</h1>
         <p className="dawn-line">{helloFor()}. {left == null ? '' : left >= 0 ? 'Your balance is ready when you are.' : 'Go gently for the rest of today.'}</p>
         <button className="btn-primary dawn-btn" onClick={onDone}>Open my day</button>
-        <p className="ver">Version {VERSION}</p>
+        <VersionLine />
       </div>
     </div>
   )

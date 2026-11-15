@@ -7,7 +7,7 @@ import { EXERCISES, GROUPS, LEVELS, PLANS, exerciseById, toSession, toWorkout, w
 const range = (r) => (r ? `${r[0]}–${r[1]} kg` : null)
 
 export default function Train(props) {
-  const { profile, updateProfile, setDay, today, dayLog, notify } = props
+  const { profile, updateProfile, setDay, today, dayLog, celebrate } = props
   const level = profile.level ?? 'beginner'
   const favs = profile.favs ?? []
   const lifts = profile.lifts ?? {}
@@ -26,7 +26,7 @@ export default function Train(props) {
     const ws = (session ? [session] : exs.map((ex) => toWorkout(ex, level, kgFor(ex)))).map((w) => ({ id: crypto.randomUUID?.() ?? String(Math.random()), ...w }))
     setDay(today, { workouts: [...(dayLog.workouts ?? []), ...ws] })
     const kcal = ws.reduce((a, w) => a + workoutKcal(w, profile.weight), 0)
-    notify(`Logged ${session ? session.label : exs[0].name}, +${fmt(kcal)} kcal`)
+    celebrate(session ? `Workout done! +${fmt(kcal)} kcal 💪` : `${exs[0].name} logged, +${fmt(kcal)} kcal`)
   }
   const finishSession = () => {
     log(null, toSession(active, session, level))

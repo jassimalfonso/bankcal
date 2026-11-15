@@ -14,6 +14,10 @@ import Statement from './screens/Statement'
 import Me from './screens/Me'
 import Train from './screens/Train'
 import { usePartners } from './partner'
+import { MILESTONES, reached } from './milestones'
+import { oneThing, weekTicks } from './habits'
+import { PLANS } from './training'
+import Character from './Character'
 import AddSheet from './screens/AddSheet'
 import SignIn from './screens/SignIn'
 import Onboarding from './screens/Onboarding'
@@ -108,6 +112,22 @@ function Bank({ user }) {
   // One toast for the whole app, with optional Undo.
   const [toast, setToast] = useState(null)
   const toastTimer = useRef(null)
+  // The buddy pops up to celebrate effort
+  const [cheer, setCheer] = useState(null)
+  const cheerTimer = useRef()
+  const cheerQueue = useRef([])
+  const celebrate = useCallback((text) => {
+    // one at a time: a second celebration waits for the first to finish
+    const show = () => {
+      const next = cheerQueue.current[0]
+      if (!next) { setCheer(null); return }
+      try { navigator.vibrate?.([12, 40, 12]) } catch { /* not allowed yet */ }
+      setCheer({ text: next, key: Date.now() })
+      cheerTimer.current = setTimeout(() => { cheerQueue.current.shift(); show() }, 3200)
+    }
+    cheerQueue.current.push(text)
+    if (cheerQueue.current.length === 1) show()
+  }, [])
   const notify = (text, undo) => {
     clearTimeout(toastTimer.current)
     setToast({ text, undo, key: Date.now() })
@@ -141,13 +161,24 @@ function Bank({ user }) {
   const closeDay = () => { if (budget != null && spent - budget <= 0) store.setDay(today, { closed: true }); setResult(true) }
   const partner = usePartners({
     enabled: !DEMO, uid: user.uid, profile, updateProfile: store.updateProfile, notify,
-    summary: { day: today, streak: streakDays, habitsDone: (pf.habits ?? []).filter((id) => dayLog.habits?.[id]).length, habitsTotal: (pf.habits ?? []).length, moved: earn.total > 0, logged: todays.length > 0, kgChange: null, goalPct: null, ...partnerProgress({ entries, profile: pf, budgetFor, todayKey: today }) },
+    summary: { day: today, streak: streakDays, habitsDone: (pf.habits ?? []).filter((id) => dayLog.habits?.[id]).length, habitsTotal: (pf.habits ?? []).length, moved: earn.total > 0, logged: todays.length > 0, weekTicks: weekTicks(pf, today), kgChange: null, goalPct: null, ...partnerProgress({ entries, profile: pf, budgetFor, todayKey: today }) },
   })
+
+  // Milestones: save newly reached ones and let the buddy announce them
+  const reachedIds = profile?.onboarded ? reached({ entries, profile: pf, streakDays }) : []
+  const newIds = reachedIds.filter((id) => !pf.badges?.[id])
+  useEffect(() => {
+    if (!newIds.length || morning || hello) return // wait until the welcome screen is out of the way
+    store.updateProfile({ badges: { ...(pf.badges ?? {}), ...Object.fromEntries(newIds.map((id) => [id, today])) } })
+    const m = MILESTONES.find((x) => x.id === newIds[0])
+    celebrate(newIds.length > 1 ? `${newIds.length} milestones reached! ${m.emoji}` : `Milestone: ${m.label} ${m.emoji}`)
+  }, [newIds.join(','), morning, hello]) // eslint-disable-line react-hooks/exhaustive-deps
+  const focus = profile?.onboarded ? oneThing({ profile: pf, todayKey: today, yesterday, plans: PLANS }) : null
 
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const ctx = { ...store, partner, notify, addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: (section) => {
+  const ctx = { ...store, partner, notify, celebrate, focus, goTab: setTab, addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }
@@ -172,14 +203,20 @@ function Bank({ user }) {
         <TabBtn id="me" tab={tab} setTab={setTab} label="Settings" Icon={IconMe} />
       </nav>
 
-      {toast && (
+      {cheer && (
+        <div className="buddy-cheer" role="status" key={cheer.key}>
+          <span className="bc-bubble">{cheer.text}</span>
+          <Character kind={profile.character} mood="happy" size={84} />
+        </div>
+      )}
+      {toast && !cheer && (
         <div className="toast" role="status" key={toast.key}>
           <span>{toast.text}</span>
           {toast.undo && <button onClick={() => { toast.undo(); setToast(null) }}>Undo</button>}
         </div>
       )}
       {!morning && hello && profile.onboarded && <WelcomeBack leaving={leaving} profile={profile} left={budget != null ? budget - spent : null} onDone={doneHello} />}
-      {morning && <MorningCard leaving={leaving} profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
+      {morning && <MorningCard focus={focus} leaving={leaving} profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
       {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true)} today={today} onClose={() => setResult(false)} />}
 
       {adding && (

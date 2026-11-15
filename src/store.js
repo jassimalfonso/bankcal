@@ -27,7 +27,7 @@ async function wipeProgress(uid) {
   }
   const today = dayKey()
   await updateDoc(doc(db, 'users', uid), {
-    days: {}, trainPlan: deleteField(), maintainWeight: deleteField(), freshStart: today,
+    days: {}, badges: deleteField(), trainPlan: deleteField(), maintainWeight: deleteField(), freshStart: today,
     startDate: today, // a plan restarts from today; its end date stays
   })
   try { Object.keys(localStorage).filter((k) => /^bankcal:(morning|bedtime):/.test(k)).forEach((k) => localStorage.removeItem(k)) } catch { /* ignore */ }
@@ -93,7 +93,7 @@ export function useStore(user) {
   const removeEntry = useCallback((id) => { deleteDoc(doc(db, 'users', uid, 'entries', id)) }, [uid])
 
   const resetProgress = useCallback(async () => {
-    setProfile((p) => ({ ...p, days: {}, trainPlan: undefined, maintainWeight: undefined }))
+    setProfile((p) => ({ ...p, days: {}, badges: undefined, trainPlan: undefined, maintainWeight: undefined }))
     setEntries([])
     await wipeProgress(uid)
   }, [uid])

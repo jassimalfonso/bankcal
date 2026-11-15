@@ -1,4 +1,5 @@
 import Calendar from './Calendar'
+import { MILESTONES } from '../milestones'
 import { useState } from 'react'
 import { dayKey, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
 import { Row } from './Today'
@@ -73,6 +74,8 @@ export default function Statement(props) {
       <h2 className="group-title">Progress</h2>
       <Progress {...props} />
 
+      <Milestones badges={props.profile?.badges ?? {}} />
+
       <h2 className="group-title">Your body</h2>
       <BodyCard {...props} />
 
@@ -113,6 +116,31 @@ function SleepWeek({ days, log }) {
           ))}
         </div>
         <p className="fine">Adults need at least {SLEEP_TARGET} hours a night. Short sleep tends to raise hunger the next day, so be kind to yourself on those days.</p>
+      </div>
+    </>
+  )
+}
+
+function Milestones({ badges }) {
+  const [all, setAll] = useState(false)
+  const got = MILESTONES.filter((m) => badges[m.id])
+  const next = MILESTONES.filter((m) => !badges[m.id])
+  const shown = all ? next : next.slice(0, 3)
+  return (
+    <>
+      <h2 className="group-title">Milestones <span className="ms-count">{got.length} of {MILESTONES.length}</span></h2>
+      <div className="card milestones">
+        {got.length === 0 && <p className="ms-empty">Your first milestone is one logged meal away.</p>}
+        {got.length > 0 && (
+          <div className="ms-grid">
+            {got.map((m) => <div className="ms on" key={m.id}><span>{m.emoji}</span><b>{m.label}</b></div>)}
+          </div>
+        )}
+        {next.length > 0 && <p className="ms-next">Coming up</p>}
+        <ul className="ms-list">
+          {shown.map((m) => <li key={m.id}><span>{m.emoji}</span>{m.hint}</li>)}
+        </ul>
+        {next.length > 3 && <button className="link-btn" onClick={() => setAll((x) => !x)}>{all ? 'Show fewer' : `Show all ${next.length}`}</button>}
       </div>
     </>
   )

@@ -6,6 +6,7 @@
 import { registerSW } from 'virtual:pwa-register'
 
 export const VERSION = __APP_VERSION__
+export const BUILD = __APP_BUILD__ // date and id of this exact build, shown only in Settings
 
 export function startUpdates() {
   if (!('serviceWorker' in navigator)) return

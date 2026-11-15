@@ -30,6 +30,6 @@ export function useDemoStore() {
   }, [])
   const setDay = useCallback((key, patch) => setProfile((p) => ({ ...p, days: { ...(p.days ?? {}), [key]: { ...(p.days?.[key] ?? {}), ...patch } } })), [])
   const removeEntry = useCallback((id) => setEntries((x) => x.filter((e) => e.id !== id)), [])
-  const resetProgress = useCallback(async () => { setEntries([]); setProfile((p) => ({ ...p, days: {}, trainPlan: undefined })) }, [])
+  const resetProgress = useCallback(async () => { setEntries([]); setProfile((p) => ({ ...p, days: {}, badges: undefined, trainPlan: undefined })) }, [])
   return { profile, entries, updateProfile, setDay, addEntry, removeEntry, resetProgress }
 }
