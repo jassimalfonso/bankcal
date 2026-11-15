@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { redirectResult, signIn } from '../firebase'
-import Avatar from '../Avatar'
+import Character from '../Character'
 
 export default function SignIn() {
   const [busy, setBusy] = useState(false)
@@ -24,8 +24,8 @@ export default function SignIn() {
   return (
     <div className="signin">
       <div className="pair">
-        <Avatar id="koala" size={104} />
-        <Avatar id="panda" size={104} />
+        <span className="theme-moss"><Character kind="cloud" size={96} /></span>
+        <span className="theme-plum"><Character kind="roo" size={96} /></span>
       </div>
       <h1>BankCal</h1>
       <p>Your daily calories, kept like a bank balance. Spend them wisely.</p>

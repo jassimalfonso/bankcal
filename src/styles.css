@@ -230,6 +230,8 @@ h1, h2, p { margin: 0; }
 /* ───────── Sign-in ───────── */
 .signin { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 32px 28px calc(var(--safe-b) + 32px); text-align: center; }
 .signin .pair { display: flex; gap: 6px; margin-bottom: 10px; }
+.signin .pair .character:first-child { animation: bob 3s ease-in-out infinite; }
+.signin .pair .character:last-child { animation: bob 3s ease-in-out 0.6s infinite; }
 .signin h1 { font-size: 40px; font-weight: 900; letter-spacing: -0.03em; }
 .signin p { color: var(--muted); font-size: 17px; max-width: 28ch; }
 .btn-google { margin-top: 18px; display: flex; align-items: center; gap: 12px; padding: 16px 26px; border-radius: 99px; background: var(--card); box-shadow: var(--shadow); font-weight: 800; font-size: 17px; }
@@ -253,19 +255,3 @@ h1, h2, p { margin: 0; }
 .swatches.small { gap: 8px; padding: 0; }
 .swatches.small .swatch { width: 30px; height: 30px; border-width: 2px; }
 .account { cursor: default; }
-
-/* ───────── Avatars ───────── */
-.avatar-pic { position: relative; display: inline-grid; place-items: center; flex: none; }
-.avatar-pic svg { overflow: visible; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.12)); }
-.avatar-pic.mood-over svg { animation: wobble 2.4s ease-in-out infinite; }
-@keyframes wobble { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-6deg); } 40% { transform: rotate(5deg); } 60% { transform: rotate(-3deg); } 80% { transform: rotate(0); } }
-.avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.avatar-choice { aspect-ratio: 1; display: grid; place-items: center; border-radius: 18px; background: var(--card); border: 2.5px solid transparent; box-shadow: var(--shadow); transition: transform 0.2s var(--spring), border-color 0.2s; }
-.avatar-choice.on { border-color: var(--accent); background: var(--soft); transform: scale(1.06); }
-.avatar-choice:active { transform: scale(0.92); }
-.buddy-card { padding: 12px; }
-.buddy-card .avatar-choice { box-shadow: none; background: var(--bg); }
-.buddy-card .avatar-choice.on { background: var(--soft); }
-.signin .pair { gap: 4px; }
-.signin .pair .avatar-pic:first-child { animation: bob 3s ease-in-out infinite; }
-.signin .pair .avatar-pic:last-child { animation: bob 3s ease-in-out 0.6s infinite; }

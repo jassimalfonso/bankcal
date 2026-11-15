@@ -12,7 +12,6 @@ import Me from './screens/Me'
 import AddSheet from './screens/AddSheet'
 import SignIn from './screens/SignIn'
 import Onboarding from './screens/Onboarding'
-import Avatar, { AVATARS } from './Avatar'
 import { IconMe, IconPlus, IconStatement, IconToday } from './icons'
 
 function useMode(mode) {
@@ -28,7 +27,6 @@ export default function App() {
   useEffect(() => onAuthStateChanged(auth, setUser), [])
   useMode('auto')
 
-  if (DEMO && location.search.includes('avatars')) return <AvatarSheet />
   if (DEMO && !location.search.includes('signin')) return <Bank user={{ uid: 'demo', email: 'demo@example.com' }} />
   if (user === undefined) return <div className="loading" />
   if (!user) return <SignIn />
@@ -91,13 +89,5 @@ function TabBtn({ id, tab, setTab, label, Icon }) {
       <Icon />
       <span>{label}</span>
     </button>
-  )
-}
-
-function AvatarSheet() {
-  return (
-    <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
-      {AVATARS.flatMap((a) => [undefined, 'happy', 'ok', 'over', 'sleep'].map((m) => <Avatar key={a.id + m} id={a.id} mood={m} size={96} />))}
-    </div>
   )
 }

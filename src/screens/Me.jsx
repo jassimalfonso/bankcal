@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ACTIVITY, GOALS, breakdown, dailyBudget, fmt } from '../calc'
-import Avatar from '../Avatar'
-import { THEMES, AvatarGrid } from './Onboarding'
+import Character, { CHARACTERS } from '../Character'
+import { THEMES } from './Onboarding'
 import { logOut } from '../firebase'
 
 // Height is stored in cm (for the maths) but entered in feet + inches.
@@ -37,7 +37,7 @@ export default function Me({ user, profile: p, updateProfile }) {
       </header>
 
       <section className="card account">
-        <Avatar id={p.character} size={58} />
+        <Character kind={p.character} mood="happy" size={58} />
         <div>
           <input className="name-in" value={p.name} maxLength={24} onChange={(e) => set({ name: e.target.value })} aria-label="Your name in the app" />
           <small>Tap your name to change it</small>
@@ -92,11 +92,15 @@ export default function Me({ user, profile: p, updateProfile }) {
         ))}
       </div>
 
-      <h2 className="group-title">Buddy</h2>
-      <div className="card buddy-card"><AvatarGrid value={p.character} onChange={(id) => set({ character: id })} /></div>
-
       <h2 className="group-title">Look and feel</h2>
       <div className="card form-list">
+        <Line label="Buddy">
+          <div className="seg">
+            {CHARACTERS.map((c) => (
+              <button key={c.id} className={p.character === c.id ? 'on' : ''} onClick={() => set({ character: c.id })}>{c.id === 'cloud' ? 'Cloud' : 'Kangaroo'}</button>
+            ))}
+          </div>
+        </Line>
         <Line label="Colour">
           <div className="swatches small">
             {THEMES.map((t) => (
