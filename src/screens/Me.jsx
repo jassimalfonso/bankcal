@@ -97,7 +97,7 @@ export default function Me({ user, profile: p, updateProfile }) {
         <Line label="Buddy">
           <div className="seg">
             {CHARACTERS.map((c) => (
-              <button key={c.id} className={p.character === c.id ? 'on' : ''} onClick={() => set({ character: c.id })}>{{ husky: 'Husky', dog: 'Retriever', cloud: 'Cloud' }[c.id]}</button>
+              <button key={c.id} className={p.character === c.id ? 'on' : ''} onClick={() => set({ character: c.id })}>{{ koala: 'Koala', dog: 'Retriever', cloud: 'Cloud' }[c.id]}</button>
             ))}
           </div>
         </Line>

@@ -112,39 +112,35 @@ function GoldenRetriever({ mood }) {
   )
 }
 
-function Husky({ mood }) {
+function Koala({ mood }) {
   return (
     <>
       <defs>
-        <linearGradient id="hk-body" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#7d8796" />
-          <stop offset="1" stopColor="#4c5563" />
+        <linearGradient id="ko-body" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#c9ced8" />
+          <stop offset="1" stopColor="#99a0ad" />
         </linearGradient>
       </defs>
-      {/* upright pointed ears */}
-      <path d="M24 52 L30 8 L56 34 Z" fill="#4c5563" />
-      <path d="M96 52 L90 8 L64 34 Z" fill="#4c5563" />
-      <path d="M31 42 L34 20 L48 34 Z" fill="#f4d7de" />
-      <path d="M89 42 L86 20 L72 34 Z" fill="#f4d7de" />
-      {/* grey head */}
-      <rect x="20" y="28" width="80" height="80" rx="40" fill="url(#hk-body)" />
-      {/* white husky mask: forehead stripe, eyebrow dots, lower face */}
-      <path d="M60 34 C54 44 52 52 46 58 C36 60 26 70 26 82 C28 100 44 108 60 108 C76 108 92 100 94 82 C94 70 84 60 74 58 C68 52 66 44 60 34 Z" fill="#f7f7fa" />
-      <ellipse cx="43" cy="44" rx="5" ry="3.4" fill="#f7f7fa" />
-      <ellipse cx="77" cy="44" rx="5" ry="3.4" fill="#f7f7fa" />
-      <ellipse cx="38" cy="80" rx="6.5" ry="4" fill="#ff8fa3" opacity="0.4" />
-      <ellipse cx="82" cy="80" rx="6.5" ry="4" fill="#ff8fa3" opacity="0.4" />
-      <Eyes mood={mood} y={60} gap={15} iris="#6ec3f0" />
-      <path d="M53 72 h14 a4 4 0 0 1 -3 6 l-4 3 l-4 -3 a4 4 0 0 1 -3 -6 z" fill="#2b2b30" />
-      <Mouth mood={mood} y={89} />
-      {mood === 'happy' && <ellipse cx="60" cy="97" rx="5" ry="6" fill="#ff7d93" />}
+      {/* big fluffy ears */}
+      <circle cx="22" cy="40" r="21" fill="#99a0ad" /><circle cx="98" cy="40" r="21" fill="#99a0ad" />
+      <circle cx="24" cy="42" r="13" fill="#eef0f4" /><circle cx="96" cy="42" r="13" fill="#eef0f4" />
+      {/* head */}
+      <rect x="20" y="28" width="80" height="80" rx="40" fill="url(#ko-body)" />
+      <ellipse cx="38" cy="82" rx="7" ry="4.5" fill="#ff8fa3" opacity="0.45" />
+      <ellipse cx="82" cy="82" rx="7" ry="4.5" fill="#ff8fa3" opacity="0.45" />
+      <Eyes mood={mood} y={58} gap={17} />
+      {/* big koala nose */}
+      <ellipse cx="60" cy="76" rx="10" ry="12" fill="#4a4a58" />
+      <ellipse cx="57" cy="71" rx="3" ry="4" fill="#fff" opacity="0.25" />
+      <Mouth mood={mood} y={95} />
+      {mood === 'happy' && <ellipse cx="60" cy="102" rx="4.5" ry="4" fill="#ff7d93" />}
     </>
   )
 }
 
-// kind: 'husky' (Fart Monster), 'dog' (Sewer Butt, golden retriever) or 'cloud' (cloud monster)
+// kind: 'koala' (Fart Monster), 'dog' (Sewer Butt, golden retriever) or 'cloud' (cloud monster)
 export const CHARACTERS = [
-  { id: 'husky', label: 'Husky' },
+  { id: 'koala', label: 'Koala' },
   { id: 'dog', label: 'Golden retriever' },
   { id: 'cloud', label: 'Cloud monster' },
 ]
@@ -152,7 +148,7 @@ export const CHARACTERS = [
 export default function Character({ kind, mood = 'happy', size = 64, className = '' }) {
   return (
     <svg className={`character ${className}`} width={size} height={size} viewBox="0 0 120 120" aria-hidden="true">
-      {kind === 'husky' ? <Husky mood={mood} /> : kind === 'dog' || kind === 'roo' || kind === 'rat' ? <GoldenRetriever mood={mood} /> : <FartMonster mood={mood} />}
+      {kind === 'koala' || kind === 'husky' ? <Koala mood={mood} /> : kind === 'dog' || kind === 'roo' || kind === 'rat' ? <GoldenRetriever mood={mood} /> : <FartMonster mood={mood} />}
     </svg>
   )
 }
