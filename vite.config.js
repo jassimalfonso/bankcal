@@ -25,7 +25,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        navigateFallbackDenylist: [/^\/__\//], // let Firebase sign-in pages through
+        navigateFallbackDenylist: [/^\/__\//, /^\/api\//], // let Firebase sign-in pages through
       },
     }),
   ],

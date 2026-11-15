@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { fmt } from '../calc'
 import Character, { moodFor } from '../Character'
+import Activity from './Activity'
 
 function message(name, budget, spent) {
   if (budget == null) return `${name} is asleep until you set a daily budget.`
@@ -29,7 +30,8 @@ export function Ring({ value, size = 220, stroke = 20, children }) {
   )
 }
 
-export default function Today({ profile, mine, todays, budget, addEntry, removeEntry, goSetup }) {
+export default function Today(props) {
+  const { profile, mine, todays, budget, base, earn, addEntry, removeEntry, goSetup } = props
   const [toast, setToast] = useState(null)
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const left = budget != null ? budget - spent : null
@@ -84,13 +86,16 @@ export default function Today({ profile, mine, todays, budget, addEntry, removeE
               <span>{over ? 'kcal over' : 'kcal left'}</span>
             </div>
             <p className="hero-msg">{message(profile.name, budget, spent)}</p>
-            <div className="hero-stats">
+            <div className="hero-stats three">
               <div><b>{fmt(spent)}</b><span>Eaten</span></div>
-              <div><b>{fmt(budget)}</b><span>Budget</span></div>
+              <div><b className="pos">+{fmt(earn.total)}</b><span>Earned</span></div>
+              <div><b>{fmt(base)}</b><span>Budget</span></div>
             </div>
           </>
         )}
       </section>
+
+      {budget != null && <Activity {...props} />}
 
       {recent.length > 0 && (
         <>

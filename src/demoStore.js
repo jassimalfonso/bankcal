@@ -15,6 +15,7 @@ export function useDemoStore() {
     setEntries((x) => [{ id, ts: now.getTime(), day: dayKey(now), ...e }, ...x])
     return id
   }, [])
+  const setDay = useCallback((key, patch) => setProfile((p) => ({ ...p, days: { ...(p.days ?? {}), [key]: { ...(p.days?.[key] ?? {}), ...patch } } })), [])
   const removeEntry = useCallback((id) => setEntries((x) => x.filter((e) => e.id !== id)), [])
-  return { profile, entries, updateProfile, addEntry, removeEntry }
+  return { profile, entries, updateProfile, setDay, addEntry, removeEntry }
 }

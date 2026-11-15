@@ -6,7 +6,7 @@ import { useDemoStore } from './demoStore'
 import { BUDDIES, Buddy } from './buddies'
 
 const DEMO = import.meta.env.MODE === 'demo'
-import { dailyBudget, dayKey } from './calc'
+import { dailyBudget, dayKey, earned } from './calc'
 import Today from './screens/Today'
 import Statement from './screens/Statement'
 import Me from './screens/Me'
@@ -48,8 +48,12 @@ function Bank({ user }) {
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const budget = dailyBudget(profile)
-  const ctx = { ...store, user, profile, mine: entries, todays, budget, goSetup: () => setTab('me') }
+  const base = dailyBudget(profile)
+  const dayLog = profile.days?.[today] ?? {}
+  const earn = earned(dayLog, profile.weight)
+  const budget = base != null ? base + earn.total : null // activity is a deposit into today's budget
+  const budgetFor = (key) => (base != null ? base + earned(profile.days?.[key], profile.weight).total : null)
+  const ctx = { ...store, user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, goSetup: () => setTab('me') }
 
   return (
     <div className={`app theme-${profile.theme}`}>

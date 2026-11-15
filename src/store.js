@@ -50,6 +50,12 @@ export function useStore(user) {
     setDoc(doc(db, 'users', uid), patch, { merge: true })
   }, [uid])
 
+  // Per-day log (steps, treadmill, weight) kept in the profile doc as days.{YYYY-MM-DD}.
+  const setDay = useCallback((key, patch) => {
+    setProfile((p) => ({ ...p, days: { ...(p.days ?? {}), [key]: { ...(p.days?.[key] ?? {}), ...patch } } }))
+    setDoc(doc(db, 'users', uid), { days: { [key]: patch } }, { merge: true })
+  }, [uid])
+
   const addEntry = useCallback((e) => {
     const ref = doc(collection(db, 'users', uid, 'entries'))
     const now = new Date()
@@ -60,7 +66,7 @@ export function useStore(user) {
 
   const removeEntry = useCallback((id) => { deleteDoc(doc(db, 'users', uid, 'entries', id)) }, [uid])
 
-  return { profile, entries, updateProfile, addEntry, removeEntry }
+  return { profile, entries, updateProfile, setDay, addEntry, removeEntry }
 }
 
 // Shrink a camera photo to a small JPEG thumbnail so cloud storage stays tiny (~8–15 KB).

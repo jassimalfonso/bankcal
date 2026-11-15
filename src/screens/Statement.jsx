@@ -2,14 +2,15 @@ import { useState } from 'react'
 import { dayKey, fmt, KCAL_PER_KG } from '../calc'
 import { Row } from './Today'
 
-export default function Statement({ mine, budget }) {
+export default function Statement({ mine, base: budget, budgetFor }) {
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
     const key = dayKey(d)
     const items = mine.filter((e) => e.day === key)
     const spent = items.reduce((a, e) => a + e.kcal, 0)
-    return { key, d, items, spent, net: budget != null && items.length ? budget - spent : null }
+    const b = budgetFor(key)
+    return { key, d, items, spent, net: b != null && items.length ? b - spent : null }
   })
   const [pick, setPick] = useState(days[6].key)
   const sel = days.find((d) => d.key === pick)

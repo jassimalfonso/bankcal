@@ -1,16 +1,20 @@
 import { useMemo, useRef, useState } from 'react'
 import { compressPhoto } from '../store'
 import { fmt, mealFor } from '../calc'
+import { searchFoods } from '../foods'
+import { askFood } from '../ai'
 import { IconCamera, IconClose } from '../icons'
 
 export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
   const [photo, setPhoto] = useState(null)
   const [name, setName] = useState('')
   const [kcal, setKcal] = useState('')
+  const [picked, setPicked] = useState(false) // hide suggestions after choosing one
+  const [ai, setAi] = useState({ busy: false, err: '', results: null, items: null, confidence: '' })
   const fileRef = useRef(null)
   const meal = mealFor()
 
-  // One-tap repeats: last distinct foods this profile logged.
+  // One-tap repeats: last distinct foods this person logged.
   const recent = useMemo(() => {
     const seen = new Set()
     const out = []
@@ -24,18 +28,53 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
     return out
   }, [mine])
 
+  // Suggestions as you type: your own past foods first, then the built-in list.
+  const suggestions = useMemo(() => {
+    const t = name.trim().toLowerCase()
+    if (picked || t.length < 2) return []
+    const own = recent.filter((r) => r.name.toLowerCase().includes(t)).map((r) => ({ name: r.name, kcal: r.kcal, portion: 'your usual' }))
+    const built = searchFoods(name).filter((f) => !own.some((o) => o.name.toLowerCase() === f.name.toLowerCase()))
+    return [...own, ...built].slice(0, 6)
+  }, [name, recent, picked])
+
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const n = Math.max(0, parseInt(kcal, 10) || 0)
   const after = budget != null ? budget - spent - n : null
   const valid = name.trim() && n > 0
 
+  function choose(f) {
+    setName(f.name)
+    setKcal(String(f.kcal))
+    setPicked(true)
+    setAi((a) => ({ ...a, results: null }))
+  }
+
+  async function searchAi() {
+    setAi({ busy: true, err: '', results: null, items: null, confidence: '' })
+    try {
+      const j = await askFood({ mode: 'search', q: name })
+      setAi({ busy: false, err: '', results: j.results ?? [], items: null, confidence: '' })
+    } catch (e) {
+      setAi({ busy: false, err: e.message, results: null, items: null, confidence: '' })
+    }
+  }
+
   async function onPhoto(ev) {
     const f = ev.target.files?.[0]
+    ev.target.value = ''
     if (!f) return
     try {
-      setPhoto(await compressPhoto(f))
-    } catch {
-      /* unreadable image — ignore */
+      const [thumb, big] = await Promise.all([compressPhoto(f), compressPhoto(f, 768)])
+      setPhoto(thumb)
+      setAi({ busy: true, err: '', results: null, items: null, confidence: '' })
+      const j = await askFood({ mode: 'photo', image: big })
+      if (!j.kcal) throw new Error('Couldn’t spot food in that photo. Type it in instead.')
+      setName(j.name || 'Meal')
+      setKcal(String(Math.round(j.kcal)))
+      setPicked(true)
+      setAi({ busy: false, err: '', results: null, items: j.items ?? [], confidence: j.confidence ?? '' })
+    } catch (e) {
+      setAi({ busy: false, err: e.message || 'Couldn’t read that photo.', results: null, items: null, confidence: '' })
     }
   }
 
@@ -64,17 +103,27 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
           ) : (
             <>
               <IconCamera size={30} />
-              <span>Take a photo of your plate</span>
-              <small>Calories from photos are coming in the next update</small>
+              <span>Snap your plate</span>
+              <small>AI reads the calories for you</small>
             </>
           )}
+          {ai.busy && photo && <span className="photo-busy">Reading your plate…</span>}
         </button>
         <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} />
 
-        {recent.length > 0 && (
+        {ai.items?.length > 0 && (
+          <div className="ai-items">
+            {ai.items.map((it, i) => (
+              <span key={i}>{it.name}{it.portion ? `, ${it.portion}` : ''} <b>{fmt(it.kcal)}</b></span>
+            ))}
+            {ai.confidence === 'low' && <small>Low confidence. Check the number below.</small>}
+          </div>
+        )}
+
+        {recent.length > 0 && !name && (
           <div className="recent">
             {recent.map((r) => (
-              <button key={r.id} className="chip" onClick={() => { setName(r.name); setKcal(String(r.kcal)) }}>
+              <button key={r.id} className="chip" onClick={() => choose(r)}>
                 {r.name} <span>{fmt(r.kcal)}</span>
               </button>
             ))}
@@ -83,8 +132,31 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
 
         <label className="field">
           <span>Food</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Chicken shawarma" autoComplete="off" enterKeyHint="next" />
+          <input value={name} onChange={(e) => { setName(e.target.value); setPicked(false) }} placeholder="Search or type, e.g. shawarma" autoComplete="off" enterKeyHint="search" />
         </label>
+
+        {(suggestions.length > 0 || (name.trim().length >= 2 && !picked)) && (
+          <div className="card suggest">
+            {suggestions.map((f) => (
+              <button key={f.name} className="suggest-row" onClick={() => choose(f)}>
+                <span><b>{f.name}</b><small>{f.portion}</small></span>
+                <span className="suggest-kcal">{fmt(f.kcal)}</span>
+              </button>
+            ))}
+            {ai.results?.map((f) => (
+              <button key={'ai' + f.name} className="suggest-row" onClick={() => choose(f)}>
+                <span><b>{f.name}</b><small>{f.portion} · AI estimate</small></span>
+                <span className="suggest-kcal">{fmt(f.kcal)}</span>
+              </button>
+            ))}
+            {!ai.results && (
+              <button className="suggest-ai" onClick={searchAi} disabled={ai.busy}>
+                {ai.busy ? 'Searching…' : `Search “${name.trim()}” with AI`}
+              </button>
+            )}
+          </div>
+        )}
+        {ai.err && <p className="ai-err">{ai.err}</p>}
 
         <div className="kcal-row">
           <button className="step" onClick={() => bump(-50)}>−50</button>

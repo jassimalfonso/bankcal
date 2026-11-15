@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ACTIVITY, GOALS, breakdown, dailyBudget, fmt } from '../calc'
+import { ACTIVITY, GOALS, breakdown, dailyBudget, dayKey, fmt, prettyDate } from '../calc'
 import Character from '../Character'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
@@ -82,7 +82,33 @@ export default function Me({ user, profile: p, updateProfile }) {
         ))}
       </div>
 
-      <h2 className="group-title">Your goal</h2>
+      <h2 className="group-title">Your plan</h2>
+      <div className="card form-list">
+        <Line label="Target weight"><Num value={p.targetWeight ?? ''} onChange={num('targetWeight')} unit="kg" ph="75" decimal /></Line>
+        <Line label="Start date"><input className="date-in" type="date" value={p.startDate ?? dayKey()} onChange={(e) => set({ startDate: e.target.value })} /></Line>
+        <Line label="Reach it by"><input className="date-in" type="date" value={p.endDate ?? ''} min={dayKey()} onChange={(e) => set({ endDate: e.target.value })} /></Line>
+      </div>
+      {bd?.plan && (
+        <div className={`card plan-note ${bd.plan.tooFast ? 'warn' : ''}`}>
+          {bd.plan.reached ? (
+            <p><b>You’re at your target.</b> Your budget is set to maintain.</p>
+          ) : bd.plan.tooFast ? (
+            <p><b>That date is too fast.</b> Losing {bd.plan.toLose.toFixed(1)} kg in {bd.plan.daysLeft} days needs {fmt(bd.plan.needed)} kcal less a day. BankCal caps it at a safe 1,000. A realistic date is <b>{prettyDate(bd.plan.realisticEnd)}</b>.
+              <button className="link-btn" onClick={() => set({ endDate: bd.plan.realisticEnd })}>Use that date</button></p>
+          ) : (
+            <p><b>On plan.</b> {bd.plan.toLose.toFixed(1)} kg to go in {bd.plan.daysLeft} days, so you eat {fmt(bd.plan.deficit)} kcal less than you burn each day.</p>
+          )}
+        </div>
+      )}
+
+      <h2 className="group-title">Daily activity targets</h2>
+      <div className="card form-list">
+        <Line label="Steps"><Num value={p.stepsGoal ?? ''} onChange={num('stepsGoal')} unit="steps" ph="8000" /></Line>
+        <Line label="Treadmill"><Num value={p.treadGoalMin ?? ''} onChange={num('treadGoalMin')} unit="min" ph="30" /></Line>
+        <Line label="Treadmill speed"><Num value={p.treadSpeed ?? ''} onChange={num('treadSpeed')} unit="km/h" ph="5" decimal /></Line>
+      </div>
+
+      <h2 className="group-title">{bd?.plan ? 'Simple goal (not used while a plan is set)' : 'Or a simple goal'}</h2>
       <div className="card form-list">
         {GOALS.map((g) => (
           <button key={g.id} className="pick" onClick={() => set({ goal: g.id })}>
