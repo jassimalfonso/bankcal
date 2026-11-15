@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { dayKey, fmt, fmtSleep, sleepHours } from '../calc'
+import { MOODS, habitById } from '../habits'
 
 const WD = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
@@ -82,6 +83,15 @@ export default function Calendar({ mine, budgetFor, profile, today }) {
           <p className="cal-extra">
             {[sl != null && `😴 ${fmtSleep(sl)}`, sel.log.steps && `🚶 ${fmt(+sel.log.steps)} steps`, sel.log.weight && `⚖️ ${sel.log.weight} kg`].filter(Boolean).join('   ')}
           </p>
+        )}
+        {Object.entries(sel.log.habits ?? {}).some(([, v]) => v) && (
+          <p className="cal-extra">{Object.entries(sel.log.habits).filter(([, v]) => v).map(([id]) => `${habitById[id]?.emoji ?? '✓'} ${habitById[id]?.label ?? id}`).join('\n')}</p>
+        )}
+        {(sel.log.journal?.text || sel.log.journal?.mood) && (
+          <div className="cal-journal">
+            <span>{MOODS.find((m) => m.id === sel.log.journal.mood)?.e ?? '📝'} Journal</span>
+            {sel.log.journal.text && <p>{sel.log.journal.text}</p>}
+          </div>
         )}
       </section>
     </>

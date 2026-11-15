@@ -3,7 +3,8 @@ import { useCountUp, useSwipe } from '../motion'
 import { fmt } from '../calc'
 import Character, { moodFor } from '../Character'
 import { missingFor } from '../calc'
-import { DEFAULT_LAYOUT } from '../layout'
+import { fullLayout } from '../layout'
+import { HabitsCard, JournalCard } from './Habits'
 import Activity from './Activity'
 import { WordsCard } from './DailyCards'
 
@@ -106,8 +107,10 @@ export default function Today(props) {
       </section>
 
 
-      {(profile.layout ?? DEFAULT_LAYOUT).map((id) => {
+      {fullLayout(profile.layout).map((id) => {
         if (id === 'words') return <WordsCard key="words" words={words} />
+        if (id === 'habits') return <HabitsCard key="habits" {...props} />
+        if (id === 'journal') return <JournalCard key="journal" {...props} />
         if (id === 'deposits') return budget != null ? <section key="deposits" className="block"><Activity {...props} /></section> : null
         if (id === 'eat') return recent.length > 0 ? (
           <section key="eat" className="block">

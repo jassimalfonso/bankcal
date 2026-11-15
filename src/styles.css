@@ -903,3 +903,40 @@ button.hello-back, .hello-back { animation: fade 0.5s var(--ease) both; }
 .more[open] summary::after { transform: rotate(-90deg); }
 .more-h { margin: 22px 0 8px; font-size: 15px; font-weight: 850; }
 .more .form-list { background: var(--bg); border-radius: 16px; }
+
+/* ───────── Habits and journal ───────── */
+.block-head { display: flex; justify-content: space-between; align-items: baseline; }
+.block-head .link-btn { padding: 0 4px; font-size: 14.5px; }
+.habit-empty { padding: 18px; }
+.habit-empty p { margin: 0 0 12px; line-height: 1.5; color: color-mix(in srgb, var(--ink) 75%, var(--muted)); }
+.habit-sugs { display: flex; flex-wrap: wrap; gap: 8px; }
+.habit-sugs .chip { box-shadow: none; background: var(--soft); color: var(--ink); font-size: 14px; }
+.habit-list { padding: 4px 16px; }
+.habit { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 0; text-align: left; color: inherit; }
+.habit + .habit { border-top: 1px solid var(--line); }
+.h-emoji { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 12px; background: var(--bg); font-size: 19px; transition: background-color 0.3s; }
+.habit.on .h-emoji { background: var(--soft); }
+.h-main { flex: 1; min-width: 0; }
+.h-main b { display: block; font-weight: 800; font-size: 15.5px; }
+.h-dots { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.h-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.h-dots i.on { background: var(--accent); }
+.h-dots small { margin-left: 6px; font-size: 12px; font-weight: 750; color: var(--accent); }
+.journal { padding: 18px; }
+.j-prompt { margin: 0 0 12px; font-weight: 800; font-size: 16px; }
+.j-moods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.j-moods button { display: grid; justify-items: center; gap: 2px; padding: 10px 4px; border-radius: 14px; background: var(--bg); transition: transform 0.2s var(--spring), background-color 0.2s; }
+.j-moods button span { font-size: 24px; }
+.j-moods button small { font-size: 12px; font-weight: 750; color: var(--muted); }
+.j-moods button.on { background: var(--soft); transform: scale(1.04); box-shadow: inset 0 0 0 2px var(--accent); }
+.journal textarea { width: 100%; margin-top: 12px; padding: 12px 14px; border: 0; border-radius: 14px; background: var(--bg); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.5; resize: vertical; min-height: 84px; }
+.journal .link-btn { margin-top: 10px; }
+.journal .fine { margin: 10px 0 0; }
+.cal-journal { margin-top: 8px; padding: 12px 14px; border-radius: 14px; background: var(--bg); }
+.cal-journal span { font-weight: 850; font-size: 14px; }
+.cal-journal p { margin: 4px 0 0; font-weight: 500 !important; line-height: 1.5; white-space: pre-wrap; }
+.btn-plain.danger { color: var(--neg); }
+.btn-plain.danger.solid { background: var(--neg); color: #fff; }
+.reset-confirm p { margin: 0 0 12px; line-height: 1.5; }
+.rc-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.more .btn-plain { width: 100%; margin: 4px 0 0; }

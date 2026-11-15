@@ -1,7 +1,8 @@
 import { useState, Children, cloneElement, isValidElement } from 'react'
 import { maintainStatus, targetCheck, KCAL_PER_KG, ageOf, DEFAULT_BED, DEFAULT_WAKE, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
 import Character from '../Character'
-import { DEFAULT_LAYOUT, SECTION_NAMES } from '../layout'
+import { SECTION_NAMES, fullLayout } from '../layout'
+import { HabitPicker } from './Habits'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
 
@@ -23,7 +24,8 @@ const toFtIn = (cm) => {
 }
 const toCm = (ft, inch) => (+ft > 0 ? Math.round(((+ft || 0) * 12 + (+inch || 0)) * 2.54) : '')
 
-export default function Me({ user, profile: p, updateProfile }) {
+export default function Me({ user, profile: p, updateProfile, resetProgress }) {
+  const [confirmReset, setConfirmReset] = useState(false)
   const set = updateProfile
   const num = (k) => (e) => set({ [k]: e.target.value.replace(/[^\d.]/g, '') })
   const [h, setH] = useState(() => toFtIn(p.height))
@@ -142,6 +144,8 @@ export default function Me({ user, profile: p, updateProfile }) {
       )}
 
 
+      <HabitPicker profile={p} updateProfile={set} />
+
       <h2 className="group-title" id="about">About you</h2>
       <div className="card form-list">
         <Line label="Sex">
@@ -176,7 +180,7 @@ export default function Me({ user, profile: p, updateProfile }) {
       <div className="card buddy-card"><BuddyGrid value={p.character} onChange={(id) => set({ character: id })} /></div>
 
       <h2 className="group-title">Today screen</h2>
-      <LayoutEditor layout={p.layout ?? DEFAULT_LAYOUT} onChange={(layout) => set({ layout })} />
+      <LayoutEditor layout={fullLayout(p.layout)} onChange={(layout) => set({ layout })} />
       <p className="fine">Move sections up or down to set the order under your balance.</p>
 
       <h2 className="group-title">Look and feel</h2>
@@ -222,6 +226,21 @@ export default function Me({ user, profile: p, updateProfile }) {
           <Line label="Fixed daily budget"><Num value={p.customBudget ?? ''} onChange={num('customBudget')} unit="kcal" ph="Off" /></Line>
         </div>
         <p className="fine">Only if a doctor or dietitian gave you a number. It replaces your goal.</p>
+        <h3 className="more-h">Start fresh</h3>
+        {!confirmReset ? (
+          <>
+            <p className="fine">Clears your meals, steps, workouts, weigh-ins, sleep, habits and journal so you can begin again. Your name, buddy, body details and goal stay.</p>
+            <button className="btn-plain danger" onClick={() => setConfirmReset(true)}>Reset my progress</button>
+          </>
+        ) : (
+          <div className="reset-confirm">
+            <p><b>Delete all your logged progress?</b> This can’t be undone.</p>
+            <div className="rc-btns">
+              <button className="btn-plain" onClick={() => setConfirmReset(false)}>Keep it</button>
+              <button className="btn-plain danger solid" onClick={async () => { await resetProgress(); setConfirmReset(false) }}>Yes, start fresh</button>
+            </div>
+          </div>
+        )}
         <h3 className="more-h">Add BankCal to your home screen</h3>
         <p className="fine">iPhone: open in Safari, tap Share, then Add to Home Screen. Android: open in Chrome, tap ⋮, then Install app.</p>
       </details>

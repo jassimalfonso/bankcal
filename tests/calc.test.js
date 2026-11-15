@@ -132,3 +132,13 @@ test('strength sessions count rests (Compendium whole-session values)', async ()
   const s = t.toSession(plan, plan.sessions[0], 'intermediate')
   assert.ok(s.min >= 25 && s.min <= 45, `session ${s.min} min`)
 })
+
+test('habits week dots and layout upgrade', async () => {
+  const h = await import('../src/habits.js')
+  const l = await import('../src/layout.js')
+  const days = { '2026-11-15': { habits: { walk: true } }, '2026-11-13': { habits: { walk: true } } }
+  assert.deepEqual(h.habitDays(days, 'walk', '2026-11-15'), [false, false, false, false, true, false, true])
+  assert.deepEqual(h.habitDays(days, 'walk', '2026-12-01', 3), [false, false, false]) // crosses month
+  assert.deepEqual(l.fullLayout(['meals', 'words', 'deposits', 'eat']), ['meals', 'habits', 'words', 'deposits', 'eat', 'journal'])
+  assert.equal(h.suggestHabits('maintain').length, 3)
+})

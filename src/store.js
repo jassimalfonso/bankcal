@@ -2,7 +2,7 @@
 // Firestore's on-device cache means reads and writes work offline and
 // sync automatically when the phone is back online.
 import { useCallback, useEffect, useState } from 'react'
-import { collection, deleteDoc, doc, limit, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, deleteField, doc, getDocs, limit, onSnapshot, orderBy, query, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
 import { db } from './firebase'
 import { dayKey } from './calc'
 
@@ -16,6 +16,25 @@ const BLANK = {
   name: '', character: 'mochi', theme: 'sky', sex: 'm', age: '', height: '', weight: '',
   activity: 'sedentary', goal: 'lose025', customBudget: '', mode: 'light', onboarded: false,
 }
+
+// Clear logged progress but keep who you are and your goal.
+async function wipeProgress(uid) {
+  const snap = await getDocs(collection(db, 'users', uid, 'entries'))
+  for (let i = 0; i < snap.docs.length; i += 450) {
+    const b = writeBatch(db)
+    snap.docs.slice(i, i + 450).forEach((d) => b.delete(d.ref))
+    await b.commit()
+  }
+  const today = dayKey()
+  await updateDoc(doc(db, 'users', uid), {
+    days: {}, trainPlan: deleteField(), maintainWeight: deleteField(), freshStart: today,
+    startDate: today, // a plan restarts from today; its end date stays
+  })
+  try { Object.keys(localStorage).filter((k) => /^bankcal:(morning|bedtime):/.test(k)).forEach((k) => localStorage.removeItem(k)) } catch { /* ignore */ }
+}
+
+// Everyone starts with a clean slate on the first open from 16 November 2026.
+const FRESH_FROM = '2026-11-16'
 
 export function useStore(user) {
   const [profile, setProfile] = useState(null)
@@ -36,10 +55,13 @@ export function useStore(user) {
         if (preset && !data.buddyV2) {
           setDoc(ref, { character: preset.character, buddyV2: true }, { merge: true })
         }
+        if (!data.freshV1 && dayKey() >= FRESH_FROM) {
+          setDoc(ref, { freshV1: true }, { merge: true }).then(() => wipeProgress(uid))
+        }
         setProfile({ ...BLANK, ...data })
       } else if (!snap.metadata.fromCache) {
         const preset = PRESETS[user.email?.toLowerCase()] ?? { name: user.displayName?.split(' ')[0] ?? '' }
-        const fresh = { ...BLANK, ...preset, email: user.email, createdAt: Date.now() }
+        const fresh = { ...BLANK, ...preset, email: user.email, createdAt: Date.now(), freshV1: true }
         setProfile(fresh)
         setDoc(ref, fresh, { merge: true })
       }
@@ -70,7 +92,13 @@ export function useStore(user) {
 
   const removeEntry = useCallback((id) => { deleteDoc(doc(db, 'users', uid, 'entries', id)) }, [uid])
 
-  return { profile, entries, updateProfile, setDay, addEntry, removeEntry }
+  const resetProgress = useCallback(async () => {
+    setProfile((p) => ({ ...p, days: {}, trainPlan: undefined, maintainWeight: undefined }))
+    setEntries([])
+    await wipeProgress(uid)
+  }, [uid])
+
+  return { profile, entries, updateProfile, setDay, addEntry, removeEntry, resetProgress }
 }
 
 // Shrink a camera photo to a small JPEG thumbnail so cloud storage stays tiny (~8–15 KB).
