@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useStore } from './store'
 import { dailyBudget, dayKey } from './calc'
 import Today from './screens/Today'
@@ -21,6 +21,13 @@ export default function App() {
   const today = dayKey()
   const todays = mine.filter((e) => e.day === today)
   const budget = dailyBudget(profile)
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.dataset.mode = state.mode
+    const dark = state.mode === 'dark' || (state.mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#161513' : '#EEEAE3')
+  }, [state.mode])
 
   const ctx = { ...store, pid, profile, mine, todays, budget, openSwitch: () => setSwitching(true), goSetup: () => setTab('me') }
 

@@ -7,6 +7,7 @@ const KEY = 'cal-bank:v1'
 
 const DEFAULT = {
   active: 'fm',
+  mode: 'auto', // appearance: auto | light | dark
   profiles: {
     fm: { name: 'Fart Monster', emoji: '👾', theme: 'moss', sex: 'm', age: '', height: '', weight: '', activity: 'sedentary', goal: 'lose025', customBudget: '' },
     sb: { name: 'Sewer Butt', emoji: '🐀', theme: 'plum', sex: 'f', age: '', height: '', weight: '', activity: 'sedentary', goal: 'lose025', customBudget: '' },
@@ -37,6 +38,7 @@ export function useStore() {
   }, [state])
 
   const setActive = useCallback((active) => setState((s) => ({ ...s, active })), [])
+  const setMode = useCallback((mode) => setState((s) => ({ ...s, mode })), [])
 
   const updateProfile = useCallback(
     (pid, patch) => setState((s) => ({ ...s, profiles: { ...s.profiles, [pid]: { ...s.profiles[pid], ...patch } } })),
@@ -51,7 +53,7 @@ export function useStore() {
 
   const removeEntry = useCallback((id) => setState((s) => ({ ...s, entries: s.entries.filter((x) => x.id !== id) })), [])
 
-  return { state, setActive, updateProfile, addEntry, removeEntry }
+  return { state, setActive, setMode, updateProfile, addEntry, removeEntry }
 }
 
 // Shrink a camera photo to a small JPEG thumbnail so storage stays light.

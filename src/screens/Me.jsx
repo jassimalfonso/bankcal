@@ -2,7 +2,7 @@ import { ACTIVITY, GOALS, breakdown, dailyBudget, fmt } from '../calc'
 
 const EMOJIS = ['👾', '🐀', '💨', '🦨', '🐷', '🦖', '🐸', '🍑', '🧌', '🐙']
 
-export default function Me({ pid, profile: p, updateProfile, openSwitch }) {
+export default function Me({ pid, profile: p, updateProfile, openSwitch, state, setMode }) {
   const set = (patch) => updateProfile(pid, patch)
   const num = (k) => (e) => set({ [k]: e.target.value.replace(/[^\d.]/g, '') })
   const bd = breakdown(p)
@@ -78,6 +78,15 @@ export default function Me({ pid, profile: p, updateProfile, openSwitch }) {
               <button key={g.id} className={`opt ${p.goal === g.id ? 'on' : ''}`} onClick={() => set({ goal: g.id })}>
                 <b>{g.label}</b><small>{g.hint}</small>
               </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="group">
+          <span className="g-label">Appearance</span>
+          <div className="seg three">
+            {['auto', 'light', 'dark'].map((m) => (
+              <button key={m} className={state.mode === m ? 'on' : ''} onClick={() => setMode(m)}>{m[0].toUpperCase() + m.slice(1)}</button>
             ))}
           </div>
         </div>

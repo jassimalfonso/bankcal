@@ -49,11 +49,11 @@ export default function Today({ profile, todays, budget, removeEntry, openSwitch
             <div className="card-foot">
               <div><small>Budget</small><b>{fmt(budget)}</b></div>
               <div><small>Spent</small><b>{fmt(spent)}</b></div>
-              <div className="pill">{over ? 'Surplus' : spent === 0 ? 'Fresh day' : 'In deficit'}</div>
+              <div><small>Status</small><b className="pill">{over ? 'Surplus' : spent === 0 ? 'Fresh day' : 'In deficit'}</b></div>
             </div>
           </>
         )}
-        <div className="card-name">{profile.emoji} {profile.name.toUpperCase()}</div>
+        <div className="card-name">Account — {profile.name}</div>
       </section>
 
       <div className="section-head">
