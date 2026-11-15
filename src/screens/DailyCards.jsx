@@ -48,7 +48,7 @@ const helloFor = (h = new Date().getHours()) => (h < 12 ? 'Good morning' : h < 1
 const longDate = () => new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
 // First open of the day: a calm, two-step welcome. Greeting first, then today's word, then the app.
-export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose, sleep, onSleep, budget }) {
+export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose, sleep, onSleep, budget, leaving }) {
   useEscape(onClose)
   const [step, setStep] = useState(0)
   const now = new Date()
@@ -57,12 +57,13 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
   const nowHM = `${String(now.getHours()).padStart(2, '0')}:${String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, '0')}`
   const usual = profile.wakeTime ?? DEFAULT_WAKE
   const [wake, setWake] = useState(sleep?.wake ?? (nowHM < usual && nowHM > '03:00' ? nowHM : usual))
-  const hrs = sleepHours({ bed, wake })
   const [editSleep, setEditSleep] = useState(false)
-  const next = () => { onSleep?.({ bed, wake }); setStep(1) }
-  const skip = () => { onSleep?.({ bed, wake }); onClose() }
+  const hrs = sleepHours({ bed, wake })
+  const save = () => { if (editSleep) onSleep?.({ bed, wake }) }
+  const next = () => { save(); setStep(1) }
+  const skip = () => { save(); onClose() }
   return (
-    <div className={`dawn theme-${profile.theme}`} role="dialog" aria-label="Good morning">
+    <div className={`dawn theme-${profile.theme} ${leaving ? 'leaving' : ''}`} role="dialog" aria-label="Good morning">
       <div className="dawn-glow" aria-hidden="true" />
       {birthday && <div className="confetti" aria-hidden="true">{Array.from({ length: 18 }, (_, i) => <i key={i} style={{ '--i': i }} />)}</div>}
 
@@ -78,7 +79,7 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
           </p>
           {!editSleep ? (
             <button className="sleep-chip" onClick={() => setEditSleep(true)}>
-              😴 <b>{hrs != null && hrs <= 14 ? fmtSleep(hrs) : '—'}</b> of sleep <span>Edit</span>
+              {sleep ? <>😴 <b>{fmtSleep(sleepHours(sleep))}</b> of sleep <span>Edit</span></> : <>😴 Log last night’s sleep <span>Add</span></>}
             </button>
           ) : (
             <div className="dawn-sleep">
@@ -108,10 +109,10 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
 }
 
 // Later opens the same day: the card shows what's left, then fades into the app.
-export function WelcomeBack({ profile, left, onDone }) {
+export function WelcomeBack({ profile, left, onDone, leaving }) {
   useEscape(onDone)
   return (
-    <div className={`dawn hello-back theme-${profile.theme}`} role="dialog" aria-label="Welcome back">
+    <div className={`dawn hello-back theme-${profile.theme} ${leaving ? 'leaving' : ''}`} role="dialog" aria-label="Welcome back">
       <div className="dawn-glow" aria-hidden="true" />
       <div className="dawn-step">
         <BankCard label={left != null && left < 0 ? 'Over today' : 'Left today'} value={left == null ? null : Math.abs(left)} holder={profile.name.toUpperCase()} buddies={[{ kind: profile.character, theme: profile.theme }]} />

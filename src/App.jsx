@@ -62,14 +62,30 @@ function Bank({ user }) {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', top)
   }, [profile?.bg, profile?.mode])
 
+  // Re-check the clock every minute and when the app returns to the front, so a new day starts on time
+  const [, tick] = useState(0)
+  useEffect(() => {
+    const bump = () => tick((n) => n + 1)
+    const id = setInterval(bump, 60000)
+    document.addEventListener('visibilitychange', bump)
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', bump) }
+  }, [])
   const today = logicalDayKey(profile ?? {})
   const todays = useMemo(() => entries.filter((e) => e.day === today), [entries, today])
   const words = useDailyWords(today)
   const seenKey = `bankcal:morning:${user.uid}:${today}`
   const [morning, setMorning] = useState(() => { try { return !localStorage.getItem(seenKey) } catch { return false } })
+  useEffect(() => { try { setMorning(!localStorage.getItem(seenKey)) } catch { /* ignore */ } }, [seenKey])
   // Welcome back on every fresh open, and again after being away for 30+ minutes
   const [hello, setHello] = useState(true)
-  const doneHello = useCallback(() => setHello(false), [])
+  // Leaving the welcome: the card lifts away while the app rises in underneath
+  const [leaving, setLeaving] = useState(false)
+  const leave = useCallback((then) => {
+    window.scrollTo(0, 0)
+    setLeaving(true)
+    setTimeout(() => { then(); setLeaving(false) }, 620)
+  }, [])
+  const doneHello = useCallback(() => leave(() => setHello(false)), [leave])
   useEffect(() => {
     let away = 0
     const onVis = () => {
@@ -79,7 +95,13 @@ function Bank({ user }) {
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [])
-  const closeMorning = () => { doneHello(); try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } setMorning(false) }
+  const closeMorning = () => { try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } leave(() => { setHello(false); setMorning(false) }) }
+  // Remember each day's base budget, so later weight or plan changes don't rewrite past days
+  useEffect(() => {
+    if (!profile?.onboarded) return
+    const b = dailyBudget(profile)
+    if (b != null && profile.days?.[today]?.base !== b) store.setDay(today, { base: b })
+  }, [profile, today]) // eslint-disable-line react-hooks/exhaustive-deps
   const [result, setResult] = useState(false)
   // One toast for the whole app, with optional Undo.
   const [toast, setToast] = useState(null)
@@ -107,7 +129,7 @@ function Bank({ user }) {
   const dayLog = profile.days?.[today] ?? {}
   const earn = earned(dayLog, profile.weight, profile.activity)
   const budget = base != null ? base + earn.total : null // activity is a deposit into today's budget
-  const budgetFor = (key) => (base != null ? base + earned(profile.days?.[key], profile.weight, profile.activity).total : null)
+  const budgetFor = (key) => { const b = key === today ? base : (profile.days?.[key]?.base ?? base); return b != null ? b + earned(profile.days?.[key], profile.weight, profile.activity).total : null }
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const closed = !!dayLog.closed
   const streakDays = streak(entries, budgetFor, today, closed)
@@ -121,7 +143,7 @@ function Bank({ user }) {
   } }
 
   return (
-    <div className={`app theme-${profile.theme}`}>
+    <div className={`app theme-${profile.theme} ${(morning || hello) && !leaving ? 'behind' : ''} ${leaving ? 'entering' : ''}`}>
       <main className={`screen slide-${dir}`} key={tab}>
         {tab === 'today' && <Today {...ctx} />}
         {tab === 'week' && <Statement {...ctx} />}
@@ -144,8 +166,8 @@ function Bank({ user }) {
           {toast.undo && <button onClick={() => { toast.undo(); setToast(null) }}>Undo</button>}
         </div>
       )}
-      {!morning && hello && profile.onboarded && <WelcomeBack profile={profile} left={budget != null ? budget - spent : null} onDone={doneHello} />}
-      {morning && <MorningCard profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
+      {!morning && hello && profile.onboarded && <WelcomeBack leaving={leaving} profile={profile} left={budget != null ? budget - spent : null} onDone={doneHello} />}
+      {morning && <MorningCard leaving={leaving} profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
       {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true)} today={today} onClose={() => setResult(false)} />}
 
       {adding && (
