@@ -1,9 +1,7 @@
 import { useState, Children, cloneElement, isValidElement } from 'react'
 import { maintainStatus, targetCheck, KCAL_PER_KG, ageOf, DEFAULT_BED, DEFAULT_WAKE, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
 import Character from '../Character'
-import { SECTION_NAMES, fullLayout } from '../layout'
 import { HabitPicker } from './Habits'
-import DragList from './DragList'
 import { BUILD, VERSION } from '../update'
 import { PartnerSettings } from './Partner'
 import { THEMES, BuddyGrid } from './Onboarding'
@@ -183,10 +181,6 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
 
       <h2 className="group-title">Buddy</h2>
       <div className="card buddy-card"><BuddyGrid value={p.character} onChange={(id) => set({ character: id })} /></div>
-
-      <h2 className="group-title">Today screen</h2>
-      <DragList items={fullLayout(p.layout2)} names={SECTION_NAMES} onChange={(layout2) => set({ layout2 })} />
-      <p className="fine">Hold a row and drag it to change the order of the cards on Today. On Today, hold a card’s title (the ⠿ mark) and drag the card itself.</p>
 
       <h2 className="group-title">Look and feel</h2>
       <div className="card form-list">
