@@ -17,6 +17,7 @@ export default async function handler(req, res) {
         .replace(/<h\d[^>]*>[\s\S]*?<\/h\d>/gi, ' ') // section headings
         .replace(/<span class="vn">[\s\S]*?<\/span>/gi, ' ') // verse numbers
         .replace(/<a class="a-tn">[\s\S]*?<\/a>/gi, '') // footnote markers
+        .replace(/<span class="tn-ref">[\s\S]*?<\/span>/gi, '') // footnote reference (nested)
         .replace(/<span class="tn">[\s\S]*?<\/span>/gi, '') // footnote text
         .replace(/<[^>]+>/g, ' '),
     ).replace(/\s+/g, ' ').replace(/\s([,.;:!?’”])/g, '$1').trim()

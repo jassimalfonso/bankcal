@@ -25,7 +25,7 @@ export const pick = (list, key, offset = 0) => (list.length ? list[(dayNumber(ke
 
 async function fetchVerse(ref) {
   try {
-    const r = await fetch(`/api/verse?ref=${encodeURIComponent(ref)}`)
+    const r = await fetch(`/api/verse?ref=${encodeURIComponent(ref)}&v=2`)
     if (r.ok) return await r.json()
   } catch { /* fall through to WEB */ }
   const r = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=web`)
@@ -36,7 +36,7 @@ async function fetchVerse(ref) {
 
 // Load (and cache) one verse by reference.
 export function useVerse(ref, cacheTag) {
-  const cacheKey = `bankcal:verse2:${cacheTag}:${ref}`
+  const cacheKey = `bankcal:verse3:${cacheTag}:${ref}`
   const [verse, setVerse] = useState(() => {
     try { return JSON.parse(localStorage.getItem(cacheKey)) } catch { return null }
   })
