@@ -136,7 +136,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave }) {
 
         <label className="field">
           <span>Food</span>
-          <input value={name} onChange={(e) => { setName(e.target.value); setPicked(false) }} placeholder="Search or type, e.g. shawarma…" aria-label="Food name" autoComplete="off" enterKeyHint="search" />
+          <input value={name} onChange={(e) => { setName(e.target.value); setPicked(false) }} placeholder="Search or type, e.g. adobo…" aria-label="Food name" autoComplete="off" enterKeyHint="search" />
         </label>
 
         {(suggestions.length > 0 || (name.trim().length >= 2 && !picked)) && (

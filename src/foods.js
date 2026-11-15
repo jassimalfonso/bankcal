@@ -15,6 +15,18 @@ export const FOODS = [
   // Filipino
   ['Chicken adobo + rice', '1 plate', 700], ['Pork sisig + rice', '1 plate', 850], ['Pancit canton', '1 plate', 500], ['Lumpia', '3 pieces', 250],
   ['Sinigang', '1 bowl', 250], ['Tapsilog', '1 plate', 800], ['Longsilog', '1 plate', 850], ['Halo-halo', '1 glass', 450], ['Garlic rice', '1 cup', 280],
+  ['Pork adobo + rice', '1 plate', 800], ['Adobong kangkong', '1 serving', 120], ['Pork sinigang + rice', '1 plate', 600], ['Bulalo', '1 bowl', 550],
+  ['Kare-kare + rice', '1 plate', 850], ['Lechon kawali', '150 g', 600], ['Crispy pata', '1 serving (shared, 1/4)', 650], ['Chicken inasal + rice', '1 plate', 700],
+  ['Pancit bihon', '1 plate', 400], ['Pancit palabok', '1 plate', 500], ['Arroz caldo', '1 bowl', 350], ['Lugaw', '1 bowl', 250],
+  ['Tocilog', '1 plate', 800], ['Bangsilog', '1 plate', 650], ['Cornsilog', '1 plate', 650], ['Hotsilog', '1 plate', 700],
+  ['Bistek tagalog + rice', '1 plate', 650], ['Chicken tinola', '1 bowl', 300], ['Pinakbet', '1 serving', 180], ['Menudo + rice', '1 plate', 650],
+  ['Kaldereta + rice', '1 plate', 750], ['Laing', '1 serving', 300], ['Bicol express + rice', '1 plate', 750], ['Dinuguan + rice', '1 plate', 600],
+  ['Lumpiang shanghai', '5 pieces', 300], ['Lumpiang sariwa', '1 roll', 220], ['Fish fillet (lapu-lapu) + rice', '1 plate', 550],
+  ['Pandesal', '2 pieces', 240], ['Ensaymada', '1 piece', 350], ['Spanish bread', '1 piece', 200], ['Bibingka', '1 piece', 300],
+  ['Puto', '3 pieces', 220], ['Kutsinta', '3 pieces', 180], ['Turon', '1 piece', 220], ['Banana cue', '1 stick', 250],
+  ['Leche flan', '1 slice', 250], ['Ube halaya', '100 g', 260], ['Taho', '1 cup', 200], ['Buko juice', '1 glass', 60],
+  ['Jollibee Chickenjoy + rice', '1 piece', 520], ['Jollibee Jolly Spaghetti', '1 serving', 480], ['Jollibee Yumburger', '1 burger', 290],
+  ['Chowking chao fan', '1 serving', 550], ['Mang Inasal PM1', '1 meal', 700], ['Max’s fried chicken', '1/4 chicken', 450],
   // Everyday & international
   ['Plain rice', '1 cup cooked', 205], ['Brown rice', '1 cup cooked', 215], ['Boiled eggs', '2 eggs', 155], ['Fried egg', '1 egg', 90],
   ['Omelette', '2 eggs', 200], ['Eggs & toast', '2 eggs + 2 toast', 420], ['Toast with butter', '2 slices', 250], ['Oats with milk', '1 bowl', 300],

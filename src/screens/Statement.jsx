@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { dayKey, fmt, KCAL_PER_KG } from '../calc'
+import { dayKey, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
 import { Row } from './Today'
 import BodyCard from './BodyCard'
 import Progress from './Progress'
@@ -60,6 +60,8 @@ export default function Statement(props) {
         </div>
       </div>
 
+      <SleepWeek days={days} log={props.profile?.days ?? {}} />
+
       <h2 className="group-title">Progress</h2>
       <Progress {...props} />
 
@@ -75,6 +77,35 @@ export default function Statement(props) {
       ) : (
         <div className="card empty"><p className="muted">Nothing logged on this day.</p></div>
       )}
+    </>
+  )
+}
+
+function SleepWeek({ days, log }) {
+  const nights = days.map((d) => ({ ...d, h: sleepHours(log[d.key]?.sleep) }))
+  const logged = nights.filter((n) => n.h != null)
+  if (!logged.length) return null
+  const avg = logged.reduce((a, n) => a + n.h, 0) / logged.length
+  const good = logged.filter((n) => n.h >= SLEEP_TARGET).length
+  return (
+    <>
+      <h2 className="group-title">Sleep</h2>
+      <div className="card sleep-week">
+        <div className="sw-top">
+          <div><span>Average</span><b>{fmtSleep(avg)}</b></div>
+          <p>{good} of {logged.length} nights with {SLEEP_TARGET}+ hours</p>
+        </div>
+        <div className="sw-bars" role="img" aria-label={`Sleep each night this week, average ${fmtSleep(avg)}`}>
+          <span className="sw-line" style={{ bottom: `${(SLEEP_TARGET / 10) * 100}%` }} />
+          {nights.map((n) => (
+            <div key={n.key} className="sw-col">
+              <i className={n.h == null ? 'none' : n.h >= SLEEP_TARGET ? 'ok' : 'short'} style={{ height: n.h == null ? '4%' : `${Math.min(100, (n.h / 10) * 100)}%` }} />
+              <small>{n.d.toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)}</small>
+            </div>
+          ))}
+        </div>
+        <p className="fine">Adults need at least {SLEEP_TARGET} hours a night. Short sleep tends to raise hunger the next day, so be kind to yourself on those days.</p>
+      </div>
     </>
   )
 }

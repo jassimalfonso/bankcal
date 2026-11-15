@@ -45,7 +45,7 @@ export default function SignIn() {
         </div>
         <ul className="si-tx">
           <li className="in"><span>🚶 10,000 steps</span><b>+259</b></li>
-          <li className="out"><span>🌯 Chicken shawarma</span><b>−520</b></li>
+          <li className="out"><span>🍗 Chicken adobo with rice</span><b>−700</b></li>
         </ul>
       </div>
 

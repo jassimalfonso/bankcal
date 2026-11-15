@@ -266,3 +266,19 @@ export function isBedtime(p, now = new Date()) {
   const bed = toMin(p?.bedTime) ?? toMin(DEFAULT_BED)
   return inWindow(nowMin(now), (bed - 15 + 1440) % 1440, rollover(p))
 }
+
+// Sleep: stored on the day you woke up as { bed: 'HH:MM', wake: 'HH:MM' }.
+// Adults need at least 7 hours a night (American Academy of Sleep Medicine / Sleep Research Society).
+export const SLEEP_TARGET = 7
+export function sleepHours(s) {
+  if (!s?.bed || !s?.wake) return null
+  const [bh, bm] = s.bed.split(':').map(Number), [wh, wm] = s.wake.split(':').map(Number)
+  let mins = wh * 60 + wm - (bh * 60 + bm)
+  if (mins <= 0) mins += 24 * 60
+  return mins / 60
+}
+export function fmtSleep(h) {
+  if (h == null) return '—'
+  const total = Math.round(h * 60)
+  return `${Math.floor(total / 60)} h${total % 60 ? ` ${total % 60} min` : ''}`
+}

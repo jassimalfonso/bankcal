@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from './firebase'
 import { useStore } from './store'
@@ -8,7 +8,7 @@ import { BUDDIES, Buddy } from './buddies'
 const DEMO = import.meta.env.MODE === 'demo'
 import { dailyBudget, dayKey, earned, isBedtime, isBirthday, isWindDown, logicalDayKey, streak } from './calc'
 import { useDailyWords } from './quotes'
-import { MorningCard, DayResult } from './screens/DailyCards'
+import { MorningCard, DayResult, WelcomeBack } from './screens/DailyCards'
 import Today from './screens/Today'
 import Statement from './screens/Statement'
 import Me from './screens/Me'
@@ -67,7 +67,9 @@ function Bank({ user }) {
   const words = useDailyWords(today)
   const seenKey = `bankcal:morning:${user.uid}:${today}`
   const [morning, setMorning] = useState(() => { try { return !localStorage.getItem(seenKey) } catch { return false } })
-  const closeMorning = () => { try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } setMorning(false) }
+  const [hello, setHello] = useState(() => { try { return !sessionStorage.getItem('bankcal:hello') } catch { return false } })
+  const doneHello = useCallback(() => { try { sessionStorage.setItem('bankcal:hello', '1') } catch { /* ignore */ } setHello(false) }, [])
+  const closeMorning = () => { doneHello(); try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } setMorning(false) }
   const [result, setResult] = useState(false)
   // One toast for the whole app, with optional Undo.
   const [toast, setToast] = useState(null)
@@ -132,7 +134,8 @@ function Bank({ user }) {
           {toast.undo && <button onClick={() => { toast.undo(); setToast(null) }}>Undo</button>}
         </div>
       )}
-      {morning && <MorningCard profile={profile} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
+      {!morning && hello && profile.onboarded && <WelcomeBack profile={profile} onDone={doneHello} />}
+      {morning && <MorningCard profile={profile} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
       {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true)} today={today} onClose={() => setResult(false)} />}
 
       {adding && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BASE_STEPS, describeWorkout, fmt, WORKOUTS, workoutKcal } from '../calc'
+import { BASE_STEPS, DEFAULT_BED, DEFAULT_WAKE, describeWorkout, fmt, fmtSleep, sleepHours, SLEEP_TARGET, WORKOUTS, workoutKcal } from '../calc'
 import WorkoutSheet from './WorkoutSheet'
 
 // Today's "deposits": steps and treadmill time earn calories back into the budget.
@@ -10,7 +10,11 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
   const steps = +dayLog.steps || 0
   const tread = +dayLog.treadMin || 0
   const workouts = dayLog.workouts ?? []
+  const sleepH = sleepHours(dayLog.sleep)
   const [adding, setAdding] = useState(false)
+  // Collapsed by default so mornings feel light; remembers your choice
+  const [open, setOpen] = useState(() => { try { return localStorage.getItem('bankcal:deposits') === 'open' } catch { return false } })
+  const toggle = () => setOpen((o) => { try { localStorage.setItem('bankcal:deposits', o ? 'closed' : 'open') } catch { /* ignore */ } return !o })
   const saveWorkout = (w) => {
     const id = Date.now().toString(36)
     setDay(today, { workouts: [...workouts, { id, ...w }] })
@@ -21,7 +25,15 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
 
   return (
     <>
-      <h2 className="group-title">Deposits <span className="pos">+{fmt(earn.total)} kcal earned</span></h2>
+      <button className="deposits-head" onClick={toggle} aria-expanded={open}>
+        <span className="group-title">Deposits</span>
+        <span className="dep-sum">
+          {open ? <span className="pos">+{fmt(earn.total)} kcal earned</span>
+            : <>{sleepH != null ? `${fmtSleep(sleepH)} sleep, ` : ''}{fmt(steps)} steps{workouts.length ? `, ${workouts.length} workout${workouts.length > 1 ? 's' : ''}` : ''} <b className="pos">+{fmt(earn.total)}</b></>}
+          <svg viewBox="0 0 12 12" aria-hidden="true" className={open ? 'up' : ''}><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </span>
+      </button>
+      {!open ? null : <>
       {earn.blocked && (
         <div className="card plan-note warn">
           <p><b>Activity isn’t added to your budget right now.</b> Your activity level in Settings already includes exercise, so adding it again would count it twice. Set it to <b>Desk job</b> to earn calories from what you log here.</p>
@@ -66,6 +78,19 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
 
         <div className="act-row">
           <div className="act-head">
+            <b>Sleep last night</b>
+            <small>{sleepH == null ? `Aim for ${SLEEP_TARGET} hours or more` : sleepH >= SLEEP_TARGET ? `${fmtSleep(sleepH)}. Well rested 😴` : `${fmtSleep(sleepH)}. A bit short`}</small>
+          </div>
+          <div className="tread-in sleep-in">
+            <input type="time" aria-label="Went to bed" value={dayLog.sleep?.bed ?? ''} placeholder={profile.bedTime ?? DEFAULT_BED}
+              onChange={(e) => setDay(today, { sleep: { wake: profile.wakeTime ?? DEFAULT_WAKE, ...dayLog.sleep, bed: e.target.value } })} />
+            <input type="time" aria-label="Woke up" value={dayLog.sleep?.wake ?? ''} placeholder={profile.wakeTime ?? DEFAULT_WAKE}
+              onChange={(e) => setDay(today, { sleep: { bed: profile.bedTime ?? DEFAULT_BED, ...dayLog.sleep, wake: e.target.value } })} />
+          </div>
+        </div>
+
+        <div className="act-row">
+          <div className="act-head">
             <b>Weight today</b>
             <small>{dayLog.weight ? 'Logged. Your budget follows it.' : 'Optional, best in the morning'}</small>
           </div>
@@ -74,6 +99,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
         </div>
       </div>
       <p className="fine">First {fmt(BASE_STEPS)} steps are everyday movement and already in your budget.</p>
+      </>}
       {adding && <WorkoutSheet profile={profile} onClose={() => setAdding(false)} onSave={saveWorkout} />}
     </>
   )

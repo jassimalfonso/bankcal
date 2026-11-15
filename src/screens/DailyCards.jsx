@@ -1,7 +1,7 @@
-import { fmt } from '../calc'
+import { fmt, fmtSleep, sleepHours, SLEEP_TARGET, DEFAULT_BED, DEFAULT_WAKE } from '../calc'
 import { GOOD_REFS, OVER_REFS, pick, useVerse } from '../quotes'
 import { BOUNCE_BACK, GOOD_DAY } from '../motivation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Character from '../Character'
 import { useEscape } from '../motion'
 
@@ -28,7 +28,12 @@ export function Words({ words, compact = false }) {
       </button>
       {hasReflection && (
         <div className={`w-fold ${open ? 'open' : ''}`} id="today-reflection" aria-hidden={!open}>
-          <div><p className="w-reflect">{words.reflection}</p></div>
+          <div>
+            <div className="w-reflect">
+              {words.context && <p className="w-context"><b>Context</b>{words.context}</p>}
+              <p>{words.reflection}</p>
+            </div>
+          </div>
         </div>
       )}
       {words.motivation && (
@@ -38,33 +43,76 @@ export function Words({ words, compact = false }) {
   )
 }
 
-// Shown once each morning: greeting, yesterday's result, streak, today's words.
-export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose }) {
+const helloFor = (h = new Date().getHours()) => (h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening')
+const longDate = () => new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+
+// First open of the day: a calm, two-step welcome. Greeting first, then today's word, then the app.
+export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose, sleep, onSleep }) {
   useEscape(onClose)
-  const h = new Date().getHours()
-  const hello = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
+  const [step, setStep] = useState(0)
+  const now = new Date()
+  const [bed, setBed] = useState(sleep?.bed ?? profile.bedTime ?? DEFAULT_BED)
+  // default to the usual wake time; only use "now" if it's earlier than that (an early start)
+  const nowHM = `${String(now.getHours()).padStart(2, '0')}:${String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, '0')}`
+  const usual = profile.wakeTime ?? DEFAULT_WAKE
+  const [wake, setWake] = useState(sleep?.wake ?? (nowHM < usual && nowHM > '03:00' ? nowHM : usual))
+  const hrs = sleepHours({ bed, wake })
+  const next = () => { onSleep?.({ bed, wake }); setStep(1) }
+  const skip = () => { onSleep?.({ bed, wake }); onClose() }
   return (
-    <div className="sheet-wrap center" onClick={onClose}>
-      <div className="daily-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Today">
-        <Character kind={profile.character} mood="happy" size={92} className="bob" />
-        <p className="muted">{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-        {birthday && <div className="confetti" aria-hidden="true">{Array.from({ length: 18 }, (_, i) => <i key={i} style={{ '--i': i }} />)}</div>}
-        <h2>{birthday ? `Happy birthday, ${profile.name}! 🎂` : `${hello}, ${profile.name}`}</h2>
-        {birthday && <p className="streak-line">Enjoy your day. Cake counts, and one day won’t undo your progress.</p>}
-        {yesterday && (
-          <p className={`yday ${yesterday.net >= 0 ? 'pos' : 'neg'}`}>
-            {yesterday.net >= 0 ? `Yesterday you saved ${fmt(yesterday.net)} kcal. Good job!` : `Yesterday went ${fmt(-yesterday.net)} kcal over. Today is a fresh start.`}
+    <div className={`dawn theme-${profile.theme}`} role="dialog" aria-label="Good morning">
+      <div className="dawn-glow" aria-hidden="true" />
+      {birthday && <div className="confetti" aria-hidden="true">{Array.from({ length: 18 }, (_, i) => <i key={i} style={{ '--i': i }} />)}</div>}
+
+      {step === 0 ? (
+        <div className="dawn-step" key="greet">
+          <Character kind={profile.character} mood="happy" size={120} className="bob" />
+          <p className="dawn-date">{longDate()}</p>
+          <h1>{birthday ? `Happy birthday, ${profile.name}! 🎂` : `${helloFor()}, ${profile.name}`}</h1>
+          <p className="dawn-line">
+            {birthday ? 'Enjoy your day. Cake counts, and one day won’t undo your progress.'
+              : yesterday ? (yesterday.net >= 0 ? `Yesterday you saved ${fmt(yesterday.net)} kcal. Well done.` : 'Yesterday went over, and that’s okay. Today is a fresh start.')
+              : 'A new day, a full balance.'}
           </p>
-        )}
-        {streakDays > 1 && <p className="streak-line">🔥 {streakDays}-day streak within budget</p>}
-        <Words words={words} />
-        <button className="btn-primary" onClick={onClose}>Start my day</button>
-      </div>
+          {streakDays > 1 && <p className="dawn-streak">🔥 {streakDays} days in a row within budget</p>}
+          <div className="dawn-sleep">
+            <span className="ds-title">How did you sleep?</span>
+            <div className="ds-row">
+              <label><span>Went to bed</span><input type="time" value={bed} onChange={(e) => setBed(e.target.value)} /></label>
+              <label><span>Woke up</span><input type="time" value={wake} onChange={(e) => setWake(e.target.value)} /></label>
+            </div>
+            <span className={`ds-total ${hrs != null && hrs < SLEEP_TARGET ? 'short' : ''}`}>
+              {hrs != null && hrs > 14 ? 'That looks long. Check the times.' : `${fmtSleep(hrs)} of sleep${hrs != null && hrs < SLEEP_TARGET ? '. Go a little gentler on yourself today.' : ''}`}
+            </span>
+          </div>
+          <button className="btn-primary dawn-btn" onClick={next}>Continue</button>
+          <button className="dawn-skip" onClick={skip}>Skip to my day</button>
+        </div>
+      ) : (
+        <div className="dawn-step word" key="word">
+          <p className="dawn-date">Today’s verse and reflection</p>
+          <Words words={words} compact />
+          <button className="btn-primary dawn-btn" onClick={onClose}>Start my day</button>
+        </div>
+      )}
+
+      <div className="dawn-dots" aria-hidden="true"><i className={step === 0 ? 'on' : ''} /><i className={step === 1 ? 'on' : ''} /></div>
     </div>
   )
 }
 
-// "Close my day": celebration when within budget, encouragement when over.
+// Later opens the same day: a brief greeting that fades into the app.
+export function WelcomeBack({ profile, onDone }) {
+  useEffect(() => { const t = setTimeout(onDone, 1500); return () => clearTimeout(t) }, [onDone])
+  return (
+    <button className={`hello-back theme-${profile.theme}`} onClick={onDone} aria-label="Continue to BankCal">
+      <Character kind={profile.character} mood="happy" size={96} className="bob" />
+      <span className="hb-title">{helloFor()}, {profile.name}</span>
+      <span className="hb-sub">Welcome back</span>
+    </button>
+  )
+}
+
 export function DayResult({ profile, budget, spent, earn, streakDays, today, onClose }) {
   useEscape(onClose)
   const net = budget - spent

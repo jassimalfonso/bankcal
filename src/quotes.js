@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react'
 import { MOTIVATION } from './motivation'
 import { REFLECTIONS } from './reflections'
+import { CONTEXT } from './context'
 
 const BIBLE_REFS = [
   'Philippians 4:13', 'Isaiah 40:31', 'Joshua 1:9', '1 Corinthians 6:19-20', '1 Corinthians 10:31', 'Galatians 6:9',
@@ -59,5 +60,5 @@ export function useVerse(ref, cacheTag) {
 export function useDailyWords(dayKey) {
   const ref = pick(BIBLE_REFS, dayKey, 7)
   const verse = useVerse(ref, dayKey)
-  return { verse, reflection: REFLECTIONS[ref] ?? null, motivation: pick(MOTIVATION, dayKey, 3) }
+  return { verse, reflection: REFLECTIONS[ref] ?? null, context: CONTEXT[ref] ?? null, motivation: pick(MOTIVATION, dayKey, 3) }
 }
