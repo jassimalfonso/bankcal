@@ -813,3 +813,12 @@ button.hello-back, .hello-back { animation: fade 0.5s var(--ease) both; }
 .app.entering .fab { animation: fab-in 0.5s var(--spring) 0.55s both; }
 @keyframes dock-in { from { opacity: 0; transform: translate(-50%, 40px); } }
 @keyframes fab-in { from { opacity: 0; transform: scale(0.4); } }
+
+.pace { margin-top: 10px; padding: 6px 16px 14px; }
+.pace-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+.pace-row span { color: var(--muted); font-weight: 700; }
+.pace-row b { text-align: right; font-weight: 850; font-variant-numeric: tabular-nums; }
+.pace-tag.steady { color: var(--pos); }
+.pace-tag.fast { color: #d98a1c; }
+.pace-tag.extreme { color: var(--neg); }
+.pace .fine { margin: 10px 0 0; }

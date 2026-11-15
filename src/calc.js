@@ -133,7 +133,11 @@ export function plan(p, currentWeight, todayKey = dayKey()) {
   const realisticDays = Math.ceil((toLose * KCAL_PER_KG) / 750)
   const realisticEnd = dayKey(new Date(today.getTime() + realisticDays * DAY))
   const active = !notStarted && !expired && toLose > 0
-  return { daysLeft, toLose, needed: Math.round(needed), deficit: active ? Math.round(Math.min(needed, SAFE_MAX_DEFICIT)) : 0, tooFast: active && tooFast, realisticEnd, reached: toLose === 0, notStarted, expired: expired && toLose > 0, active }
+  const deficitUsed = active ? Math.min(needed, SAFE_MAX_DEFICIT) : 0
+  // expected loss per week, mostly fat: 7 days × daily deficit ÷ 7,700 kcal per kg
+  const rateNeeded = (needed * 7) / KCAL_PER_KG
+  const rate = (deficitUsed * 7) / KCAL_PER_KG
+  return { rateNeeded: Math.round(rateNeeded * 100) / 100, rate: Math.round(rate * 100) / 100, pctPerWeek: Math.round((rateNeeded / w) * 1000) / 10, pace: paceFor(rateNeeded, w), daysLeft, toLose, needed: Math.round(needed), deficit: active ? Math.round(Math.min(needed, SAFE_MAX_DEFICIT)) : 0, tooFast: active && tooFast, realisticEnd, reached: toLose === 0, notStarted, expired: expired && toLose > 0, active }
 }
 
 export const prettyDate = (k) => parseDay(k).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -300,4 +304,22 @@ export function maintainStatus(p) {
   if (p.goal !== 'maintain' || !(keep > 0) || !(w > 0)) return null
   const diff = Math.round((w - keep) * 10) / 10
   return { keep, low: keep - MAINTAIN_BAND, high: keep + MAINTAIN_BAND, diff, status: diff > MAINTAIN_BAND ? 'above' : diff < -MAINTAIN_BAND ? 'below' : 'in' }
+}
+
+// How hard a weekly loss rate is. Common guidance: 0.25–0.5 kg a week is steady,
+// up to about 1 kg (or 1% of body weight) is the safe upper limit, beyond that is extreme.
+export function paceFor(kgPerWeek, weightKg) {
+  const pct = weightKg > 0 ? (kgPerWeek / weightKg) * 100 : 0
+  if (kgPerWeek <= 0) return 'none'
+  if (kgPerWeek <= 0.5) return 'steady'
+  if (kgPerWeek <= 1 && pct <= 1) return 'fast'
+  return 'extreme'
+}
+
+// Is the target itself healthy for this height? Below BMI 18.5 is underweight.
+export function targetCheck(targetKg, heightCm) {
+  const h = +heightCm / 100, t = +targetKg
+  if (!(h > 0 && t > 0)) return null
+  const bmi = t / (h * h)
+  return { bmi: Math.round(bmi * 10) / 10, tooLow: bmi < 18.5, lowest: Math.ceil(18.5 * h * h * 10) / 10 }
 }

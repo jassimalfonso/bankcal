@@ -107,3 +107,16 @@ test('maintenance band', () => {
   assert.equal(c.maintainStatus({ ...p, weight: 68 }).status, 'below')
   assert.equal(c.maintainStatus({ goal: 'lose05', maintainWeight: 70, weight: 72 }), null)
 })
+
+test('weekly loss rate and pace', () => {
+  const p = c.plan({ targetWeight: 78, endDate: '2027-03-15' }, 84, '2026-11-15') // 385/day
+  assert.equal(p.rate, 0.35) // 385 × 7 ÷ 7700
+  assert.equal(p.pace, 'steady')
+  const fast = c.plan({ targetWeight: 70, endDate: '2026-12-15' }, 84, '2026-11-15')
+  assert.equal(fast.pace, 'extreme')
+  assert.equal(fast.rate, 0.91) // capped at 1000/day
+  assert.equal(c.paceFor(0.8, 90), 'fast')
+  assert.equal(c.paceFor(0.8, 60), 'extreme') // 1.3% of body weight
+  assert.equal(c.targetCheck(50, 173).tooLow, true)
+  assert.equal(c.targetCheck(50, 173).lowest, 55.4)
+})

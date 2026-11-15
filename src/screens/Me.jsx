@@ -1,5 +1,5 @@
 import { useState, Children, cloneElement, isValidElement } from 'react'
-import { maintainStatus, ACTIVITY, ageOf, DEFAULT_BED, DEFAULT_WAKE, GOALS, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
+import { maintainStatus, targetCheck, KCAL_PER_KG, ACTIVITY, ageOf, DEFAULT_BED, DEFAULT_WAKE, GOALS, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
 import Character from '../Character'
 import { DEFAULT_LAYOUT, SECTION_NAMES } from '../layout'
 import { THEMES, BuddyGrid } from './Onboarding'
@@ -35,7 +35,10 @@ export default function Me({ user, profile: p, updateProfile }) {
   const bd = breakdown(p)
   const ms = maintainStatus(p)
   // reached the target: stop the plan and keep this weight
-  const keepIt = () => set({ goal: 'maintain', maintainWeight: +p.targetWeight || +p.weight, targetWeight: null, endDate: null })
+  const keepIt = () => set({ goal: 'maintain', maintainWeight: +p.targetWeight || +p.weight, targetWeight: null, endDate: null, startDate: null, customBudget: null })
+    // Maintain from the simple goal: keep today's weight and clear the plan and any custom budget so maintenance applies
+    const goMaintain = () => set({ goal: 'maintain', maintainWeight: +p.weight || null, targetWeight: null, endDate: null, startDate: null, customBudget: null })
+    const tc = targetCheck(p.targetWeight, p.height)
   const budget = dailyBudget(p)
 
   return (
@@ -109,7 +112,7 @@ export default function Me({ user, profile: p, updateProfile }) {
 
       <h2 className="group-title">Your plan</h2>
       <div className="card form-list">
-        <Line label="Target weight"><Num value={p.targetWeight ?? ''} onChange={num('targetWeight')} unit="kg" ph="75" decimal /></Line>
+        <Line label="Target weight"><Num value={p.targetWeight ?? ''} onChange={(e) => { const v = e.target.value.replace(/[^\d.]/g, ''); set(p.goal === 'maintain' && v ? { targetWeight: v, goal: 'lose05', maintainWeight: null } : { targetWeight: v }) }} unit="kg" ph="75" decimal /></Line>
         <Line label="Start date"><input className="date-in" type="date" value={p.startDate ?? dayKey()} onChange={(e) => set({ startDate: e.target.value })} /></Line>
         <Line label="Reach it by"><input className="date-in" type="date" value={p.endDate ?? ''} min={dayKey()} onChange={(e) => set({ endDate: e.target.value })} /></Line>
       </div>
@@ -138,11 +141,18 @@ export default function Me({ user, profile: p, updateProfile }) {
           ) : bd.plan.notStarted ? (
             <p><b>Your plan starts on {prettyDate(p.startDate)}.</b> Until then your budget follows your simple goal below.</p>
           ) : bd.plan.tooFast ? (
-            <p><b>That date is too fast.</b> Losing {bd.plan.toLose.toFixed(1)} kg in {bd.plan.daysLeft} days needs {fmt(bd.plan.needed)} kcal less a day. BankCal caps it at a safe 1,000. A realistic date is <b>{prettyDate(bd.plan.realisticEnd)}</b>.
+            <p><b>That date is too fast.</b> Losing {bd.plan.toLose.toFixed(1)} kg in {bd.plan.daysLeft} days needs {fmt(bd.plan.needed)} kcal less a day. BankCal caps it at a safe 1,000, so you’ll lose about {bd.plan.rate} kg a week, not {bd.plan.rateNeeded}. A realistic date is <b>{prettyDate(bd.plan.realisticEnd)}</b>.
               <button className="link-btn" onClick={() => set({ endDate: bd.plan.realisticEnd })}>Use that date</button></p>
           ) : (
-            <p><b>On plan.</b> {bd.plan.toLose.toFixed(1)} kg to go in {bd.plan.daysLeft} days, so you eat {fmt(bd.plan.deficit)} kcal less than you burn each day.</p>
+            <p><b>{bd.plan.pace === 'fast' ? 'On plan, at a fast pace.' : 'On plan.'}</b> {bd.plan.toLose.toFixed(1)} kg to go in {bd.plan.daysLeft} days, so you eat {fmt(bd.plan.deficit)} kcal less than you burn each day.</p>
           )}
+        </div>
+      )}
+      {bd?.plan?.active && <PaceTable plan={bd.plan} weight={+p.weight} />}
+      {tc?.tooLow && (
+        <div className="card plan-note warn">
+          <p><b>{p.targetWeight} kg is below a healthy weight for your height</b> (BMI {tc.bmi}; healthy starts at 18.5). The lowest healthy weight for you is about <b>{tc.lowest} kg</b>.
+            <button className="link-btn" onClick={() => set({ targetWeight: tc.lowest })}>Aim for {tc.lowest} kg</button></p>
         </div>
       )}
       {ms && (
@@ -169,7 +179,7 @@ export default function Me({ user, profile: p, updateProfile }) {
       <h2 className="group-title">{bd?.plan?.active ? 'Simple goal (not used while your plan runs)' : 'Or a simple goal'}</h2>
       <div className="card form-list">
         {GOALS.map((g) => (
-          <button key={g.id} className="pick" onClick={() => set(g.id === 'maintain' ? { goal: 'maintain', maintainWeight: p.maintainWeight ?? (+p.weight || null) } : { goal: g.id })}>
+          <button key={g.id} className="pick" onClick={() => (g.id === 'maintain' ? goMaintain() : set({ goal: g.id, maintainWeight: null }))}>
             <span><b>{g.label}</b><small>{g.hint}</small></span>
             <span className={`check ${p.goal === g.id ? 'on' : ''}`} aria-hidden="true" />
           </button>
@@ -263,5 +273,20 @@ function LayoutEditor({ layout, onChange }) {
         </li>
       ))}
     </ol>
+  )
+}
+
+// What the plan means each week: needed pace vs what BankCal will budget, and how hard that is.
+function PaceTable({ plan, weight }) {
+  const label = { steady: 'Steady and easy to keep', fast: 'Fast but within safe limits', extreme: 'Extreme' }[plan.pace]
+  const perMonth = Math.round(plan.rate * 4.35 * 10) / 10
+  return (
+    <div className="card pace">
+      <div className="pace-row"><span>Your date needs</span><b>{plan.rateNeeded} kg/week</b></div>
+      <div className="pace-row"><span>That’s</span><b>{plan.pctPerWeek}% of body weight a week</b></div>
+      <div className="pace-row"><span>Your budget gives</span><b>≈ {plan.rate} kg/week · {perMonth} kg/month</b></div>
+      <div className="pace-row"><span>Pace</span><b className={`pace-tag ${plan.pace}`}>{label}</b></div>
+      <p className="fine">Each kg of body fat is about {KCAL_PER_KG.toLocaleString('en')} kcal. Most of the loss is fat at these rates, though the first week or two also drops some water. Safe guidance is up to about 1 kg (or 1% of body weight) a week{weight ? `, ${Math.min(1, Math.round(weight) / 100).toFixed(2)} kg for you` : ''}.</p>
+    </div>
   )
 }
