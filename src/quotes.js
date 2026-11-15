@@ -39,22 +39,26 @@ async function fetchVerse(ref) {
 // Load (and cache) one verse by reference.
 export function useVerse(ref, cacheTag) {
   const cacheKey = `bankcal:verse3:${cacheTag}:${ref}`
-  const [verse, setVerse] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(cacheKey)) } catch { return null }
-  })
+  const read = () => { try { return JSON.parse(localStorage.getItem(cacheKey)) } catch { return null } }
+  // The loaded verse is remembered together with the day and reference it belongs to,
+  // so when the day (or wake time) changes it can never be shown against another day's reflection.
+  const [state, setState] = useState(() => ({ key: cacheKey, verse: read() }))
+  const verse = state.key === cacheKey ? state.verse : read()
   useEffect(() => {
-    // re-check once per open if we only have the WEB fallback, so NLT appears as soon as its key is added
-    if (!ref || (verse?.text && verse.version !== 'WEB') || !navigator.onLine) return
+    const cur = read()
+    setState({ key: cacheKey, verse: cur })
+    // re-check once per open if we only have the WEB fallback, so NLT appears as soon as it's available
+    if (!ref || (cur?.text && cur.version !== 'WEB') || !navigator.onLine) return
     let alive = true
     fetchVerse(ref)
       .then((v) => {
         try { localStorage.setItem(cacheKey, JSON.stringify(v)) } catch { /* storage full */ }
-        if (alive) setVerse(v)
+        if (alive) setState({ key: cacheKey, verse: v })
       })
       .catch(() => {})
     return () => { alive = false }
   }, [ref, cacheKey]) // eslint-disable-line react-hooks/exhaustive-deps
-  return verse ?? { text: null, reference: ref, version: '' }
+  return verse?.text ? { ...verse, reference: ref } : { text: null, reference: ref, version: '' }
 }
 
 export function useDailyWords(dayKey) {

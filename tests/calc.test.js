@@ -201,3 +201,31 @@ test('milestones, week ticks and one thing today', async () => {
   assert.match(h.oneThing({ profile: { habits: ['walk'], days: {} }, todayKey: '2026-11-11' }).text, /scale/)
   assert.equal(h.oneThing({ profile: { habits: ['walk', 'water'], days }, todayKey: '2026-11-11', yesterday: { net: 50 } }).text, 'Water with every meal')
 })
+
+test('routine items: honest calories from time and effort', async () => {
+  const t = await import('../src/training.js')
+  // bicep curl, 3 × 10 @ 5 kg, 60 s rests: 90 s work + 180 s rest = 4.5 min at 3.5 MET
+  const curl = t.routineFromExercise(t.exerciseById.curl, 'intermediate', 5)
+  assert.equal(curl.sets, 3); assert.equal(curl.reps, 10); assert.equal(curl.kg, 5); assert.equal(curl.rest, 60)
+  const w = t.routineWorkout(curl)
+  assert.equal(w.min, 4.5); assert.equal(w.note, '3 × 10 @ 5 kg'); assert.equal(w.rid, curl.id)
+  assert.equal(c.workoutKcal(w, 84), 16) // (3.5−1) × 84 × 4.5 ÷ 60
+  // more sets → more calories; heavier weight alone → same
+  assert.ok(c.workoutKcal(t.routineWorkout({ ...curl, sets: 5 }), 84) > 16)
+  assert.equal(c.workoutKcal(t.routineWorkout({ ...curl, kg: 12 }), 84), 16)
+  // very hard custom exercise: work at 8 MET, rests at 2 MET
+  const hard = t.routineWorkout({ id: 'x', name: 'Sprints', kind: 'time', sets: 4, sec: 30, rest: 60, met: 8 })
+  assert.equal(hard.min, 6); assert.equal(hard.met, 4) // (8×120 + 2×240) ÷ 360
+  assert.equal(c.workoutKcal(hard, 84), 25)
+  assert.equal(c.earned({ workouts: [w, hard] }, 84).work, 41)
+})
+
+test('missing wake or bed time falls back to the defaults (06:30, 22:30)', () => {
+  const at = (h, m) => new Date(2026, 10, 16, h, m)
+  assert.equal(c.logicalDayKey({}, at(0, 40)), '2026-11-15') // was treated as a midnight rollover
+  assert.equal(c.logicalDayKey({ wakeTime: '' }, at(0, 40)), '2026-11-15')
+  assert.equal(c.logicalDayKey({}, at(3, 30)), '2026-11-16')
+  assert.equal(c.isWindDown({}, at(21, 0)), false)
+  assert.equal(c.isWindDown({}, at(21, 45)), true)
+  assert.equal(c.isBedtime({}, at(12, 0)), false)
+})

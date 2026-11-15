@@ -1164,3 +1164,58 @@ html, body { max-width: 100%; overflow-x: clip; }
 .psh-cheers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .psh-cheers .btn-soft { padding: 14px 8px; font-size: 14.5px; transition: transform 0.2s var(--spring); }
 .psh-cheers .btn-soft:active { transform: scale(0.94); }
+
+/* Budget breakdown */
+.hero-break { margin: 14px 4px 0; font-size: 13.5px; font-weight: 650; line-height: 1.45; color: var(--muted); text-align: center; text-wrap: balance; }
+.hero-break b { color: var(--ink); font-weight: 850; font-variant-numeric: tabular-nums; }
+.hero-break .pos b { color: var(--pos); }
+/* My routine */
+.rt-sum { font-size: 14px; font-weight: 750; color: var(--muted); padding-right: 4px; }
+.rt-empty { padding: 18px; display: grid; gap: 14px; }
+.rt-empty p { margin: 0; line-height: 1.5; color: color-mix(in srgb, var(--ink) 75%, var(--muted)); }
+.rt-list { padding: 2px 8px 2px 6px; }
+.rt + .rt { border-top: 1px solid var(--line); }
+.rt-row { display: flex; align-items: center; gap: 4px; }
+.rt-tick { flex: none; width: 52px; height: 60px; display: grid; place-items: center; }
+.check.big { width: 30px; height: 30px; }
+.rt-main { flex: 1; min-width: 0; padding: 12px 0; text-align: left; color: inherit; }
+.rt-main b { display: block; font-weight: 800; font-size: 15.5px; transition: opacity 0.2s; }
+.rt-main small { display: block; margin-top: 1px; color: var(--muted); font-weight: 650; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.rt.done .rt-main b { opacity: 0.55; text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.rt-edit { flex: none; padding: 10px 10px; font-weight: 850; font-size: 13.5px; color: var(--accent); }
+.rt-adjust { padding: 4px 8px 14px 12px; display: grid; gap: 8px; animation: fade 0.25s; }
+.stepper { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 6px 6px 14px; border-radius: 16px; background: var(--bg); }
+.stepper > span { font-weight: 800; font-size: 14.5px; color: var(--muted); }
+.stepper > div { display: flex; align-items: center; gap: 4px; }
+.stepper b { min-width: 64px; text-align: center; font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.stepper b small { font-size: 12.5px; font-weight: 800; color: var(--muted); }
+.stepper button { width: 44px; height: 44px; border-radius: 13px; background: var(--card); box-shadow: var(--shadow); font-size: 22px; font-weight: 800; color: var(--ink); line-height: 1; transition: transform 0.15s var(--spring); }
+.stepper button:active { transform: scale(0.9); }
+.stepper button:disabled { opacity: 0.3; box-shadow: none; }
+.rt-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.rt-tools button { padding: 9px 12px; border-radius: 12px; background: var(--bg); font-weight: 800; font-size: 13.5px; color: var(--ink); }
+.rt-tools button:disabled { opacity: 0.35; }
+.rt-tools .danger { color: var(--neg); margin-left: auto; }
+.rt-adjust .fine { margin: 2px 4px 0; }
+/* Exercise search and custom exercises */
+.ex-search { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 4px 8px 4px 14px; border-radius: 16px; background: var(--card); box-shadow: var(--shadow); }
+.ex-search input { flex: 1; min-width: 0; border: 0; background: none; padding: 10px 0; font: inherit; font-size: 16px; font-weight: 650; color: var(--ink); outline: none; }
+.ex-search:focus-within { box-shadow: 0 0 0 2px var(--accent); }
+.ex-search button { width: 36px; height: 36px; border-radius: 50%; color: var(--muted); font-weight: 800; }
+.ex-none { margin: 0; padding: 16px 0; color: var(--muted); font-weight: 650; }
+.create-ex { display: block; width: 100%; margin-top: 12px; }
+.ex-routine { display: block; width: 100%; margin-top: 22px; }
+.ex-routine:disabled { opacity: 1; background: none; color: var(--pos); }
+.ex-routine + .ex-actions { margin-top: 8px; }
+.custom-sheet { max-height: 92dvh; overflow-y: auto; }
+.custom-sheet .field { display: grid; gap: 6px; margin-top: 6px; }
+.custom-sheet .field span { font-size: 13px; font-weight: 800; color: var(--muted); }
+.custom-sheet .field input { padding: 14px 16px; border: 0; border-radius: 16px; background: var(--bg); color: var(--ink); font: inherit; font-size: 17px; font-weight: 750; }
+.emoji-row { display: flex; gap: 6px; overflow-x: auto; margin: 12px -4px 0; padding: 2px 4px; scrollbar-width: none; }
+.emoji-row button { flex: none; width: 44px; height: 44px; border-radius: 13px; background: var(--bg); font-size: 20px; }
+.emoji-row button.on { background: var(--soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.seg.two { display: grid; grid-template-columns: 1fr 1fr; }
+.effort-list { border-radius: 16px; background: var(--bg); overflow: hidden; }
+.effort-list .pick { padding-left: 14px; padding-right: 14px; }
+.custom-actions { display: grid; gap: 8px; margin-top: 18px; }
+.custom-actions .btn-plain { margin: 0; }

@@ -1,3 +1,5 @@
+import { WORKOUTS } from './calc.js'
+
 // Exercise library, levels and workout plans for the Train tab.
 // Sets, reps and rest follow common strength-training guidance for each level
 // (e.g. ACSM: 2–4 sets of 8–12 reps for general strength; beginners start with 1–2 sets).
@@ -293,4 +295,43 @@ const CIRCUIT_MIN = { beginner: 15, intermediate: 20, advanced: 25 }
 export function toSession(plan, session, level) {
   const mins = plan.id === 'burn' ? CIRCUIT_MIN[level] : Math.round(5 + session.items.reduce((a, id) => a + exerciseMinutes(exerciseById[id], level), 0))
   return { type: plan.id === 'burn' ? 'circuit' : 'strength', min: mins, label: `${plan.name}: ${session.name}`, note: `${session.items.length} exercises · ${mins} min` }
+}
+
+// ───────── Your own exercises and your routine ─────────
+// Effort levels use Compendium of Physical Activities values:
+// calisthenics light 2.8, moderate 3.8; vigorous resistance training 6.0; vigorous calisthenics 8.0.
+export const EFFORTS = [
+  { id: 'light', label: 'Light', met: 2.8, hint: 'Stretching, mobility, easy bodyweight moves' },
+  { id: 'moderate', label: 'Moderate', met: 3.8, hint: 'Most dumbbell and bodyweight exercises' },
+  { id: 'hard', label: 'Hard', met: 6.0, hint: 'Heavy lifting or short rests; you’re out of breath' },
+  { id: 'cardio', label: 'Very hard', met: 8.0, hint: 'Fast cardio like burpees, skipping, sprints' },
+]
+const REST_MET = 2.0 // standing around between hard sets
+
+// A routine item from a library exercise at your level.
+export function routineFromExercise(ex, level, kg) {
+  const L = ex.levels[level]
+  const n = parseInt(L.reps, 10) || 10
+  const met = ex.group === 'cardio' ? (WORKOUTS.find((w) => w.id === ex.log.type)?.met ?? 8) : 3.5
+  return {
+    id: `r${Date.now().toString(36)}`, ex: ex.id, name: ex.name, emoji: ex.emoji,
+    kind: ex.log.sec ? 'time' : 'reps', sets: L.sets, reps: ex.log.sec ? undefined : n, sec: ex.log.sec ? n : undefined,
+    each: /each/.test(L.reps) || undefined, kg: ex.kg && kg > 0 ? +kg : undefined, rest: secs(L.rest) || 60, met,
+  }
+}
+export function routineFromCustom(c) {
+  return { id: `r${Date.now().toString(36)}`, ex: c.id, name: c.name, emoji: c.emoji ?? '✅', kind: c.kind, sets: 3, reps: c.kind === 'reps' ? 10 : undefined, sec: c.kind === 'time' ? 30 : undefined, kg: c.weighted ? 5 : undefined, rest: 60, met: c.met }
+}
+
+// Minutes and effort for a routine item. Up to moderate effort the whole time counts at that
+// level, rests included (how the Compendium rates weight training). For harder efforts only the
+// working time counts at the high level and the rests count as light standing.
+export function routineWorkout(item) {
+  const sets = +item.sets || 1
+  const work = sets * (item.kind === 'time' ? (+item.sec || 0) : (+item.reps || 0) * 3 * (item.each ? 2 : 1))
+  const rest = sets * (+item.rest || 60)
+  const total = work + rest
+  const met = item.met <= 3.8 ? item.met : total > 0 ? (item.met * work + REST_MET * rest) / total : item.met
+  const dose = item.kind === 'time' ? `${sets} × ${item.sec} s` : `${sets} × ${item.reps}${item.each ? ' each side' : ''}`
+  return { type: 'custom', rid: item.id, min: Math.round((total / 60) * 10) / 10, met: Math.round(met * 100) / 100, label: item.name, note: `${dose}${item.kg ? ` @ ${item.kg} kg` : ''}` }
 }

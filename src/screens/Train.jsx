@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { fmt, workoutKcal } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
-import { EXERCISES, GROUPS, LEVELS, PLANS, exerciseById, toSession, toWorkout, weightRange } from '../training'
+import { EXERCISES, GROUPS, LEVELS, PLANS, exerciseById, routineFromCustom, routineFromExercise, routineWorkout, toSession, toWorkout, weightRange } from '../training'
+import { CustomSheet, RoutineCard } from './Routine'
 
 const range = (r) => (r ? `${r[0]}–${r[1]} kg` : null)
 
@@ -33,7 +34,21 @@ export default function Train(props) {
     updateProfile({ trainPlan: { ...profile.trainPlan, done: done + 1, last: today } })
   }
 
-  const list = EXERCISES.filter((e) => group === 'all' || e.group === group)
+  // your own exercises and routine
+  const customs = profile.customEx ?? []
+  const routine = profile.routine ?? []
+  const [q, setQ] = useState('')
+  const [custom, setCustom] = useState(null) // 'new' or an exercise being edited
+  const saveCustom = (c) => updateProfile({
+    customEx: customs.some((x) => x.id === c.id) ? customs.map((x) => (x.id === c.id ? c : x)) : [...customs, c],
+    routine: routine.map((it) => (it.ex === c.id ? { ...it, name: c.name, emoji: c.emoji, met: c.met } : it)),
+  })
+  const addRoutine = (item) => { updateProfile({ routine: [...(profile.routine ?? []), item] }); props.notify(`${item.name} added to your routine`) }
+  const inRoutine = (id) => routine.some((it) => it.ex === id)
+  const t = q.trim().toLowerCase()
+  const match = (e) => !t || e.name.toLowerCase().includes(t) || (e.muscles ?? '').toLowerCase().includes(t)
+  const list = EXERCISES.filter((e) => (group === 'all' || e.group === group) && match(e))
+  const mine = group === 'all' || group === 'mine' ? customs.filter(match) : []
 
   return (
     <>
@@ -50,6 +65,8 @@ export default function Train(props) {
         ))}
       </div>
       <p className="fine level-hint">{LEVELS.find((l) => l.id === level).hint}. Sets, reps and weights below match this level.</p>
+
+      <RoutineCard {...props} onCreate={() => setCustom('new')} />
 
       <h2 className="group-title">Your plan</h2>
       {active && !browse ? (
@@ -99,17 +116,40 @@ export default function Train(props) {
       )}
 
       <h2 className="group-title">Exercises</h2>
+      <label className="ex-search">
+        <span aria-hidden="true">🔍</span>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search exercises…" aria-label="Search exercises" autoComplete="off" />
+        {q && <button onClick={() => setQ('')} aria-label="Clear search">✕</button>}
+      </label>
       <div className="chips" role="tablist">
-        {GROUPS.map((g) => <button key={g.id} role="tab" aria-selected={group === g.id} className={`chip ${group === g.id ? 'on' : ''}`} onClick={() => setGroup(g.id)}>{g.label}</button>)}
+        {[...GROUPS, ...(customs.length ? [{ id: 'mine', label: 'Mine' }] : [])].map((g) => <button key={g.id} role="tab" aria-selected={group === g.id} className={`chip ${group === g.id ? 'on' : ''}`} onClick={() => setGroup(g.id)}>{g.label}</button>)}
       </div>
       <div className="card ex-list">
+        {mine.map((c) => (
+          <button className="ex-row" key={c.id} onClick={() => setCustom(c)}>
+            <span className="ex-emoji">{c.emoji}</span>
+            <span className="ex-main"><b>{c.name}</b><small>My exercise{inRoutine(c.id) ? ' · in my routine' : ''}</small></span>
+            <span className="ex-dose">Edit</span>
+          </button>
+        ))}
         {list.map((ex) => <ExRow key={ex.id} ex={ex} level={level} profile={profile} kg={kgFor(ex)} onOpen={() => setOpen(ex)} fav={favs.includes(ex.id)} />)}
+        {list.length + mine.length === 0 && <p className="ex-none">Nothing matches “{q}”. You can add it as your own exercise.</p>}
       </div>
+      <button className="btn-soft create-ex" onClick={() => setCustom(q.trim() && list.length + mine.length === 0 ? { name: q.trim(), emoji: '✅', kind: 'reps', weighted: false, met: 3.8 } : 'new')}>＋ Create my own exercise</button>
       <p className="fine">These are general guides for healthy adults. Stop if anything hurts (beyond normal muscle effort), and check with a doctor first if you’re pregnant, injured or managing a health condition.</p>
 
       {open && (
         <ExerciseSheet ex={open} level={level} profile={profile} kg={kgFor(open)} fav={favs.includes(open.id)}
-          onFav={() => toggleFav(open.id)} onKg={(v) => setLift(open.id, v)} onLog={() => { log([open]); setOpen(null) }} onClose={() => setOpen(null)} />
+          onFav={() => toggleFav(open.id)} onKg={(v) => setLift(open.id, v)} onLog={() => { log([open]); setOpen(null) }} onClose={() => setOpen(null)}
+          inRoutine={inRoutine(open.id)} onRoutine={() => addRoutine(routineFromExercise(open, level, kgFor(open)))} />
+      )}
+      {custom && (
+        <CustomSheet initial={custom === 'new' ? null : custom} key={custom === 'new' ? 'new' : custom.id ?? custom.name} weight={profile.weight}
+          inRoutine={custom !== 'new' && custom.id ? inRoutine(custom.id) : false}
+          onSave={saveCustom} onAddRoutine={(c) => addRoutine(routineFromCustom(c))}
+          onLog={(c) => { const w = { id: crypto.randomUUID?.() ?? String(Math.random()), ...routineWorkout(routineFromCustom(c)), rid: undefined }; setDay(today, { workouts: [...(dayLog.workouts ?? []), w] }); celebrate(`${c.name} logged, +${fmt(workoutKcal(w, profile.weight))} kcal`) }}
+          onDelete={(id) => updateProfile({ customEx: customs.filter((x) => x.id !== id), routine: routine.filter((it) => it.ex !== id) })}
+          onClose={() => setCustom(null)} />
       )}
     </>
   )
@@ -126,7 +166,7 @@ function ExRow({ ex, level, profile, kg, onOpen, fav }) {
   )
 }
 
-function ExerciseSheet({ ex, level, profile, kg, fav, onFav, onKg, onLog, onClose }) {
+function ExerciseSheet({ ex, level, profile, kg, fav, onFav, onKg, onLog, onClose, inRoutine, onRoutine }) {
   const drag = useSheetDrag(onClose)
   useEscape(onClose)
   const L = ex.levels[level]
@@ -187,6 +227,7 @@ function ExerciseSheet({ ex, level, profile, kg, fav, onFav, onKg, onLog, onClos
           {harder && <p><span>Harder</span>{ex.levels[harder].variant}</p>}
         </div>
 
+        <button className="btn-soft ex-routine" disabled={inRoutine} onClick={onRoutine}>{inRoutine ? '✓ In my routine' : '＋ Add to my routine'}</button>
         <div className="ex-actions">
           <button className={`btn-ghost ${fav ? 'on' : ''}`} onClick={onFav} aria-pressed={fav}>{fav ? '★ Favourite' : '☆ Favourite'}</button>
           <button className="btn-primary" onClick={onLog}>Log it · +{fmt(kcal)} kcal</button>

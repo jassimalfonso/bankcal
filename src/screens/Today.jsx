@@ -111,9 +111,12 @@ export default function Today(props) {
             {(windDown || location.search.includes('evening')) && todays.length > 0 && <button className="btn-soft close-day" onClick={closeDay}>Close my day</button>}
             <div className="hero-stats three">
               <div><b>{fmt(shownSpent)}</b><span>Eaten</span></div>
-              <div><b className="pos">+{fmt(shownEarn)}</b><span>Earned</span></div>
-              <div><b>{fmt(base)}</b><span>Budget</span></div>
+              <div><b className="pos">+{fmt(shownEarn)}</b><span>Burned</span></div>
+              <div><b>{fmt(budget)}</b><span>Budget</span></div>
             </div>
+            <p className="hero-break">{earn.total > 0
+              ? <>Today’s budget: <b>{fmt(base)}</b> base <span className="pos">+ <b>{fmt(earn.total)}</b> burned</span>{earn.work > 0 && earn.steps + earn.tread > 0 ? ` (workouts ${fmt(earn.work)}, steps and walking ${fmt(earn.steps + earn.tread)})` : earn.work > 0 ? ' from workouts' : ' from steps and walking'}</>
+              : <>Today’s budget: <b>{fmt(base)}</b> base. Tick a workout or log steps to add burned calories.</>}</p>
           </>
         )}
       </section>

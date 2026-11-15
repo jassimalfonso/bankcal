@@ -153,6 +153,7 @@ export const WORKOUTS = [
   { id: 'pushups', label: 'Push-ups', emoji: '💪', kind: 'reps', met: 8.0, secPerRep: 2.5 },
   { id: 'situps', label: 'Sit-ups', emoji: '🔄', kind: 'reps', met: 3.8, secPerRep: 3 },
   // whole-session values from the Compendium: resistance training (rests included) 3.5, moderate circuit training 4.3
+  { id: 'custom', label: 'Exercise', emoji: '✅', kind: 'min', met: 3.5 },
   { id: 'strength', label: 'Strength training', emoji: '🏋️', kind: 'min', met: 3.5 },
   { id: 'circuit', label: 'Circuit training', emoji: '⚡', kind: 'min', met: 4.3 },
   { id: 'bridge', label: 'Glute bridges', emoji: '🍑', kind: 'reps', met: 3.8, secPerRep: 3 },
@@ -185,7 +186,8 @@ export function workoutKcal(w, weightKg) {
   const def = WORKOUTS.find((x) => x.id === w.type)
   if (!def) return 0
   // heavier dumbbells = harder effort (vigorous weight training ≈ 6 MET)
-  const met = def.id === 'dumbbells' ? (+w.kg >= 10 ? 6.0 : +w.kg >= 5 ? 5.0 : 3.5) : def.met
+  // an entry can carry its own effort level (custom exercises and routine items)
+  const met = +w.met > 0 ? +w.met : def.id === 'dumbbells' ? (+w.kg >= 10 ? 6.0 : +w.kg >= 5 ? 5.0 : 3.5) : def.met
   return Math.round(Math.max(0, met - 1) * (+weightKg || 70) * (workoutMinutes(w) / 60))
 }
 
@@ -256,7 +258,8 @@ export function streak(entries, budgetFor, todayKey, includeToday) {
 // ───────── Your day: wake-up and bedtime ─────────
 // The "day" rolls over 3 hours before you wake (never later than 5 am), so a
 // late-night snack after midnight still counts towards the day you were in.
-const toMin = (hhmm) => { const [h, m] = String(hhmm || '').split(':').map(Number); return Number.isFinite(h) ? h * 60 + (m || 0) : null }
+// 'HH:MM' → minutes; anything missing or malformed → null so the defaults apply
+const toMin = (hhmm) => { if (!/^\d{1,2}:\d{2}$/.test(String(hhmm ?? ''))) return null; const [h, m] = hhmm.split(':').map(Number); return h * 60 + m }
 const nowMin = (d) => d.getHours() * 60 + d.getMinutes()
 const inWindow = (m, s, e) => (s <= e ? m >= s && m < e : m >= s || m < e)
 export const DEFAULT_WAKE = '06:30'
