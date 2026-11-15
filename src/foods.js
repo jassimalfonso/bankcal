@@ -25,6 +25,30 @@ export const FOODS = [
   ['Pandesal', '2 pieces', 240], ['Ensaymada', '1 piece', 350], ['Spanish bread', '1 piece', 200], ['Bibingka', '1 piece', 300],
   ['Puto', '3 pieces', 220], ['Kutsinta', '3 pieces', 180], ['Turon', '1 piece', 220], ['Banana cue', '1 stick', 250],
   ['Leche flan', '1 slice', 250], ['Ube halaya', '100 g', 260], ['Taho', '1 cup', 200], ['Buko juice', '1 glass', 60],
+  ['Okoy (shrimp fritter)', '2 pieces', 300], ['Tortang talong', '1 piece', 220], ['Tortang talong + rice', '1 plate', 450],
+  ['Tortang giniling', '1 piece', 280], ['Tortang alamang', '1 piece', 200], ['Lomi', '1 bowl', 550], ['Lomi overload (with toppings)', '1 big bowl', 850],
+  ['Batchoy (La Paz)', '1 bowl', 480], ['Mami', '1 bowl', 420], ['Sotanghon soup', '1 bowl', 300], ['Pancit malabon', '1 plate', 550],
+  ['Pancit habhab', '1 serving', 400], ['Pancit lomi guisado', '1 plate', 600], ['Miki bihon', '1 plate', 480], ['Spaghetti (Filipino sweet)', '1 plate', 500],
+  ['Chopsuey', '1 serving', 180], ['Ginisang ampalaya', '1 serving', 150], ['Ginisang monggo', '1 bowl', 280], ['Ginataang kalabasa at sitaw', '1 serving', 250],
+  ['Ginataang tilapia', '1 serving', 350], ['Paksiw na isda', '1 serving', 250], ['Sinigang na hipon', '1 bowl', 220], ['Sinigang na bangus', '1 bowl', 280],
+  ['Pinangat', '1 serving', 300], ['Tinolang tahong', '1 bowl', 220], ['Nilaga (pork or beef)', '1 bowl', 400], ['Pochero', '1 bowl', 450],
+  ['Afritada (chicken)', '1 serving', 350], ['Mechado', '1 serving', 420], ['Chicken curry (Filipino)', '1 serving', 420], ['Humba', '1 serving', 550],
+  ['Pork binagoongan', '1 serving', 550], ['Lechon (roast pork)', '150 g', 600], ['Lechon manok', '1/4 chicken', 400], ['Liempo (grilled)', '150 g', 580],
+  ['Pork BBQ skewer', '1 stick', 180], ['Isaw', '3 sticks', 150], ['Kwek-kwek', '5 pieces', 250], ['Fishball', '10 pieces', 150],
+  ['Tokneneng', '3 pieces', 220], ['Siomai', '4 pieces', 200], ['Siopao asado', '1 piece', 320], ['Siopao bola-bola', '1 piece', 340],
+  ['Embutido', '2 slices', 280], ['Hamonado / tocino', '100 g', 330], ['Longganisa', '2 pieces', 300], ['Skinless longganisa', '3 pieces', 280],
+  ['Corned beef (ginisa)', '1 serving', 300], ['Daing na bangus', '1/2 fish', 380], ['Fried tilapia', '1 piece', 280], ['Tuyo', '3 pieces', 150],
+  ['Sardinas with egg', '1 serving', 250], ['Fried egg', '1 egg', 90], ['Sinangag (garlic rice)', '1 cup', 280], ['White rice', '1 cup', 205],
+  ['Kinilaw', '1 serving', 180], ['Sisig (bangus)', '1 serving', 380], ['Chicharon', '30 g', 160], ['Chicharon bulaklak', '50 g', 300],
+  ['Dinakdakan', '1 serving', 450], ['Papaitan', '1 bowl', 350], ['Kare-kare (oxtail)', '1 serving', 600], ['Kaldereta (goat)', '1 serving', 450],
+  ['Champorado', '1 bowl', 320], ['Goto', '1 bowl', 330], ['Palabok (Jollibee)', '1 serving', 470], ['Pansit canton (instant)', '1 pack', 310],
+  ['Lucky Me Pancit Canton', '1 pack', 310], ['Cup noodles (Filipino)', '1 cup', 280], ['Ensaladang talong', '1 serving', 80], ['Atchara', '2 tbsp', 30],
+  ['Biko', '1 slice', 280], ['Suman', '1 piece', 180], ['Maja blanca', '1 slice', 200], ['Cassava cake', '1 slice', 280], ['Buko pandan', '1 cup', 300],
+  ['Mais con yelo', '1 glass', 300], ['Sago at gulaman', '1 glass', 180], ['Palitaw', '3 pieces', 200], ['Polvoron', '2 pieces', 140], ['Hopia', '1 piece', 180],
+  ['Mamon', '1 piece', 170], ['Pianono', '1 slice', 200], ['Brazo de Mercedes', '1 slice', 260], ['Ube cake', '1 slice', 350], ['Cheese ensaymada', '1 piece', 380],
+  ['Kakanin platter', '1 serving', 350], ['Puto bumbong', '1 serving', 280], ['Fruit salad (Filipino)', '1 cup', 280], ['Mango float', '1 slice', 400],
+  ['Calamansi juice', '1 glass', 90], ['Tsokolate (tablea)', '1 cup', 200], ['Kapeng barako with sugar', '1 cup', 50], ['3-in-1 coffee', '1 sachet', 100],
+  ['Greenwich pizza slice', '1 slice', 280], ['Chowking siopao', '1 piece', 320], ['Chowking halo-halo', '1 serving', 470], ['Goldilocks polvoron', '1 piece', 80],
   ['Jollibee Chickenjoy + rice', '1 piece', 520], ['Jollibee Jolly Spaghetti', '1 serving', 480], ['Jollibee Yumburger', '1 burger', 290],
   ['Chowking chao fan', '1 serving', 550], ['Mang Inasal PM1', '1 meal', 700], ['Max’s fried chicken', '1/4 chicken', 450],
   // Everyday & international
@@ -39,18 +63,37 @@ export const FOODS = [
   ['Mixed nuts', '30 g', 175], ['Dark chocolate', '2 squares', 110], ['Ice cream', '1 scoop', 140], ['Donut', '1', 260], ['Chips', 'small bag', 160],
 ].map(([name, portion, kcal]) => ({ name, portion, kcal }))
 
-export function searchFoods(q, limit = 6) {
-  const t = q.trim().toLowerCase()
+// Words people type that should find the same dish
+const ALIASES = { talong: 'eggplant', okoy: 'ukoy', ukoy: 'okoy', pansit: 'pancit', pancit: 'pansit', sinangag: 'garlic rice', longsilog: 'longganisa', siopao: 'bun' }
+const norm = (x) => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()
+
+// one typo allowed for words of 5+ letters
+function close(a, b) {
+  if (a === b) return true
+  if (Math.abs(a.length - b.length) > 1 || a.length < 5) return false
+  let i = 0, j = 0, edits = 0
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) { i++; j++; continue }
+    if (++edits > 1) return false
+    if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++ }
+  }
+  return edits + (a.length - i) + (b.length - j) <= 1
+}
+
+export function searchFoods(q, limit = 8) {
+  const t = norm(q)
   if (t.length < 2) return []
-  const words = t.split(/\s+/)
+  const words = t.split(' ')
   return FOODS
     .map((f) => {
-      const n = f.name.toLowerCase()
-      const score = n.startsWith(t) ? 3 : n.includes(t) ? 2 : words.every((w) => n.includes(w)) ? 1 : 0
+      const n = norm(f.name)
+      const nw = n.split(' ')
+      const hit = (w) => n.includes(w) || (ALIASES[w] && n.includes(ALIASES[w])) || nw.some((x) => close(w, x))
+      const score = n.startsWith(t) ? 4 : n.includes(t) ? 3 : words.every(hit) ? 2 : words.some((w) => w.length > 3 && hit(w)) ? 1 : 0
       return { f, score }
     })
     .filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => b.score - a.score || a.f.name.length - b.f.name.length)
     .slice(0, limit)
     .map((x) => x.f)
 }
