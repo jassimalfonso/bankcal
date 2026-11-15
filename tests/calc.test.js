@@ -44,7 +44,7 @@ test('activity deposits are net of resting burn', () => {
   assert.equal(c.earned({ steps: 10000 }, 84).steps, 259) // 7000 × 0.00044 × 84
   assert.equal(c.earned({ treadMin: 30, treadSpeed: 5.6 }, 84).tread, 139) // (4.3−1) × 84 × 0.5
   assert.equal(c.workoutKcal({ type: 'rope', min: 10 }, 84), 158) // (12.3−1) × 84 ÷ 6
-  assert.equal(c.earned({ steps: 10000 }, 84, 'moderate').total, 0) // no double counting
+  assert.equal(c.dailyBudget({ ...man, activity: 'active' }), c.dailyBudget(man)) // old activity setting no longer changes the base
 })
 
 test('BMI categories, international and Asian', () => {

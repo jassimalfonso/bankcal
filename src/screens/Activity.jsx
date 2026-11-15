@@ -34,11 +34,6 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
         </span>
       </button>
       {!open ? null : <>
-      {earn.blocked && (
-        <div className="card plan-note warn">
-          <p><b>Activity isn’t added to your budget right now.</b> Your activity level in Settings already includes exercise, so adding it again would count it twice. Set it to <b>Desk job</b> to earn calories from what you log here.</p>
-        </div>
-      )}
       <div className="card form-list activity">
         <div className="act-row">
           <div className="act-head">

@@ -50,7 +50,9 @@ export function bmr({ sex, weight, height, ...p }) {
 export function breakdown(p) {
   if (!(p.weight > 0 && p.height > 0 && ageOf(p) > 0)) return null
   const b = bmr(p)
-  const act = ACTIVITY.find((a) => a.id === p.activity) ?? ACTIVITY[0]
+  // One base for everyone: daily life without exercise (×1.2). Exercise is added only when it's logged,
+  // so it's never counted twice and rest days and active days get different budgets.
+  const act = ACTIVITY[0]
   const goal = GOALS.find((g) => g.id === p.goal) ?? GOALS[0]
   const pl = plan(p, p.weight)
   // an active plan sets the deficit; reached = maintain; not started or past its date = simple goal
@@ -97,8 +99,7 @@ export function metFor(kmh) {
 export const BASE_STEPS = 3000 // everyday steps already counted in a desk-job budget
 
 // Calories earned today from steps (above the everyday baseline) and treadmill time.
-export function earned(day, weightKg, activity = 'sedentary') {
-  if (activity && activity !== 'sedentary') return { steps: 0, tread: 0, work: 0, total: 0, blocked: true }
+export function earned(day, weightKg) {
   const w = +weightKg || 70
   const steps = Math.max(0, (+day?.steps || 0) - BASE_STEPS)
   // net walking cost ≈ 2.5 MET × 3.5 ml/kg/min ÷ 200 ≈ 0.044 kcal/kg per minute, ~100 steps a minute

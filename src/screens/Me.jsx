@@ -1,5 +1,5 @@
 import { useState, Children, cloneElement, isValidElement } from 'react'
-import { maintainStatus, targetCheck, KCAL_PER_KG, ACTIVITY, ageOf, DEFAULT_BED, DEFAULT_WAKE, GOALS, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
+import { maintainStatus, targetCheck, KCAL_PER_KG, ageOf, DEFAULT_BED, DEFAULT_WAKE, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
 import Character from '../Character'
 import { DEFAULT_LAYOUT, SECTION_NAMES } from '../layout'
 import { THEMES, BuddyGrid } from './Onboarding'
@@ -40,6 +40,7 @@ export default function Me({ user, profile: p, updateProfile }) {
     const goMaintain = () => set({ goal: 'maintain', maintainWeight: +p.weight || null, targetWeight: null, endDate: null, startDate: null, customBudget: null })
     const tc = targetCheck(p.targetWeight, p.height)
   const budget = dailyBudget(p)
+  const maintaining = p.goal === 'maintain'
 
   return (
     <>
@@ -62,11 +63,84 @@ export default function Me({ user, profile: p, updateProfile }) {
         <span>Daily budget</span>
         <b>{budget != null ? fmt(budget) : '—'}<small> kcal</small></b>
         <p>
-          {bd
-            ? `You burn about ${fmt(bd.tdee)} kcal a day${bd.deficit ? `, minus ${bd.deficit} for your goal` : ''}.${bd.auto === bd.floor ? ` Kept at the safe minimum of ${fmt(bd.floor)}.` : ''}${p.customBudget > 0 ? ' Using your custom number.' : ''}`
-            : 'Fill in your birthday, height and weight below.'}
+          {p.customBudget > 0 ? 'Using your own number (under More settings).'
+            : bd ? `You burn about ${fmt(bd.tdee)} kcal on a normal day${bd.deficit ? `, and your goal takes off ${fmt(bd.deficit)}` : ''}.${bd.auto === bd.floor ? ` Kept at the safe minimum of ${fmt(bd.floor)}.` : ''} Steps and workouts you log add more.`
+            : 'Fill in About you below to work out your budget.'}
         </p>
       </section>
+
+      <h2 className="group-title">Your goal</h2>
+      <div className="seg goal-seg">
+        <button className={!maintaining ? 'on' : ''} onClick={() => maintaining && set({ goal: 'lose05', maintainWeight: null })}>Lose weight</button>
+        <button className={maintaining ? 'on' : ''} onClick={() => !maintaining && goMaintain()}>Maintain</button>
+      </div>
+
+      {!maintaining && (
+        <>
+          <div className="card form-list goal-card">
+            <Line label="Target weight"><Num value={p.targetWeight ?? ''} onChange={num('targetWeight')} unit="kg" ph="75" decimal /></Line>
+          </div>
+          {+p.targetWeight > 0 && +p.weight > +p.targetWeight ? (
+            <div className="recs">
+              <p className="recs-title">How fast?</p>
+              <div className="recs-row">
+                {recommendDates(p.weight, p.targetWeight).map((r) => (
+                  <button key={r.id} className={`rec ${p.endDate === r.date ? 'on' : ''} ${r.best ? 'best' : ''}`} onClick={() => set({ endDate: r.date, startDate: dayKey() })}>
+                    <b>{r.label}</b>
+                    <span>{prettyDate(r.date)}</span>
+                    <small>{r.rate} kg/week</small>
+                  </button>
+                ))}
+              </div>
+              <details className="own-date">
+                <summary>Or choose my own date</summary>
+                <input className="date-in" type="date" aria-label="Reach my target by" value={p.endDate ?? ''} min={dayKey()} onChange={(e) => set({ endDate: e.target.value, startDate: dayKey() })} />
+              </details>
+            </div>
+          ) : !(+p.targetWeight > 0) && (
+            <p className="fine">Add a target to see when you could reach it. Until then BankCal takes off 550 kcal a day, about 0.5 kg a week.</p>
+          )}
+        </>
+      )}
+      {bd?.plan && (
+        <div className={`card plan-note ${bd.plan.tooFast || bd.plan.expired ? 'warn' : ''}`}>
+          {bd.plan.reached ? (
+            <p><b>🎉 You’ve reached {p.targetWeight} kg.</b> Your budget is now set to maintain this weight.
+              <button className="link-btn" onClick={keepIt}>Switch to maintain</button></p>
+          ) : bd.plan.expired ? (
+            <p><b>Your plan ended on {prettyDate(p.endDate)}</b> with {bd.plan.toLose.toFixed(1)} kg still to go. Until you pick a new date, BankCal takes off 550 kcal a day. A realistic one is <b>{prettyDate(bd.plan.realisticEnd)}</b>.
+              <button className="link-btn" onClick={() => set({ endDate: bd.plan.realisticEnd, startDate: dayKey() })}>Use that date</button></p>
+          ) : bd.plan.notStarted ? (
+            <p><b>Your plan starts on {prettyDate(p.startDate)}.</b> </p>
+          ) : bd.plan.tooFast ? (
+            <p><b>That date is too fast.</b> Losing {bd.plan.toLose.toFixed(1)} kg in {bd.plan.daysLeft} days needs {fmt(bd.plan.needed)} kcal less a day. BankCal caps it at a safe 1,000, so you’ll lose about {bd.plan.rate} kg a week, not {bd.plan.rateNeeded}. A realistic date is <b>{prettyDate(bd.plan.realisticEnd)}</b>.
+              <button className="link-btn" onClick={() => set({ endDate: bd.plan.realisticEnd })}>Use that date</button></p>
+          ) : (
+            <p><b>{bd.plan.pace === 'fast' ? 'On plan, at a fast pace.' : 'On plan.'}</b> {bd.plan.toLose.toFixed(1)} kg to go in {bd.plan.daysLeft} days, so you eat {fmt(bd.plan.deficit)} kcal less than you burn each day.</p>
+          )}
+        </div>
+      )}
+      {bd?.plan?.active && bd.plan.pace !== 'steady' && <PaceTable plan={bd.plan} weight={+p.weight} />}
+      {tc?.tooLow && (
+        <div className="card plan-note warn">
+          <p><b>{p.targetWeight} kg is below a healthy weight for your height</b> (BMI {tc.bmi}; healthy starts at 18.5). The lowest healthy weight for you is about <b>{tc.lowest} kg</b>.
+            <button className="link-btn" onClick={() => set({ targetWeight: tc.lowest })}>Aim for {tc.lowest} kg</button></p>
+        </div>
+      )}
+      {ms && (
+        <div className={`card plan-note ${ms.status === 'in' ? '' : 'warn'}`}>
+          {ms.status === 'in' ? (
+            <p><b>Maintaining {ms.keep} kg.</b> You’re {ms.diff === 0 ? 'right on it' : `${Math.abs(ms.diff)} kg ${ms.diff > 0 ? 'above' : 'below'}`}, inside your healthy range of {ms.low.toFixed(1)}–{ms.high.toFixed(1)} kg. Day-to-day swings like this are normal.</p>
+          ) : ms.status === 'above' ? (
+            <p><b>You’re {ms.diff} kg above the {ms.keep} kg you’re keeping.</b> A gentle reset brings it back without strict dieting.
+              <button className="link-btn" onClick={() => set({ goal: 'lose025', maintainWeight: null, targetWeight: ms.keep, endDate: null })}>Ease back to {ms.keep} kg</button></p>
+          ) : (
+            <p><b>You’re {Math.abs(ms.diff)} kg below the {ms.keep} kg you’re keeping.</b> If that wasn’t planned, eat a little more, or keep the new weight.
+              <button className="link-btn" onClick={() => set({ maintainWeight: +p.weight })}>Keep {p.weight} kg instead</button></p>
+          )}
+        </div>
+      )}
+
 
       <h2 className="group-title" id="about">About you</h2>
       <div className="card form-list">
@@ -97,94 +171,6 @@ export default function Me({ user, profile: p, updateProfile }) {
         <Line label="Bedtime"><input className="date-in" type="time" value={p.bedTime ?? DEFAULT_BED} onChange={(e) => set({ bedTime: e.target.value })} /></Line>
       </div>
       <p className="fine">Your morning card appears when your day starts. An hour before bed, “Close my day” appears, and at bedtime BankCal offers to close it for you. Late-night snacks after midnight still count to the day you’re in.</p>
-
-      <h2 className="group-title">How active are you?</h2>
-      <div className="card form-list">
-        {ACTIVITY.map((a) => (
-          <button key={a.id} className="pick" onClick={() => set({ activity: a.id })}>
-            <span><b>{a.label}</b><small>{a.hint}</small></span>
-            <span className={`check ${p.activity === a.id ? 'on' : ''}`} aria-hidden="true" />
-          </button>
-        ))}
-      </div>
-
-      <p className="fine">Tip: if you log steps and workouts in Deposits, choose <b>Desk job</b>. Higher levels already include exercise, so BankCal won’t add your logged activity on top.</p>
-
-      <h2 className="group-title">Your plan</h2>
-      <div className="card form-list">
-        <Line label="Target weight"><Num value={p.targetWeight ?? ''} onChange={(e) => { const v = e.target.value.replace(/[^\d.]/g, ''); set(p.goal === 'maintain' && v ? { targetWeight: v, goal: 'lose05', maintainWeight: null } : { targetWeight: v }) }} unit="kg" ph="75" decimal /></Line>
-        <Line label="Start date"><input className="date-in" type="date" value={p.startDate ?? dayKey()} onChange={(e) => set({ startDate: e.target.value })} /></Line>
-        <Line label="Reach it by"><input className="date-in" type="date" value={p.endDate ?? ''} min={dayKey()} onChange={(e) => set({ endDate: e.target.value })} /></Line>
-      </div>
-      {+p.targetWeight > 0 && +p.weight > +p.targetWeight && (
-        <div className="recs">
-          <p className="recs-title">When to aim for {p.targetWeight} kg</p>
-          <div className="recs-row">
-            {recommendDates(p.weight, p.targetWeight).map((r) => (
-              <button key={r.id} className={`rec ${p.endDate === r.date ? 'on' : ''} ${r.best ? 'best' : ''}`} onClick={() => set({ endDate: r.date, startDate: dayKey() })}>
-                <b>{r.label}</b>
-                <span>{prettyDate(r.date)}</span>
-                <small>{r.rate} kg/week · {r.note}</small>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      {bd?.plan && (
-        <div className={`card plan-note ${bd.plan.tooFast || bd.plan.expired ? 'warn' : ''}`}>
-          {bd.plan.reached ? (
-            <p><b>🎉 You’ve reached {p.targetWeight} kg.</b> Your budget is now set to maintain this weight.
-              <button className="link-btn" onClick={keepIt}>Switch to maintain</button></p>
-          ) : bd.plan.expired ? (
-            <p><b>Your plan ended on {prettyDate(p.endDate)}</b> with {bd.plan.toLose.toFixed(1)} kg still to go. Your budget is back on your simple goal below until you pick a new date. A realistic one is <b>{prettyDate(bd.plan.realisticEnd)}</b>.
-              <button className="link-btn" onClick={() => set({ endDate: bd.plan.realisticEnd, startDate: dayKey() })}>Use that date</button></p>
-          ) : bd.plan.notStarted ? (
-            <p><b>Your plan starts on {prettyDate(p.startDate)}.</b> Until then your budget follows your simple goal below.</p>
-          ) : bd.plan.tooFast ? (
-            <p><b>That date is too fast.</b> Losing {bd.plan.toLose.toFixed(1)} kg in {bd.plan.daysLeft} days needs {fmt(bd.plan.needed)} kcal less a day. BankCal caps it at a safe 1,000, so you’ll lose about {bd.plan.rate} kg a week, not {bd.plan.rateNeeded}. A realistic date is <b>{prettyDate(bd.plan.realisticEnd)}</b>.
-              <button className="link-btn" onClick={() => set({ endDate: bd.plan.realisticEnd })}>Use that date</button></p>
-          ) : (
-            <p><b>{bd.plan.pace === 'fast' ? 'On plan, at a fast pace.' : 'On plan.'}</b> {bd.plan.toLose.toFixed(1)} kg to go in {bd.plan.daysLeft} days, so you eat {fmt(bd.plan.deficit)} kcal less than you burn each day.</p>
-          )}
-        </div>
-      )}
-      {bd?.plan?.active && <PaceTable plan={bd.plan} weight={+p.weight} />}
-      {tc?.tooLow && (
-        <div className="card plan-note warn">
-          <p><b>{p.targetWeight} kg is below a healthy weight for your height</b> (BMI {tc.bmi}; healthy starts at 18.5). The lowest healthy weight for you is about <b>{tc.lowest} kg</b>.
-            <button className="link-btn" onClick={() => set({ targetWeight: tc.lowest })}>Aim for {tc.lowest} kg</button></p>
-        </div>
-      )}
-      {ms && (
-        <div className={`card plan-note ${ms.status === 'in' ? '' : 'warn'}`}>
-          {ms.status === 'in' ? (
-            <p><b>Maintaining {ms.keep} kg.</b> You’re {ms.diff === 0 ? 'right on it' : `${Math.abs(ms.diff)} kg ${ms.diff > 0 ? 'above' : 'below'}`}, inside your healthy range of {ms.low.toFixed(1)}–{ms.high.toFixed(1)} kg. Day-to-day swings like this are normal.</p>
-          ) : ms.status === 'above' ? (
-            <p><b>You’re {ms.diff} kg above the {ms.keep} kg you’re keeping.</b> A gentle reset brings it back without strict dieting.
-              <button className="link-btn" onClick={() => set({ goal: 'lose025' })}>Lose 0.25 kg a week for a while</button></p>
-          ) : (
-            <p><b>You’re {Math.abs(ms.diff)} kg below the {ms.keep} kg you’re keeping.</b> If that wasn’t planned, eat a little more, or keep the new weight.
-              <button className="link-btn" onClick={() => set({ maintainWeight: +p.weight })}>Keep {p.weight} kg instead</button></p>
-          )}
-        </div>
-      )}
-
-      <h2 className="group-title">Daily activity targets</h2>
-      <div className="card form-list">
-        <Line label="Steps"><Num value={p.stepsGoal ?? ''} onChange={num('stepsGoal')} unit="steps" ph="8000" /></Line>
-        <Line label="Treadmill"><Num value={p.treadGoalMin ?? ''} onChange={num('treadGoalMin')} unit="min" ph="30" /></Line>
-        <Line label="Treadmill speed"><Num value={p.treadSpeed ?? ''} onChange={num('treadSpeed')} unit="km/h" ph="5" decimal /></Line>
-      </div>
-
-      <h2 className="group-title">{bd?.plan?.active ? 'Simple goal (not used while your plan runs)' : 'Or a simple goal'}</h2>
-      <div className="card form-list">
-        {GOALS.map((g) => (
-          <button key={g.id} className="pick" onClick={() => (g.id === 'maintain' ? goMaintain() : set({ goal: g.id, maintainWeight: null }))}>
-            <span><b>{g.label}</b><small>{g.hint}</small></span>
-            <span className={`check ${p.goal === g.id ? 'on' : ''}`} aria-hidden="true" />
-          </button>
-        ))}
-      </div>
 
       <h2 className="group-title">Buddy</h2>
       <div className="card buddy-card"><BuddyGrid value={p.character} onChange={(id) => set({ character: id })} /></div>
@@ -220,16 +206,27 @@ export default function Me({ user, profile: p, updateProfile }) {
             ))}
           </div>
         </Line>
-        <Line label="Custom budget"><Num value={p.customBudget} onChange={num('customBudget')} unit="kcal" ph={bd ? String(bd.auto) : 'Off'} /></Line>
       </div>
 
-      <div className="card note">
-        <b>Add BankCal to your home screen</b>
-        <p>iPhone: open in Safari, tap Share, then Add to Home Screen.</p>
-        <p>Android: open in Chrome, tap the ⋮ menu, then Install app.</p>
-      </div>
+      <details className="more card">
+        <summary>More settings</summary>
+      <h3 className="more-h">Daily activity targets</h3>
+        <div className="form-list">
+        <Line label="Steps"><Num value={p.stepsGoal ?? ''} onChange={num('stepsGoal')} unit="steps" ph="8000" /></Line>
+        <Line label="Treadmill"><Num value={p.treadGoalMin ?? ''} onChange={num('treadGoalMin')} unit="min" ph="30" /></Line>
+        <Line label="Treadmill speed"><Num value={p.treadSpeed ?? ''} onChange={num('treadSpeed')} unit="km/h" ph="5" decimal /></Line>
+        </div>
+
+        <h3 className="more-h">Custom budget</h3>
+        <div className="form-list">
+          <Line label="Fixed daily budget"><Num value={p.customBudget ?? ''} onChange={num('customBudget')} unit="kcal" ph="Off" /></Line>
+        </div>
+        <p className="fine">Only if a doctor or dietitian gave you a number. It replaces your goal.</p>
+        <h3 className="more-h">Add BankCal to your home screen</h3>
+        <p className="fine">iPhone: open in Safari, tap Share, then Add to Home Screen. Android: open in Chrome, tap ⋮, then Install app.</p>
+      </details>
       <button className="btn-plain" onClick={logOut}>Sign out</button>
-      <p className="fine disclaimer">BankCal gives estimates from standard methods: the Mifflin-St Jeor equation for calories burned at rest, standard activity multipliers, the Compendium of Physical Activities for exercise, about 7,700 kcal per kg of body fat, and WHO BMI categories. Real results vary from person to person. It isn’t medical advice, so check with a doctor before big changes, especially if you’re pregnant, under 18, or managing a health condition.</p>
+      <p className="fine disclaimer">BankCal gives estimates from standard methods: the Mifflin-St Jeor equation for calories burned at rest, the Compendium of Physical Activities for exercise, about 7,700 kcal per kg of body fat, and WHO BMI categories. Real results vary from person to person. It isn’t medical advice, so check with a doctor before big changes, especially if you’re pregnant, under 18, or managing a health condition.</p>
       <p className="foot">BankCal 0.2. Synced to your Google account and works offline.</p>
     </>
   )

@@ -73,7 +73,7 @@ export default function BodyCard({ profile, updateProfile, goSetup }) {
           <b>Strategy: lose {b.toHealthy} kg to reach a healthy BMI</b>
           <small>About {b.weeksToHealthy} weeks at a steady 0.5 kg a week{b.toIdeal > b.toHealthy ? `, or ${b.weeksToIdeal} weeks to BMI ${b.idealBmi}` : ''}.</small>
           <ol>
-            <li><b>Eat about 550 kcal under your burn</b> each day. BankCal sets this for you when you pick a plan below.</li>
+            <li><b>Eat about 550 kcal under your burn</b> each day. BankCal does this for you when your goal is Lose weight.</li>
             <li><b>Walk 8,000–10,000 steps</b> a day. Steps above 3,000 earn calories back.</li>
             <li><b>150 minutes of cardio a week</b>, like 30 minutes on the treadmill 5 days a week.</li>
             <li><b>Strength twice a week</b>: squats, push-ups, dumbbells, dead hang. It keeps muscle while you lose fat.</li>

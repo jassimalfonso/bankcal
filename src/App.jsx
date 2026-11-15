@@ -128,9 +128,9 @@ function Bank({ user }) {
 
   const base = dailyBudget(profile)
   const dayLog = profile.days?.[today] ?? {}
-  const earn = earned(dayLog, profile.weight, profile.activity)
+  const earn = earned(dayLog, profile.weight)
   const budget = base != null ? base + earn.total : null // activity is a deposit into today's budget
-  const budgetFor = (key) => { const b = key === today ? base : (profile.days?.[key]?.base ?? base); return b != null ? b + earned(profile.days?.[key], profile.weight, profile.activity).total : null }
+  const budgetFor = (key) => { const b = key === today ? base : (profile.days?.[key]?.base ?? base); return b != null ? b + earned(profile.days?.[key], profile.weight).total : null }
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const closed = !!dayLog.closed
   const streakDays = streak(entries, budgetFor, today, closed)
