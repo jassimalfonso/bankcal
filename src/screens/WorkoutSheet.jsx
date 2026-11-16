@@ -2,10 +2,18 @@ import { Children, cloneElement, isValidElement, useState } from 'react'
 import { WORKOUTS, fmt, workoutKcal, workoutMinutes } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
+import { routineWorkout } from '../training'
+import { Stepper } from './Routine'
 
 // Pick an exercise, enter amounts, see the calories it earns, deposit.
-export default function WorkoutSheet({ profile, onClose, onSave }) {
+// `mine` = your routine and your own exercises, shown first since they're what you usually do.
+export default function WorkoutSheet({ profile, mine = [], start = null, onClose, onSave }) {
   const [type, setType] = useState(null)
+  const [own, setOwn] = useState(start) // one of `mine`, being adjusted
+  const [it, setIt] = useState(start?.item ?? null)
+  const pickOwn = (m) => { setOwn(m); setIt(m.item) }
+  const ownW = it ? routineWorkout(it) : null
+  const ownKcal = ownW ? workoutKcal(ownW, profile.weight) : 0
   const drag = useSheetDrag(onClose)
   useEscape(onClose)
   const [f, setF] = useState({ min: '', sec: '', sets: '1', reps: '', kg: '' })
@@ -22,12 +30,42 @@ export default function WorkoutSheet({ profile, onClose, onSave }) {
         <div className="sheet-head">
           <div>
             <p className="muted">Workouts earn calories</p>
-            <h2>{def ? `${def.emoji} ${def.label}` : 'What did you do?'}</h2>
+            <h2>{own ? `${it.emoji} ${it.name}` : def ? `${def.emoji} ${def.label}` : 'What did you do?'}</h2>
           </div>
-          <button className="icon-btn" onClick={def ? () => setType(null) : onClose} aria-label={def ? 'Back' : 'Close'}><IconClose /></button>
+          <button className="icon-btn" onClick={own && !start ? () => setOwn(null) : def ? () => setType(null) : onClose} aria-label={(own && !start) || def ? 'Back' : 'Close'}><IconClose /></button>
         </div>
 
-        {!def ? (
+        {own ? (
+          <>
+            <div className="card rt-adjust own-adjust">
+              <Stepper label="Sets" value={it.sets} min={1} max={20} onChange={(v) => setIt({ ...it, sets: v })} />
+              {it.kind === 'time'
+                ? <Stepper label="Seconds" value={it.sec} step={5} min={5} max={600} onChange={(v) => setIt({ ...it, sec: v })} />
+                : <Stepper label="Reps" value={it.reps} min={1} max={100} onChange={(v) => setIt({ ...it, reps: v })} />}
+              {it.kg != null && <Stepper label="Weight" unit="kg" value={it.kg} step={0.5} min={0} max={200} onChange={(v) => setIt({ ...it, kg: v })} />}
+            </div>
+            <p className="earn-line"><b className="pos">+{fmt(ownKcal)} kcal</b> earned<span> · about {Math.round(ownW.min)} min with rests</span></p>
+            {own.done && <p className="fine center">Already done once today. This logs it again.</p>}
+            <button className="btn-primary" onClick={() => onSave({ ...ownW, ...(own.done ? { rid: undefined } : {}) })}>Deposit {fmt(ownKcal)} kcal</button>
+            <p className="fine">Change the numbers for today only. To change your usual amounts, use Adjust in My routine on the Train tab.</p>
+          </>
+        ) : !def ? (
+          <>
+          {mine.length > 0 && (
+            <>
+              <h3 className="ex-h">Yours</h3>
+              <div className="card mine-list">
+                {mine.map((m) => (
+                  <button key={m.key} className={`mine-row ${m.done ? 'done' : ''}`} onClick={() => pickOwn(m)}>
+                    <span className="w-emoji small">{m.item.emoji}</span>
+                    <span className="ex-main"><b>{m.item.name}</b><small>{m.done ? 'Done today ✓' : m.dose}</small></span>
+                    <span className="pos">+{fmt(workoutKcal(routineWorkout(m.item), profile.weight))}</span>
+                  </button>
+                ))}
+              </div>
+              <h3 className="ex-h">Everything else</h3>
+            </>
+          )}
           <div className="workout-grid">
             {WORKOUTS.map((w) => (
               <button key={w.id} className="workout-choice" onClick={() => setType(w.id)}>
@@ -36,6 +74,7 @@ export default function WorkoutSheet({ profile, onClose, onSave }) {
               </button>
             ))}
           </div>
+          </>
         ) : (
           <>
             <div className="card form-list">

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { BASE_STEPS, DEFAULT_BED, DEFAULT_WAKE, describeWorkout, fmt, fmtSleep, sleepHours, SLEEP_TARGET, WORKOUTS, workoutKcal } from '../calc'
 import WorkoutSheet from './WorkoutSheet'
+import { routineFromCustom, routineWorkout } from '../training'
+import { workoutKcal as kcalOf } from '../calc'
 
 // Today's "deposits": steps and treadmill time earn calories back into the budget.
 // Values are typed in (a web app can't read the phone's step counter) and saved on blur.
@@ -21,6 +23,13 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
     celebrate?.(`Nice work! +${fmt(workoutKcal(w, profile.weight))} kcal 💪`)
     setAdding(false)
   }
+  // your routine first, then your own exercises that aren't in it
+  const routine = profile.routine ?? []
+  const doseOf = (it) => (it.kind === 'time' ? `${it.sets} × ${it.sec} s` : `${it.sets} × ${it.reps}${it.each ? ' each side' : ''}`) + (it.kg ? ` · ${it.kg} kg` : '')
+  const mine = [
+    ...routine.map((it) => ({ key: it.id, item: it, done: workouts.some((w) => w.rid === it.id) })),
+    ...(profile.customEx ?? []).filter((c) => !routine.some((r) => r.ex === c.id)).map((c) => ({ key: c.id, item: { ...routineFromCustom(c), id: undefined } })),
+  ].map((m) => ({ ...m, dose: doseOf(m.item) }))
   const removeWorkout = (id) => setDay(today, { workouts: workouts.filter((w) => w.id !== id) })
 
   return (
@@ -69,7 +78,14 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
             </div>
           )
         })}
-        <button className="add-workout" onClick={() => setAdding(true)}>+ Add a workout <small>jumping jacks, squats, dumbbells…</small></button>
+        {mine.length > 0 && (
+          <div className="quick-ws" aria-label="Your workouts">
+            {mine.filter((m) => !m.done).slice(0, 6).map((m) => (
+              <button key={m.key} className="chip" onClick={() => setAdding(m)}>{m.item.emoji} {m.item.name} <span className="pos">+{fmt(kcalOf(routineWorkout(m.item), profile.weight))}</span></button>
+            ))}
+          </div>
+        )}
+        <button className="add-workout" onClick={() => setAdding(true)}>+ Add a workout <small>{mine.length ? 'yours, or walking, cycling, dumbbells…' : 'jumping jacks, squats, dumbbells…'}</small></button>
 
         <div className="act-row">
           <div className="act-head">
@@ -86,7 +102,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
       </div>
       <p className="fine">First {fmt(BASE_STEPS)} steps are everyday movement and already in your budget.</p>
       </>}
-      {adding && <WorkoutSheet profile={profile} onClose={() => setAdding(false)} onSave={saveWorkout} />}
+      {adding && <WorkoutSheet profile={profile} mine={mine} start={adding === true ? null : adding} onClose={() => setAdding(false)} onSave={saveWorkout} />}
     </>
   )
 }

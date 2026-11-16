@@ -6,7 +6,7 @@ import { EFFORTS, routineWorkout } from '../training'
 
 const uid = () => crypto.randomUUID?.() ?? String(Math.random())
 
-function Stepper({ label, value, unit, step = 1, min = 0, max = 999, onChange }) {
+export function Stepper({ label, value, unit, step = 1, min = 0, max = 999, onChange }) {
   const set = (v) => onChange(Math.max(min, Math.min(max, Math.round(v * 2) / 2)))
   return (
     <div className="stepper">
@@ -98,13 +98,16 @@ export function RoutineCard({ profile, updateProfile, dayLog, setDay, today, cel
 const EMOJIS = ['✅', '💪', '🏋️', '🦵', '🤸', '🧘', '🚴', '🏃', '🥊', '🧗', '⛹️', '🪢']
 
 // Create or edit one of your own exercises.
-export function CustomSheet({ initial: given, weight, inRoutine, onSave, onDelete, onAddRoutine, onLog, onClose }) {
+export function CustomSheet({ initial: given, weight, inRoutine, existing = [], onSave, onDelete, onAddRoutine, onLog, onOpen, notify, onClose }) {
   const drag = useSheetDrag(onClose)
   useEscape(onClose)
   const initial = given?.id ? given : null // an exercise without an id is a new one prefilled from search
   const [c, setC] = useState(given ?? { name: '', emoji: '✅', kind: 'reps', weighted: false, met: 3.8 })
   const set = (patch) => setC((x) => ({ ...x, ...patch }))
-  const valid = c.name.trim().length > 1
+  // new exercises go straight into the routine (that's where they're used); edits leave it as is
+  const [toRoutine, setToRoutine] = useState(!initial)
+  const twin = !initial && existing.find((x) => x.name.trim().toLowerCase() === c.name.trim().toLowerCase())
+  const valid = c.name.trim().length > 1 && !twin
   const sample = { id: 'x', name: c.name, kind: c.kind, sets: 3, reps: 10, sec: 30, rest: 60, met: c.met }
   const saved = () => { const out = { ...c, name: c.name.trim(), id: c.id ?? `c${Date.now().toString(36)}` }; onSave(out); return out }
   return (
@@ -143,10 +146,21 @@ export function CustomSheet({ initial: given, weight, inRoutine, onSave, onDelet
         </div>
         <p className="fine">At this effort, 3 sets of {c.kind === 'time' ? '30 seconds' : '10 reps'} with 1-minute rests burns about <b>{fmt(workoutKcal(routineWorkout(sample), weight))} kcal</b> for you, above what you’d burn resting.</p>
 
+        {twin && (
+          <p className="dup-note">You already have <b>{twin.name}</b>. <button className="link-btn" onClick={() => onOpen?.(twin)}>Open it</button></p>
+        )}
+        {!inRoutine && (
+          <label className="keep-food"><input type="checkbox" checked={toRoutine} onChange={(e) => setToRoutine(e.target.checked)} />
+            <span><b>Add to my routine</b>, so you can tick it off each time you train</span></label>
+        )}
         <div className="custom-actions">
-          <button className="btn-primary" disabled={!valid} onClick={() => { const out = saved(); if (!inRoutine) onAddRoutine(out); onClose() }}>{inRoutine ? 'Save' : 'Save and add to my routine'}</button>
-          {!inRoutine && <button className="btn-soft" disabled={!valid} onClick={() => { saved(); onClose() }}>Save only</button>}
-          {initial && <button className="btn-soft" onClick={() => { onLog(saved()); onClose() }}>Log it once now</button>}
+          <button className="btn-primary" disabled={!valid} onClick={() => {
+            const out = saved()
+            if (toRoutine && !inRoutine) onAddRoutine(out)
+            notify?.(initial ? `${out.name} updated` : toRoutine ? `${out.name} saved and added to your routine` : `${out.name} saved. It’s under Mine, and in Deposits`)
+            onClose()
+          }}>{initial ? 'Save changes' : 'Save exercise'}</button>
+          {initial && <button className="btn-soft" onClick={() => { onLog(saved()); onClose() }}>Log it today</button>}
           {initial && <button className="btn-plain danger" onClick={() => { onDelete(initial.id); onClose() }}>Delete this exercise</button>}
         </div>
       </div>

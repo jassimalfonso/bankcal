@@ -43,7 +43,7 @@ export default function Train(props) {
     customEx: customs.some((x) => x.id === c.id) ? customs.map((x) => (x.id === c.id ? c : x)) : [...customs, c],
     routine: routine.map((it) => (it.ex === c.id ? { ...it, name: c.name, emoji: c.emoji, met: c.met } : it)),
   })
-  const addRoutine = (item) => { updateProfile({ routine: [...(profile.routine ?? []), item] }); props.notify(`${item.name} added to your routine`) }
+  const addRoutine = (item, quiet) => { updateProfile({ routine: [...(profile.routine ?? []), item] }); if (!quiet) props.notify(`${item.name} added to your routine`) }
   const inRoutine = (id) => routine.some((it) => it.ex === id)
   const t = q.trim().toLowerCase()
   const match = (e) => !t || e.name.toLowerCase().includes(t) || (e.muscles ?? '').toLowerCase().includes(t)
@@ -146,7 +146,8 @@ export default function Train(props) {
       {custom && (
         <CustomSheet initial={custom === 'new' ? null : custom} key={custom === 'new' ? 'new' : custom.id ?? custom.name} weight={profile.weight}
           inRoutine={custom !== 'new' && custom.id ? inRoutine(custom.id) : false}
-          onSave={saveCustom} onAddRoutine={(c) => addRoutine(routineFromCustom(c))}
+          existing={customs} notify={props.notify} onOpen={(c) => setCustom(c)}
+          onSave={saveCustom} onAddRoutine={(c) => addRoutine(routineFromCustom(c), true)}
           onLog={(c) => { const w = { id: crypto.randomUUID?.() ?? String(Math.random()), ...routineWorkout(routineFromCustom(c)), rid: undefined }; setDay(today, { workouts: [...(dayLog.workouts ?? []), w] }); celebrate(`${c.name} logged, +${fmt(workoutKcal(w, profile.weight))} kcal`) }}
           onDelete={(id) => updateProfile({ customEx: customs.filter((x) => x.id !== id), routine: routine.filter((it) => it.ex !== id) })}
           onClose={() => setCustom(null)} />
