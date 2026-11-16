@@ -11,20 +11,20 @@ import { useSheetDrag } from '../motion'
 // online answers, remembered while the app stays open
 const onlineCache = new Map()
 
-export default function AddSheet({ mine, todays, budget, onClose, onSave, profile, updateProfile }) {
+export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemove, editing, today, profile, updateProfile }) {
   const myFoods = profile?.myFoods ?? []
   const [keep, setKeep] = useState(false)
   const [editMine, setEditMine] = useState(false)
   const removeMine = (id) => updateProfile({ myFoods: myFoods.filter((f) => f.id !== id) })
-  const [photo, setPhoto] = useState(null)
-  const [name, setName] = useState('')
-  const [kcal, setKcal] = useState('')
-  const [picked, setPicked] = useState(false) // hide suggestions after choosing one
+  const [photo, setPhoto] = useState(editing?.photo ?? null)
+  const [name, setName] = useState(editing?.name ?? '')
+  const [kcal, setKcal] = useState(editing ? String(editing.kcal) : '')
+  const [picked, setPicked] = useState(!!editing) // hide suggestions after choosing one
   const [ai, setAi] = useState({ busy: false, err: '', results: null, items: null, confidence: '' })
   const fileRef = useRef(null)
   const drag = useSheetDrag(onClose)
   useEscape(onClose)
-  const meal = mealFor()
+  const [meal, setMeal] = useState(editing?.meal ?? mealFor())
   const inputRef = useRef(null)
 
   // Keep the sheet inside the part of the screen the keyboard leaves visible (iPhone),
@@ -73,9 +73,11 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
     return [...own, ...built].slice(0, 8)
   }, [name, recent, picked, myFoods])
 
-  const spent = todays.reduce((a, e) => a + e.kcal, 0)
+  // when changing something already logged today, don't count the old number twice
+  const spent = todays.reduce((a, e) => a + (e.id === editing?.id ? 0 : e.kcal), 0)
+  const otherDay = editing && editing.day && editing.day !== today
   const n = Math.max(0, parseInt(kcal, 10) || 0)
-  const after = budget != null ? budget - spent - n : null
+  const after = budget != null && !otherDay ? budget - spent - n : null
   const valid = name.trim() && n > 0
 
   function choose(f) {
@@ -157,12 +159,12 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
 
   return (
     <div className="sheet-wrap" onClick={onClose} style={view ? { top: view.top, bottom: 'auto', height: view.height } : undefined}>
-      <div className={`sheet ${searching ? 'searching' : ''}`} style={view ? { ...drag.style, maxHeight: view.height - 8 } : drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Log food">
+      <div className={`sheet ${searching ? 'searching' : ''}`} style={view ? { ...drag.style, maxHeight: view.height - 8 } : drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={editing ? 'Edit food' : 'Log food'}>
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
         <div className="sheet-head">
           <div>
-            <p className="muted">{meal}</p>
-            <h2>What are you about to eat?</h2>
+            <p className="muted">{editing ? `${meal}, ${new Date(editing.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : meal}</p>
+            <h2>{editing ? 'Edit this food' : 'What are you about to eat?'}</h2>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
         </div>
@@ -241,6 +243,14 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
         )}
 
 
+        {editing && (
+          <div className="meal-pick" role="radiogroup" aria-label="Meal">
+            {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((m) => (
+              <button key={m} role="radio" aria-checked={meal === m} className={`chip ${meal === m ? 'on' : ''}`} onClick={() => setMeal(m)}>{m}</button>
+            ))}
+          </div>
+        )}
+
         <div className="kcal-row">
           <button className="step" onClick={() => bump(-50)}>−50</button>
           <label className="kcal-input">
@@ -264,8 +274,9 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
         )}
 
         <button className="btn-primary" disabled={!valid} onClick={save}>
-          {valid ? `Spend ${fmt(n)} kcal` : 'Spend'}
+          {editing ? 'Save changes' : valid ? `Spend ${fmt(n)} kcal` : 'Spend'}
         </button>
+        {editing && <button className="remove-entry" onClick={() => onRemove?.(editing)}>Remove this food</button>}
       </div>
     </div>
   )

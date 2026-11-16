@@ -1244,3 +1244,6 @@ body:has(.app)::after, body[data-bg]:not([data-bg='plain']):has(.app)::after { b
 .photo.compact small { font-size: 13px; }
 .photo.has { margin-top: 14px; }
 .sheet-head + .field { margin-top: 0; }
+.meal-pick { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.meal-pick .chip { min-height: 40px; }
+.remove-entry { display: block; width: 100%; text-align: center; margin-top: 10px; padding: 12px; color: var(--neg); font-weight: 800; font-size: 15px; }

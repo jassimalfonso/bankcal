@@ -91,6 +91,10 @@ export function useStore(user) {
   }, [uid])
 
   const removeEntry = useCallback((id) => { deleteDoc(doc(db, 'users', uid, 'entries', id)) }, [uid])
+  const updateEntry = useCallback((id, patch) => {
+    const keep = Object.fromEntries(Object.entries(patch).filter(([k]) => ['name', 'kcal', 'meal', 'photo'].includes(k)))
+    setDoc(doc(db, 'users', uid, 'entries', id), keep, { merge: true })
+  }, [uid])
 
   const resetProgress = useCallback(async () => {
     setProfile((p) => ({ ...p, days: {}, badges: undefined, trainPlan: undefined, maintainWeight: undefined }))
@@ -98,7 +102,7 @@ export function useStore(user) {
     await wipeProgress(uid)
   }, [uid])
 
-  return { profile, entries, updateProfile, setDay, addEntry, removeEntry, resetProgress }
+  return { profile, entries, updateProfile, setDay, addEntry, removeEntry, updateEntry, resetProgress }
 }
 
 // Shrink a camera photo to a small JPEG thumbnail so cloud storage stays tiny (~8–15 KB).

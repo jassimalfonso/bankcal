@@ -155,7 +155,7 @@ export default function Today(props) {
               </div>
             ) : (
               <ul className="card list">
-                {todays.map((e) => <Row key={e.id} e={e} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo })) }} />)}
+                {todays.map((e) => <Row key={e.id} e={e} onEdit={() => props.editEntry?.(e)} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo })) }} />)}
               </ul>
             )}
           </section>
@@ -168,7 +168,7 @@ export default function Today(props) {
   )
 }
 
-export function Row({ e, onDelete }) {
+export function Row({ e, onDelete, onEdit }) {
   const [open, setOpen] = useState(false)
   const { dx, setDx, handlers } = useSwipe(() => onDelete?.())
   const time = new Date(e.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -179,7 +179,8 @@ export function Row({ e, onDelete }) {
       <div
         className="row"
         style={{ transform: `translateX(${shift}px)`, transition: dx ? 'none' : undefined }}
-        onClick={() => { if (!onDelete) return; setDx(0); setOpen((o) => !o) }}
+        onClick={() => { if (open || dx) { setDx(0); setOpen(false); return } if (onEdit) onEdit(); else if (onDelete) setOpen(true) }}
+        role={onEdit ? 'button' : undefined} aria-label={onEdit ? `Edit ${e.name}` : undefined}
         {...(onDelete ? handlers : {})}
       >
         {e.photo ? <img className="row-img" src={e.photo} alt="" /> : <span className="row-img ph">{e.name.slice(0, 1).toUpperCase()}</span>}

@@ -30,8 +30,9 @@ export function useDemoStore() {
   }, [])
   const setDay = useCallback((key, patch) => setProfile((p) => ({ ...p, days: { ...(p.days ?? {}), [key]: { ...(p.days?.[key] ?? {}), ...patch } } })), [])
   const removeEntry = useCallback((id) => setEntries((x) => x.filter((e) => e.id !== id)), [])
+  const updateEntry = useCallback((id, patch) => setEntries((x) => x.map((e) => (e.id === id ? { ...e, ...patch } : e))), [])
   const resetProgress = useCallback(async () => { setEntries([]); setProfile((p) => ({ ...p, days: {}, badges: undefined, trainPlan: undefined })) }, [])
-  return { profile, entries, updateProfile, setDay, addEntry, removeEntry, resetProgress }
+  return { profile, entries, updateProfile, setDay, addEntry, removeEntry, updateEntry, resetProgress }
 }
 
 // Fake linked partner for screenshot testing (?partner). Never used in production.

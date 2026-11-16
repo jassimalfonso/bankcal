@@ -179,7 +179,7 @@ function Bank({ user }) {
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const ctx = { ...store, partner, notify, celebrate, focus, goTab: setTab, addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: (section) => {
+  const ctx = { ...store, partner, notify, celebrate, focus, goTab: setTab, editEntry: (e) => setAdding(e), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }
@@ -223,8 +223,21 @@ function Bank({ user }) {
       {adding && (
         <AddSheet
           {...ctx}
+          editing={adding === true ? null : adding}
           onClose={() => setAdding(false)}
+          onRemove={(old) => {
+            store.removeEntry(old.id)
+            notify(`Removed ${old.name}`, () => store.addEntry({ name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo, day: old.day }))
+            setAdding(false)
+          }}
           onSave={(e) => {
+            if (adding !== true) {
+              const old = adding
+              store.updateEntry(old.id, e)
+              notify(`Updated ${e.name}`, () => store.updateEntry(old.id, { name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo ?? null }))
+              setAdding(false)
+              return
+            }
             const id = store.addEntry({ ...e, day: today })
             navigator.vibrate?.(12)
             notify(`Spent ${e.kcal.toLocaleString('en-US')} kcal on ${e.name}`, () => store.removeEntry(id))
