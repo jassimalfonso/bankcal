@@ -34,7 +34,8 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
     const v = window.visualViewport
     if (!v) return
     const on = () => {
-      const kb = window.innerHeight - v.height > 120 // keyboard is up
+      const full = Math.max(document.documentElement.clientHeight, window.innerHeight)
+      const kb = full - v.height > 120 // keyboard is up
       setView(kb ? { top: v.offsetTop, height: v.height } : null)
     }
     on()
@@ -166,52 +167,6 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
           <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
         </div>
 
-        {(photo || !searching) && <button className={`photo ${photo ? 'has' : ''}`} onClick={() => fileRef.current?.click()}>
-          {photo ? (
-            <img src={photo} alt="Your meal" />
-          ) : (
-            <>
-              <IconCamera size={30} />
-              <span>Snap your plate</span>
-              <small>AI reads the calories for you</small>
-            </>
-          )}
-          {ai.busy && photo && <span className="photo-busy">Reading your plate…</span>}
-        </button>}
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} />
-
-        {ai.items?.length > 0 && (
-          <div className="ai-items">
-            {ai.items.map((it, i) => (
-              <span key={i}>{it.name}{it.portion ? `, ${it.portion}` : ''} <b>{fmt(it.kcal)}</b></span>
-            ))}
-            {ai.confidence === 'low' && <small>Low confidence. Check the number below.</small>}
-          </div>
-        )}
-
-        {myFoods.length > 0 && !name && (
-          <div className="myfoods">
-            <div className="mf-head"><b>My foods</b><button className="link-btn" onClick={() => setEditMine((x) => !x)}>{editMine ? 'Done' : 'Edit'}</button></div>
-            <div className="recent">
-              {myFoods.map((f) => editMine ? (
-                <button key={f.id} className="chip mine edit" onClick={() => removeMine(f.id)} aria-label={`Remove ${f.name}`}>{f.name} <span>✕</span></button>
-              ) : (
-                <button key={f.id} className="chip mine" onClick={() => choose(f)}>⭐ {f.name} <span>{fmt(f.kcal)}</span></button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {recent.length > 0 && !name && (
-          <div className="recent">
-            {recent.map((r) => (
-              <button key={r.id} className="chip" onClick={() => choose(r)}>
-                {r.name} <span>{fmt(r.kcal)}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
         <label className="field">
           <span>Food</span>
           <input ref={inputRef} value={name} onKeyDown={onEnter} type="search" onChange={(e) => { setName(e.target.value); setPicked(false) }} placeholder="Search or type, e.g. adobo…" aria-label="Food name" autoComplete="off" enterKeyHint="search" />
@@ -239,6 +194,52 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
           </div>
         )}
         {ai.err && <p className="ai-err">{ai.err}</p>}
+        {myFoods.length > 0 && !name && (
+          <div className="myfoods">
+            <div className="mf-head"><b>My foods</b><button className="link-btn" onClick={() => setEditMine((x) => !x)}>{editMine ? 'Done' : 'Edit'}</button></div>
+            <div className="recent">
+              {myFoods.map((f) => editMine ? (
+                <button key={f.id} className="chip mine edit" onClick={() => removeMine(f.id)} aria-label={`Remove ${f.name}`}>{f.name} <span>✕</span></button>
+              ) : (
+                <button key={f.id} className="chip mine" onClick={() => choose(f)}>⭐ {f.name} <span>{fmt(f.kcal)}</span></button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {recent.length > 0 && !name && (
+          <div className="recent">
+            {recent.map((r) => (
+              <button key={r.id} className="chip" onClick={() => choose(r)}>
+                {r.name} <span>{fmt(r.kcal)}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+
+        {(photo || !searching) && <button className={`photo ${photo ? 'has' : 'compact'}`} onClick={() => fileRef.current?.click()}>
+          {photo ? (
+            <img src={photo} alt="Your meal" />
+          ) : (
+            <>
+              <IconCamera size={26} />
+              <span>Snap your plate<small>AI reads the calories for you</small></span>
+            </>
+          )}
+          {ai.busy && photo && <span className="photo-busy">Reading your plate…</span>}
+        </button>}
+        <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} />
+
+        {ai.items?.length > 0 && (
+          <div className="ai-items">
+            {ai.items.map((it, i) => (
+              <span key={i}>{it.name}{it.portion ? `, ${it.portion}` : ''} <b>{fmt(it.kcal)}</b></span>
+            ))}
+            {ai.confidence === 'low' && <small>Low confidence. Check the number below.</small>}
+          </div>
+        )}
+
 
         <div className="kcal-row">
           <button className="step" onClick={() => bump(-50)}>−50</button>
