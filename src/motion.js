@@ -61,10 +61,46 @@ export function useSheetDrag(onClose) {
 }
 
 // Close an overlay with the Escape key (keyboard and hardware keyboards on tablets)
+// Escape key and the phone's Back button both close the top-most sheet.
+// How Back works: while the app is open we keep one spare history entry. Pressing Back
+// uses it up; we close the top sheet (or go back to Today) and put a fresh one back.
+// Only on Today with nothing open does Back leave, and only when pressed twice.
+const backStack = [] // refs to close functions, newest last
+let backRoot = null // () => true if it handled Back (e.g. switched to Today)
+let backExit = null // () => shows "press Back again to close"
+let armed = false
+let exitAt = 0
+function arm() {
+  if (armed) return
+  try { history.pushState({ bankcal: true }, ''); armed = true } catch { /* ignore */ }
+}
+if (typeof window !== 'undefined') {
+  // browsers only honour history entries added after the person has touched the page
+  addEventListener('pointerdown', arm, { capture: true, passive: true })
+  addEventListener('popstate', () => {
+    armed = false
+    const top = backStack[backStack.length - 1]
+    if (top) { top.current?.(); arm(); return }
+    if (backRoot?.()) { arm(); return }
+    if (Date.now() - exitAt < 2500) { history.back(); return } // second press: leave
+    exitAt = Date.now()
+    backExit?.()
+    arm()
+  })
+}
+export function setBackHandlers(root, exit) { backRoot = root; backExit = exit }
+
 export function useEscape(onClose) {
+  const ref = useRef(onClose)
+  ref.current = onClose
   useEffect(() => {
-    const h = (e) => { if (e.key === 'Escape') onClose?.() }
+    backStack.push(ref)
+    const h = (e) => { if (e.key === 'Escape' && backStack[backStack.length - 1] === ref) ref.current?.() }
     addEventListener('keydown', h)
-    return () => removeEventListener('keydown', h)
-  }, [onClose])
+    return () => {
+      removeEventListener('keydown', h)
+      const i = backStack.indexOf(ref)
+      if (i >= 0) backStack.splice(i, 1)
+    }
+  }, [])
 }

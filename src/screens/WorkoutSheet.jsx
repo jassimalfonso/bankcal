@@ -15,7 +15,8 @@ export default function WorkoutSheet({ profile, mine = [], start = null, onClose
   const ownW = it ? routineWorkout(it) : null
   const ownKcal = ownW ? workoutKcal(ownW, profile.weight) : 0
   const drag = useSheetDrag(onClose)
-  useEscape(onClose)
+  // Back from a chosen exercise returns to the list first
+  useEscape(() => { if (own && !start) setOwn(null); else if (type) setType(null); else onClose() })
   const [f, setF] = useState({ min: '', sec: '', sets: '1', reps: '', kg: '' })
   const def = WORKOUTS.find((w) => w.id === type)
   const entry = def ? { type, min: +f.min, sec: +f.sec, sets: +f.sets || 1, reps: +f.reps, kg: +f.kg } : null

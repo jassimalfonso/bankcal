@@ -4,6 +4,7 @@ import { auth } from './firebase'
 import { useStore } from './store'
 import { useDemoStore, demoPartner } from './demoStore'
 import { BUDDIES, Buddy } from './buddies'
+import { setBackHandlers } from './motion'
 
 const DEMO = import.meta.env.MODE === 'demo'
 import { partnerProgress, dailyBudget, dayKey, earned, isBedtime, isBirthday, isWindDown, logicalDayKey, streak } from './calc'
@@ -133,6 +134,11 @@ function Bank({ user }) {
     setToast({ text, undo, key: Date.now() })
     toastTimer.current = setTimeout(() => setToast(null), 4000)
   }
+  // Phone Back button: other tabs go back to Today; on Today, a second press closes the app
+  setBackHandlers(
+    () => { if (tab !== 'today') { setTab('today'); return true } return false },
+    () => notify('Press Back again to close BankCal'),
+  )
   // At bedtime, offer to close the day once (if anything was logged and it isn't closed yet).
   const bedKey = `bankcal:bedtime:${user.uid}:${today}`
   useEffect(() => {
