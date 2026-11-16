@@ -63,7 +63,7 @@ export default async function handler(req, res) {
     body: msg === '👏' ? 'Open BankCal to see your day.' : msg,
     tag: `cheer-${me}`,
   })
-  const { default: webpush } = await import('web-push') // loaded only when sending
+  const webpush = await import('web-push') // loaded only when sending
   webpush.setVapidDetails('https://bankcal.vercel.app', pub, priv)
   const out = await Promise.allSettled(subs.map((s) => webpush.sendNotification(s, payload, { TTL: 12 * 3600, urgency: 'normal' })))
   return res.json({ sent: out.filter((x) => x.status === 'fulfilled').length })
