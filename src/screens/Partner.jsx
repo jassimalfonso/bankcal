@@ -5,9 +5,22 @@ import { useEscape, useSheetDrag } from '../motion'
 
 const CHEERS = ['👏 Go you!', '💪 You’ve got this', '❤️ Proud of you', '🙏 Praying for you']
 
+const ago = (t) => {
+  const m = Math.round((Date.now() - t) / 60000)
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m} min ago`
+  const h = Math.round(m / 60)
+  if (h < 24) return `${h} h ago`
+  const d = new Date(t)
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+}
+const cheerText = (msg) => (!msg || msg === '👏' ? '👏 Cheer' : msg)
+// How many cheers a record holds. Cheers sent before counting began count as one.
+const countOf = (c) => (c ? c.count ?? (c.log?.length || 1) : 0)
+
 // Today: how your partner is doing. Tap them for the full picture; cheer as often as you like.
 export function PartnerCard({ partner, today, notify, profile, myTicks = 0 }) {
-  const { partners, shares, cheer } = partner
+  const { partners, shares, cheer, me: myId, received = {} } = partner
   const [open, setOpen] = useState(null)
   const [justSent, setJustSent] = useState(null)
   const list = partners.map((id) => [id, shares[id]]).filter(([, s]) => s)
@@ -55,7 +68,7 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0 }) {
           )
         })}
       </div>
-      {sel && <PartnerSheet s={sel} info={today_(sel)} team={team} myTicks={myTicks} me={profile?.name} onCheer={(msg) => send(open, sel.name, msg)} onClose={() => setOpen(null)} />}
+      {sel && <PartnerSheet s={sel} sent={sel.cheers?.[myId]} got={received[open]} info={today_(sel)} team={team} myTicks={myTicks} me={profile?.name} onCheer={(msg) => send(open, sel.name, msg)} onClose={() => setOpen(null)} />}
     </section>
   )
 }
@@ -71,7 +84,13 @@ function TeamGoal({ team, split }) {
   )
 }
 
-function PartnerSheet({ s, info, team, myTicks, me, onCheer, onClose }) {
+function PartnerSheet({ s, sent, got, info, team, myTicks, me, onCheer, onClose }) {
+  const log = [
+    ...(sent?.log ?? []).map((c) => ({ ...c, who: 'You' })),
+    ...(got?.log ?? []).map((c) => ({ ...c, who: s.name })),
+  ].sort((a, b) => b.at - a.at)
+  const day0 = new Date().setHours(0, 0, 0, 0)
+  const todayN = log.filter((c) => c.at >= day0).length
   const drag = useSheetDrag(onClose)
   useEscape(onClose)
   const rows = [
@@ -103,7 +122,21 @@ function PartnerSheet({ s, info, team, myTicks, me, onCheer, onClose }) {
         <div className="psh-cheers">
           {CHEERS.map((c) => <button key={c} className="btn-soft" onClick={() => onCheer(c)}>{c}</button>)}
         </div>
-        <p className="fine center">Cheer as often as you like. They’ll see it the next time BankCal is open.</p>
+        <p className="fine center">Cheer as often as you like. If {s.name} has notifications on, their phone lets them know straight away.</p>
+
+        <h3 className="ex-h">Cheers between you</h3>
+        <div className="cheer-stats">
+          <span><b>{countOf(sent)}</b>sent</span>
+          <span><b>{countOf(got)}</b>received</span>
+          <span><b>{todayN}</b>today</span>
+        </div>
+        {log.length > 0 ? (
+          <ul className="cheer-log">
+            {log.slice(0, 15).map((c, i) => (
+              <li key={i} className={c.who === 'You' ? 'mine' : ''}><span><b>{c.who}</b> {cheerText(c.msg)}</span><small>{ago(c.at)}</small></li>
+            ))}
+          </ul>
+        ) : <p className="fine">No cheers yet. Send the first one!</p>}
       </div>
     </div>
   )
@@ -111,7 +144,7 @@ function PartnerSheet({ s, info, team, myTicks, me, onCheer, onClose }) {
 
 // Settings: link a partner with a code.
 export function PartnerSettings({ partner, profile, updateProfile }) {
-  const { partners, shares, createInvite, acceptInvite, removePartner } = partner
+  const { partners, shares, createInvite, acceptInvite, removePartner, push } = partner
   const [code, setCode] = useState('')
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
@@ -140,6 +173,12 @@ export function PartnerSettings({ partner, profile, updateProfile }) {
           <button className="btn-soft" disabled={busy || code.length !== 6}>Link</button>
         </form>
         {msg && <p className="ps-msg" role="status">{msg}</p>}
+        {partners.length > 0 && push && (
+          <label className="keep-food ps-share">
+            <input type="checkbox" checked={push.on} disabled={busy} onChange={(e) => run(e.target.checked ? push.turnOn : push.turnOff)} />
+            <span><b>Notify me</b> on this phone when I’m cheered{!push.supported && ' (open BankCal from your Home Screen to turn this on)'}</span>
+          </label>
+        )}
         <label className="keep-food ps-share">
           <input type="checkbox" checked={!!profile.shareWeight} onChange={(e) => updateProfile({ shareWeight: e.target.checked })} />
           <span>Also share my <b>weight progress</b> (kg lost so far and % to goal, not my actual weight)</span>

@@ -2,8 +2,8 @@
 //   shares/{uid}   a tiny public-to-partners summary (never calories, weight or journal)
 //   invites/{code} a short-lived pairing code
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { deleteDoc, doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
-import { db } from './firebase'
+import { arrayUnion, deleteDoc, deleteField, doc, getDoc, increment, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
+import { auth, db } from './firebase'
 
 const code6 = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
 
@@ -43,6 +43,9 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
     const fresh = Object.values(cheers).filter((c) => c.at > seen && Date.now() - c.at < 36 * 3600 * 1000)
     if (!fresh.length) return
     try { localStorage.setItem(`bankcal:cheer:${uid}`, String(Math.max(...fresh.map((c) => c.at)))) } catch { /* ignore */ }
+    // keep each partner's log short (the latest 30 cheers)
+    const trim = Object.fromEntries(Object.entries(cheers).filter(([, v]) => (v.log?.length ?? 0) > 30).map(([k, v]) => [`cheers.${k}.log`, [...v.log].sort((a, b) => a.at - b.at).slice(-30)]))
+    if (Object.keys(trim).length) updateDoc(doc(db, 'shares', uid), trim).catch(() => {})
     const c = fresh.sort((a, b) => b.at - a.at)[0]
     ;(celebrate ?? notify)(c.msg && c.msg !== '👏' ? `${c.name}: ${c.msg}` : `👏 ${c.name} cheered you on`)
   }, [mineShare?.cheers]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -82,8 +85,54 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
   const removePartner = useCallback((p) => updateProfile({ partners: partners.filter((x) => x !== p) }), [partners.join(','), updateProfile]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const cheer = useCallback(async (p, msg = '👏') => {
-    await updateDoc(doc(db, 'shares', p), { [`cheers.${uid}`]: { at: Date.now(), name: profile.name, msg: String(msg).slice(0, 40) } })
+    const at = Date.now()
+    const m = String(msg).slice(0, 40)
+    const k = `cheers.${uid}`
+    await updateDoc(doc(db, 'shares', p), { [`${k}.at`]: at, [`${k}.name`]: profile.name, [`${k}.msg`]: m, [`${k}.count`]: increment(1), [`${k}.log`]: arrayUnion({ at, msg: m }) })
+    // ping their phone too (only if they've turned notifications on); never blocks the cheer
+    auth.currentUser?.getIdToken().then((t) => fetch('/api/push', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${t}` }, body: JSON.stringify({ to: p, msg: m }) })).catch(() => {})
   }, [uid, profile?.name])
 
-  return { partners, shares, createInvite, acceptInvite, removePartner, cheer }
+  // Notifications on this phone
+  const push = usePush(enabled, uid)
+
+  return { partners, shares, me: uid, received: mineShare?.cheers ?? {}, createInvite, acceptInvite, removePartner, cheer, push }
+}
+
+// Phone notifications for cheers. Each phone signs up separately; the address is kept in
+// shares/{uid}.push so only linked partners (through the server) can use it.
+const deviceId = () => {
+  try {
+    let d = localStorage.getItem('bankcal:device')
+    if (!d) { d = Math.random().toString(36).slice(2, 10); localStorage.setItem('bankcal:device', d) }
+    return d
+  } catch { return 'phone' }
+}
+const b64ToBytes = (b) => { const s = atob((b + '='.repeat((4 - (b.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, (c) => c.charCodeAt(0)) }
+
+function usePush(enabled, uid) {
+  const supported = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
+  const [on, setOn] = useState(false)
+  useEffect(() => {
+    if (!supported || !enabled) return
+    navigator.serviceWorker.ready.then((r) => r.pushManager.getSubscription()).then((sub) => setOn(!!sub && Notification.permission === 'granted')).catch(() => {})
+  }, [supported, enabled])
+  const turnOn = useCallback(async () => {
+    if (!supported) throw new Error('Add BankCal to your Home Screen first, then open it from there and turn this on.')
+    if ((await Notification.requestPermission()) !== 'granted') throw new Error('Notifications are blocked. Allow them for BankCal in your phone’s settings.')
+    const k = await fetch('/api/push').then((r) => r.json()).catch(() => ({}))
+    if (!k.key) throw new Error('Notifications aren’t ready yet. Try again later.')
+    const reg = await navigator.serviceWorker.ready
+    let sub = await reg.pushManager.getSubscription()
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(k.key) })
+    await setDoc(doc(db, 'shares', uid), { push: { [deviceId()]: JSON.parse(JSON.stringify(sub)) } }, { merge: true })
+    setOn(true)
+  }, [supported, uid])
+  const turnOff = useCallback(async () => {
+    const reg = await navigator.serviceWorker.ready
+    await (await reg.pushManager.getSubscription())?.unsubscribe()
+    await updateDoc(doc(db, 'shares', uid), { [`push.${deviceId()}`]: deleteField() }).catch(() => {})
+    setOn(false)
+  }, [uid])
+  return { supported, on, turnOn, turnOff }
 }

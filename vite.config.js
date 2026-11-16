@@ -35,6 +35,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globIgnores: ['push-sw.js'],
+        importScripts: ['push-sw.js'], // cheer notifications
         navigateFallbackDenylist: [/^\/__\//, /^\/api\//], // let Firebase sign-in pages through
       },
     }),

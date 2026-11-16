@@ -38,6 +38,8 @@ export function useDemoStore() {
 // Fake linked partner for screenshot testing (?partner). Never used in production.
 export const demoPartner = (today) => ({
   partners: ['p1'],
-  shares: { p1: { name: 'Sewer Butt', character: 'avocado', theme: 'plum', day: today, streak: 3, habitsDone: 1, habitsTotal: 2, moved: true, logged: true, weekWithin: 4, weekLogged: 5, weekWorkouts: 2, weekTicks: 6, kgChange: -0.8, goalPct: 16 } },
+  shares: { p1: { name: 'Sewer Butt', character: 'avocado', theme: 'plum', day: today, streak: 3, habitsDone: 1, habitsTotal: 2, moved: true, logged: true, weekWithin: 4, weekLogged: 5, weekWorkouts: 2, weekTicks: 6, kgChange: -0.8, goalPct: 16, cheers: { me: { count: 2, log: [{ at: Date.now() - 2 * 3600e3, msg: '💪 You’ve got this' }] } } } },
+  me: 'me', received: { p1: { name: 'Sewer Butt', count: 4, log: [{ at: Date.now() - 3600e3, msg: '❤️ Proud of you' }, { at: Date.now() - 26 * 3600e3, msg: '👏' }] } },
+  push: { supported: true, on: false, turnOn: async () => {}, turnOff: async () => {} },
   cheer: async () => {}, createInvite: async () => 'ABC123', acceptInvite: async () => 'Sewer Butt', removePartner: () => {},
 })
