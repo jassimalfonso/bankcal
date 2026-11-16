@@ -54,13 +54,15 @@ export const FOODS = [
   ['Calamansi juice', '1 glass', 90], ['Tsokolate (tablea)', '1 cup', 200], ['Kapeng barako with sugar', '1 cup', 50], ['3-in-1 coffee', '1 sachet', 100],
   ['Greenwich pizza slice', '1 slice', 280], ['Chowking siopao', '1 piece', 320], ['Chowking halo-halo', '1 serving', 470], ['Goldilocks polvoron', '1 piece', 80],
   // Starbucks (grande = 473 ml unless noted; published values, which vary a little by country)
-  ['Starbucks Caffè Latte, skimmed milk', 'grande', 130], ['Starbucks Caffè Latte, semi-skimmed (2%) milk', 'grande', 190], ['Starbucks Caffè Latte, whole milk', 'grande', 250],
-  ['Starbucks Caffè Latte, oat milk', 'grande', 170], ['Starbucks Caffè Latte, almond milk', 'grande', 100], ['Starbucks Iced Latte, skimmed milk', 'grande', 130],
-  ['Starbucks Cappuccino, skimmed milk', 'grande', 80], ['Starbucks Cappuccino, semi-skimmed (2%) milk', 'grande', 140], ['Starbucks Flat White, whole milk', 'grande', 220],
-  ['Starbucks Americano', 'grande', 15], ['Starbucks Iced Americano', 'grande', 15], ['Starbucks brewed coffee, black (dark roast, Pike Place or blonde)', 'grande', 5],
-  ['Starbucks brewed coffee with a splash of skimmed milk', 'grande', 20], ['Starbucks Cold Brew, black', 'grande', 5], ['Starbucks Iced Coffee, sweetened', 'grande', 80],
-  ['Starbucks Espresso, double (doppio)', '2 shots', 10], ['Starbucks Doubleshot on Ice (Iced Shaken Espresso), skimmed milk', 'grande', 90],
-  ['Starbucks Doubleshot on Ice (Iced Shaken Espresso), semi-skimmed (2%) milk', 'grande', 100], ['Starbucks Brown Sugar Oat Shaken Espresso', 'grande', 120],
+  ['Starbucks Caffè Latte (hot), skimmed milk', 'grande', 130, 'hot double shot doubleshot dark roast blonde medium roast espresso'], ['Starbucks Caffè Latte (hot), semi-skimmed (2%) milk', 'grande', 190, 'hot double shot doubleshot dark roast blonde medium roast espresso'], ['Starbucks Caffè Latte (hot), whole milk', 'grande', 250, 'hot double shot doubleshot dark roast blonde medium roast espresso'],
+  ['Starbucks Caffè Latte (hot), oat milk', 'grande', 170, 'hot double shot doubleshot dark roast blonde medium roast espresso'], ['Starbucks Caffè Latte (hot), almond milk', 'grande', 100, 'hot double shot doubleshot dark roast blonde medium roast espresso'], ['Starbucks Iced Latte, skimmed milk', 'grande', 130],
+  ['Starbucks Cappuccino (hot), skimmed milk', 'grande', 80, 'hot double shot doubleshot dark roast blonde medium roast espresso'], ['Starbucks Cappuccino (hot), semi-skimmed (2%) milk', 'grande', 140, 'hot double shot doubleshot dark roast blonde medium roast espresso'], ['Starbucks Flat White (hot), whole milk', 'grande', 220, 'hot double shot doubleshot dark roast blonde medium roast espresso'], ['Starbucks Flat White (hot), skimmed milk', 'grande', 100, 'hot double shot doubleshot dark roast blonde medium roast espresso'],
+  ['Starbucks Caffè Misto (hot brewed coffee with steamed milk), skimmed milk', 'grande', 70, 'hot dark roast cafe au lait'], ['Starbucks Americano (hot) with a splash of skimmed milk', 'grande', 25, 'hot double shot doubleshot dark roast espresso'],
+  ['Starbucks double espresso with steamed skimmed milk (macchiato)', '2 shots', 15, 'hot doubleshot dark roast doppio'],
+  ['Starbucks Americano (hot)', 'grande', 15, 'hot black espresso dark roast'], ['Starbucks Iced Americano', 'grande', 15], ['Starbucks brewed coffee, black (dark roast, Pike Place or blonde)', 'grande', 5],
+  ['Starbucks brewed coffee (hot) with a splash of skimmed milk', 'grande', 20, 'hot dark roast pike place blonde filter'], ['Starbucks Cold Brew, black', 'grande', 5], ['Starbucks Iced Coffee, sweetened', 'grande', 80],
+  ['Starbucks Espresso, double (doppio)', '2 shots', 10], ['Starbucks Doubleshot on Ice (Iced Shaken Espresso), skimmed milk', 'grande', 90, 'cold iced'],
+  ['Starbucks Doubleshot on Ice (Iced Shaken Espresso), semi-skimmed (2%) milk', 'grande', 100, 'cold iced'], ['Starbucks Brown Sugar Oat Shaken Espresso', 'grande', 120],
   ['Starbucks Caffè Mocha with whipped cream', 'grande', 370], ['Starbucks White Chocolate Mocha', 'grande', 430], ['Starbucks Caramel Macchiato', 'grande', 250],
   ['Starbucks Vanilla Latte', 'grande', 250], ['Starbucks Skinny Vanilla Latte', 'grande', 100], ['Starbucks Chai Tea Latte', 'grande', 240], ['Starbucks Matcha Latte', 'grande', 240],
   ['Starbucks Hot Chocolate with whipped cream', 'grande', 370], ['Starbucks Vanilla Sweet Cream Cold Brew', 'grande', 110],
@@ -84,7 +86,7 @@ export const FOODS = [
   ['Fried chicken', '2 pieces', 500], ['Croissant', '1', 270], ['Cappuccino', 'regular', 120], ['Latte', 'regular', 190], ['Iced latte', 'regular', 150],
   ['Black coffee', '1 cup', 5], ['Orange juice', '1 glass', 110], ['Soft drink', '1 can', 140], ['Protein shake', '1 scoop + water', 120],
   ['Mixed nuts', '30 g', 175], ['Dark chocolate', '2 squares', 110], ['Ice cream', '1 scoop', 140], ['Donut', '1', 260], ['Chips', 'small bag', 160],
-].map(([name, portion, kcal]) => ({ name, portion, kcal }))
+].map(([name, portion, kcal, words]) => ({ name, portion, kcal, words }))
 
 // Words people type that should find the same dish
 const ALIASES = { talong: 'eggplant', okoy: 'ukoy', ukoy: 'okoy', pansit: 'pancit', pancit: 'pansit', sinangag: 'garlic rice', longsilog: 'longganisa', siopao: 'bun', dinamita: 'dynamite', dynamite: 'dinamita', sili: 'chili', camote: 'kamote', kamote: 'camote' }
@@ -106,8 +108,8 @@ function close(a, b) {
 const STOP = new Set(['with', 'and', 'the', 'of', 'in', 'a', 'an', 'on', 'for', 'milk', 'coffee', 'size'])
 // common ways of saying the same thing, applied to what was typed
 const REWRITE = [
-  [/\b(non ?fat|fat ?free|skim(med)?|skinny milk|0 ?%)\b/g, 'skimmed'], [/\bdouble ?shots?\b/g, 'doubleshot'], [/\bfrapp?(e|é)?s?\b/g, 'frappuccino'],
-  [/\b(low ?fat|semi ?skim(med)?|2 ?%)\b/g, 'semi skimmed'], [/\b(full ?fat|full cream)\b/g, 'whole'], [/\bcafe latte\b/g, 'caffe latte'], [/\bsbux\b/g, 'starbucks'],
+  [/\b(low ?fat|semi ?skim(med)?|2 ?%)\b/g, 'semiskim'], [/\b(non ?fat|fat ?free|skim(med)?|skinny milk|0 ?%)\b/g, 'skimmed'], [/\bdouble ?shots?\b/g, 'doubleshot'], [/\bfrapp?(e|é)?s?\b/g, 'frappuccino'],
+  [/\b(full ?fat|full cream)\b/g, 'whole'], [/\bcafe latte\b/g, 'caffe latte'], [/\bsbux\b/g, 'starbucks'],
   [/\bchoco\b/g, 'chocolate'], [/\b(medium|16 ?oz)\b/g, 'grande'],
 ]
 
@@ -121,17 +123,19 @@ export function matchFoods(q, limit = 8) {
   const words = all.filter((w) => !STOP.has(w))
   const use = words.length ? words : all
   return FOODS
-    .map((f) => {
-      const n = norm(f.name)
+    .map((f, idx) => {
+      let n = norm(`${f.name} ${f.portion ?? ''} ${f.words ?? ''}`)
+      for (const [re, to] of REWRITE) n = n.replace(re, to)
+      const plain = norm(f.name)
       const nw = n.split(' ')
       const hit = (w) => n.includes(w) || (ALIASES[w] && n.includes(ALIASES[w])) || nw.some((x) => close(w, x))
       const hits = use.filter(hit).length
       const strong = hits === use.length
-      const score = n.startsWith(raw) ? 1000 : n.includes(raw) ? 900 : strong ? 500 + hits : hits >= 2 || (hits === 1 && use.some((w) => w.length > 3 && hit(w))) ? hits * 10 : 0
-      return { f, score, strong }
+      const score = plain.startsWith(raw) ? 1000 : plain.includes(raw) ? 900 : strong ? 500 + hits : hits >= 2 || (hits === 1 && use.some((w) => w.length > 3 && hit(w))) ? hits * 10 : 0
+      return { f, score, strong, idx }
     })
     .filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score || a.f.name.length - b.f.name.length)
+    .sort((a, b) => b.score - a.score || a.idx - b.idx) // ties keep the list's own order (most common first)
     .slice(0, limit)
 }
 
