@@ -226,3 +226,15 @@ test('close-my-day windows end at midnight', () => {
   assert.equal(c.isWindDown(owl, at(22, 59)), false); assert.equal(c.isWindDown(owl, at(23, 0)), true)
   assert.equal(c.isBedtime(owl, at(23, 45)), true); assert.equal(c.isBedtime(owl, at(0, 30)), false)
 })
+
+test('food search understands brands, sizes and milk wording', async () => {
+  const f = await import('../src/foods.js')
+  const top = (q) => f.matchFoods(q)[0]?.f.name
+  assert.match(top('starbucks double shot coffee dark roast with skimmed milk grande'), /Doubleshot on Ice.*skimmed/)
+  assert.match(top('starbucks latte nonfat'), /Latte, skimmed/)
+  assert.match(top('sbux frap'), /Frappuccino/)
+  assert.equal(top('okoy'), 'Okoy (shrimp fritter)')
+  assert.equal(top('tortang talog'), 'Tortang talong')
+  assert.equal(f.matchFoods('starbucks double shot coffee dark roast with skimmed milk grande').some((m) => m.strong), false) // → looks online too
+  assert.equal(f.matchFoods('spanish latte')[0].strong, true)
+})

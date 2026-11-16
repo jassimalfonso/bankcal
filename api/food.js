@@ -11,7 +11,7 @@ const CONTEXT = 'You are a nutrition assistant for people living in the UAE / GC
 
 const PROMPTS = {
   photo: `${CONTEXT} Look at this meal photo. Identify each food, estimate its portion and calories. Return JSON exactly like {"name": "short name for the whole plate", "kcal": 0, "items": [{"name": "", "portion": "", "kcal": 0}], "confidence": "low|medium|high"}. If there is no food, return {"name": "", "kcal": 0, "items": [], "confidence": "low"}.`,
-  search: (q) => `${CONTEXT} The user typed "${q}". List up to 6 common foods or dishes that match, each with a typical single-serving portion and its calories. Return JSON exactly like {"results": [{"name": "", "portion": "", "kcal": 0}]}.`,
+  search: (q) => `${CONTEXT} The user typed "${q}" to log something they ate or drank. Work out what they mean, including brand names and restaurant or café chains (for example Starbucks, Costa, Tim Hortons, McDonald's, KFC, Jollibee, supermarket products). For branded or chain items, use the brand's published nutrition figures for that exact item, size and options (cup size such as tall, grande or venti; milk type such as skimmed, whole or oat; syrups, whipped cream), not a generic estimate. Put the best match for exactly what was typed first, then up to 5 close alternatives the user might have meant (other sizes, milk options or similar items). Each name must be specific: include the brand, the size and the options. Give the portion (for drinks, the size and ml). If something is unclear, assume the most common version in the UAE. Return JSON exactly like {"results": [{"name": "", "portion": "", "kcal": 0}]}.`,
 }
 
 async function callGemini(key, parts) {

@@ -53,6 +53,25 @@ export const FOODS = [
   ['Kakanin platter', '1 serving', 350], ['Puto bumbong', '1 serving', 280], ['Fruit salad (Filipino)', '1 cup', 280], ['Mango float', '1 slice', 400],
   ['Calamansi juice', '1 glass', 90], ['Tsokolate (tablea)', '1 cup', 200], ['Kapeng barako with sugar', '1 cup', 50], ['3-in-1 coffee', '1 sachet', 100],
   ['Greenwich pizza slice', '1 slice', 280], ['Chowking siopao', '1 piece', 320], ['Chowking halo-halo', '1 serving', 470], ['Goldilocks polvoron', '1 piece', 80],
+  // Starbucks (grande = 473 ml unless noted; published values, which vary a little by country)
+  ['Starbucks Caffè Latte, skimmed milk', 'grande', 130], ['Starbucks Caffè Latte, semi-skimmed (2%) milk', 'grande', 190], ['Starbucks Caffè Latte, whole milk', 'grande', 250],
+  ['Starbucks Caffè Latte, oat milk', 'grande', 170], ['Starbucks Caffè Latte, almond milk', 'grande', 100], ['Starbucks Iced Latte, skimmed milk', 'grande', 130],
+  ['Starbucks Cappuccino, skimmed milk', 'grande', 80], ['Starbucks Cappuccino, semi-skimmed (2%) milk', 'grande', 140], ['Starbucks Flat White, whole milk', 'grande', 220],
+  ['Starbucks Americano', 'grande', 15], ['Starbucks Iced Americano', 'grande', 15], ['Starbucks brewed coffee, black (dark roast, Pike Place or blonde)', 'grande', 5],
+  ['Starbucks brewed coffee with a splash of skimmed milk', 'grande', 20], ['Starbucks Cold Brew, black', 'grande', 5], ['Starbucks Iced Coffee, sweetened', 'grande', 80],
+  ['Starbucks Espresso, double (doppio)', '2 shots', 10], ['Starbucks Doubleshot on Ice (Iced Shaken Espresso), skimmed milk', 'grande', 90],
+  ['Starbucks Doubleshot on Ice (Iced Shaken Espresso), semi-skimmed (2%) milk', 'grande', 100], ['Starbucks Brown Sugar Oat Shaken Espresso', 'grande', 120],
+  ['Starbucks Caffè Mocha with whipped cream', 'grande', 370], ['Starbucks White Chocolate Mocha', 'grande', 430], ['Starbucks Caramel Macchiato', 'grande', 250],
+  ['Starbucks Vanilla Latte', 'grande', 250], ['Starbucks Skinny Vanilla Latte', 'grande', 100], ['Starbucks Chai Tea Latte', 'grande', 240], ['Starbucks Matcha Latte', 'grande', 240],
+  ['Starbucks Hot Chocolate with whipped cream', 'grande', 370], ['Starbucks Vanilla Sweet Cream Cold Brew', 'grande', 110],
+  ['Starbucks Caramel Frappuccino with whipped cream', 'grande', 380], ['Starbucks Java Chip Frappuccino with whipped cream', 'grande', 440], ['Starbucks Mocha Frappuccino with whipped cream', 'grande', 370],
+  ['Starbucks Coffee Frappuccino', 'grande', 230], ['Starbucks Butter Croissant', '1 piece', 260], ['Starbucks Banana Bread', '1 slice', 410], ['Starbucks Blueberry Muffin', '1 piece', 360],
+  ['Starbucks Cheese Danish', '1 piece', 290], ['Starbucks Chocolate Chip Cookie', '1 piece', 370], ['Starbucks Egg & Cheese Sandwich', '1 sandwich', 380],
+  ['Starbucks Doubleshot Espresso can (ready to drink)', '200 ml can', 140], ['Starbucks Frappuccino bottle (ready to drink)', '250 ml bottle', 190],
+  // Coffee shop drinks (any café, medium ≈ 350 ml)
+  ['Latte, skimmed milk', 'medium cup', 100], ['Latte, full-fat milk', 'medium cup', 190], ['Cappuccino, skimmed milk', 'medium cup', 70], ['Cappuccino, full-fat milk', 'medium cup', 130],
+  ['Flat white', 'small cup', 120], ['Spanish latte', 'medium cup', 250], ['Iced Spanish latte', 'medium cup', 230], ['Mocha', 'medium cup', 290], ['Americano / black coffee', '1 cup', 5],
+  ['Espresso', '1 shot', 5], ['Hot chocolate', 'medium cup', 300], ['Matcha latte', 'medium cup', 190], ['Iced caramel latte', 'medium cup', 220], ['Affogato', '1 serving', 150],
   ['Jollibee Chickenjoy + rice', '1 piece', 520], ['Jollibee Jolly Spaghetti', '1 serving', 480], ['Jollibee Yumburger', '1 burger', 290],
   ['Chowking chao fan', '1 serving', 550], ['Mang Inasal PM1', '1 meal', 700], ['Max’s fried chicken', '1/4 chicken', 450],
   // Everyday & international
@@ -84,20 +103,38 @@ function close(a, b) {
   return edits + (a.length - i) + (b.length - j) <= 1
 }
 
-export function searchFoods(q, limit = 8) {
-  const t = norm(q)
+const STOP = new Set(['with', 'and', 'the', 'of', 'in', 'a', 'an', 'on', 'for', 'milk', 'coffee', 'size'])
+// common ways of saying the same thing, applied to what was typed
+const REWRITE = [
+  [/\b(non ?fat|fat ?free|skim(med)?|skinny milk|0 ?%)\b/g, 'skimmed'], [/\bdouble ?shots?\b/g, 'doubleshot'], [/\bfrapp?(e|é)?s?\b/g, 'frappuccino'],
+  [/\b(low ?fat|semi ?skim(med)?|2 ?%)\b/g, 'semi skimmed'], [/\b(full ?fat|full cream)\b/g, 'whole'], [/\bcafe latte\b/g, 'caffe latte'], [/\bsbux\b/g, 'starbucks'],
+  [/\bchoco\b/g, 'chocolate'], [/\b(medium|16 ?oz)\b/g, 'grande'],
+]
+
+// Ranked matches. `strong` is true when every meaningful word typed was found in the name.
+export function matchFoods(q, limit = 8) {
+  let t = norm(q)
   if (t.length < 2) return []
-  const words = t.split(' ')
+  const raw = t
+  for (const [re, to] of REWRITE) t = t.replace(re, to)
+  const all = t.split(' ').filter(Boolean)
+  const words = all.filter((w) => !STOP.has(w))
+  const use = words.length ? words : all
   return FOODS
     .map((f) => {
       const n = norm(f.name)
       const nw = n.split(' ')
       const hit = (w) => n.includes(w) || (ALIASES[w] && n.includes(ALIASES[w])) || nw.some((x) => close(w, x))
-      const score = n.startsWith(t) ? 4 : n.includes(t) ? 3 : words.every(hit) ? 2 : words.some((w) => w.length > 3 && hit(w)) ? 1 : 0
-      return { f, score }
+      const hits = use.filter(hit).length
+      const strong = hits === use.length
+      const score = n.startsWith(raw) ? 1000 : n.includes(raw) ? 900 : strong ? 500 + hits : hits >= 2 || (hits === 1 && use.some((w) => w.length > 3 && hit(w))) ? hits * 10 : 0
+      return { f, score, strong }
     })
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score || a.f.name.length - b.f.name.length)
     .slice(0, limit)
-    .map((x) => x.f)
+}
+
+export function searchFoods(q, limit = 8) {
+  return matchFoods(q, limit).map((x) => x.f)
 }

@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { compressPhoto } from '../store'
 import { fmt, mealFor } from '../calc'
 import { searchFoods } from '../foods'
 import { askFood } from '../ai'
+import { matchFoods } from '../foods'
 import { IconCamera, IconClose } from '../icons'
 import { useEscape } from '../motion'
 import { useSheetDrag } from '../motion'
@@ -59,15 +60,32 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
     setAi((a) => ({ ...a, results: null }))
   }
 
-  async function searchAi() {
+  const asked = useRef('')
+  async function searchAi(auto = false) {
+    const q = name.trim()
+    asked.current = q.toLowerCase()
     setAi({ busy: true, err: '', results: null, items: null, confidence: '' })
     try {
-      const j = await askFood({ mode: 'search', q: name })
+      const j = await askFood({ mode: 'search', q })
+      if (asked.current !== q.toLowerCase()) return // they kept typing; a newer search is on its way
       setAi({ busy: false, err: '', results: j.results ?? [], items: null, confidence: '' })
     } catch (e) {
-      setAi({ busy: false, err: e.message, results: null, items: null, confidence: '' })
+      if (asked.current !== q.toLowerCase()) return
+      // an automatic search that fails stays quiet; the button is still there to try again
+      setAi({ busy: false, err: auto ? '' : e.message, results: null, items: null, confidence: '' })
     }
   }
+
+  // When the built-in list has no good match, look it up online automatically
+  // (after a short pause in typing, once per search, and only while online).
+  useEffect(() => {
+    const q = name.trim()
+    if (picked || photo || q.length < 4 || !navigator.onLine || asked.current === q.toLowerCase()) return
+    const strong = matchFoods(q).filter((m) => m.strong).length + suggestions.filter((sg) => sg.portion === 'my food' || sg.portion === 'your usual').length
+    if (strong >= 1) return
+    const id = setTimeout(() => searchAi(true), 900)
+    return () => clearTimeout(id)
+  }, [name, picked, photo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function onPhoto(ev) {
     const f = ev.target.files?.[0]
@@ -177,8 +195,8 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
               </button>
             ))}
             {!ai.results && (
-              <button className="suggest-ai" onClick={searchAi} disabled={ai.busy}>
-                {ai.busy ? 'Searching…' : `Search “${name.trim()}” with AI`}
+              <button className="suggest-ai" onClick={() => searchAi(false)} disabled={ai.busy}>
+                {ai.busy ? 'Searching online…' : `Search online for “${name.trim()}”`}
               </button>
             )}
           </div>
