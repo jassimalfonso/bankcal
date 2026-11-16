@@ -120,8 +120,8 @@ function usePush(enabled, uid) {
   const turnOn = useCallback(async () => {
     if (!supported) throw new Error('Add BankCal to your Home Screen first, then open it from there and turn this on.')
     if ((await Notification.requestPermission()) !== 'granted') throw new Error('Notifications are blocked. Allow them for BankCal in your phone’s settings.')
-    const k = await fetch('/api/push').then((r) => r.json()).catch(() => ({}))
-    if (!k.key) throw new Error('Notifications aren’t ready yet. Try again later.')
+    const k = await fetch('/api/push', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({ error: 'Couldn’t reach BankCal. Check your connection.' }))
+    if (!k.key) throw new Error(k.error || 'Notifications aren’t ready yet. Try again later.')
     const reg = await navigator.serviceWorker.ready
     let sub = await reg.pushManager.getSubscription()
     if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(k.key) })

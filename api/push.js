@@ -5,7 +5,6 @@
 // The partner's notification address is read from shares/{to} *with the caller's own sign-in*,
 // so Firestore's rules decide: only a linked partner can read it, so only a partner can notify.
 import { createRemoteJWKSet, jwtVerify } from 'jose'
-import webpush from 'web-push'
 
 const PROJECT = 'bankcal-2d763'
 const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'))
@@ -28,8 +27,9 @@ export default async function handler(req, res) {
   const pub = process.env.VAPID_PUBLIC_KEY
   const priv = process.env.VAPID_PRIVATE_KEY
   if (req.method === 'GET') {
-    if (!pub) return res.status(503).json({ error: 'Notifications aren’t set up on the server yet.' })
-    res.setHeader('Cache-Control', 'public, max-age=3600')
+    // 200 either way so the app can show the reason
+    if (!pub || !priv) return res.json({ key: null, error: `Server is missing ${[!pub && 'VAPID_PUBLIC_KEY', !priv && 'VAPID_PRIVATE_KEY'].filter(Boolean).join(' and ')}. Add it in Vercel, then redeploy.` })
+    res.setHeader('Cache-Control', 'no-store')
     return res.json({ key: pub })
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use GET or POST' })
@@ -63,6 +63,7 @@ export default async function handler(req, res) {
     body: msg === '👏' ? 'Open BankCal to see your day.' : msg,
     tag: `cheer-${me}`,
   })
+  const { default: webpush } = await import('web-push') // loaded only when sending
   webpush.setVapidDetails('https://bankcal.vercel.app', pub, priv)
   const out = await Promise.allSettled(subs.map((s) => webpush.sendNotification(s, payload, { TTL: 12 * 3600, urgency: 'normal' })))
   return res.json({ sent: out.filter((x) => x.status === 'fulfilled').length })
