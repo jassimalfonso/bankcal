@@ -5,7 +5,29 @@ import { createRemoteJWKSet, jwtVerify } from 'jose'
 
 const PROJECT = 'bankcal-2d763'
 const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'))
-const MODELS = (process.env.GEMINI_MODEL || 'gemini-2.5-flash,gemini-2.0-flash').split(',').map((s) => s.trim())
+// Google retires Gemini model names every few months (2.0 Flash and 2.5 Flash are both gone),
+// so nothing is hard-coded: we try an optional override, then Google's "latest" alias, then
+// whatever current Flash models the API itself lists for this key.
+const OVERRIDE = (process.env.GEMINI_MODEL || '').split(',').map((s) => s.trim()).filter(Boolean)
+const API = 'https://generativelanguage.googleapis.com/v1beta'
+let cache = { at: 0, models: [] } // discovered models, kept for an hour while the function stays warm
+let good = null // the model that last worked
+
+async function discover(key) {
+  if (Date.now() - cache.at < 3600e3 && cache.models.length) return cache.models
+  const r = await fetch(`${API}/models?pageSize=200&key=${key}`)
+  if (!r.ok) return []
+  const j = await r.json()
+  const ver = (n) => parseFloat((/gemini-(\d+(?:\.\d+)?)/.exec(n) || [])[1] || '0')
+  const models = (j.models || [])
+    .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
+    .map((m) => m.name.replace(/^models\//, ''))
+    .filter((n) => /^gemini-.*flash/.test(n) && !/image|tts|audio|live|embedding|computer|robot/.test(n))
+    // newest stable full Flash first, then previews, then the lighter "lite" models
+    .sort((x, y) => (/lite/.test(x) - /lite/.test(y)) || (/preview|exp/.test(x) - /preview|exp/.test(y)) || ver(y) - ver(x) || x.length - y.length)
+  cache = { at: Date.now(), models }
+  return models
+}
 
 const CONTEXT = 'You are a nutrition assistant for people living in the UAE / GCC. Use typical portions served in UAE restaurants, cafeterias, supermarkets and homes (Arabic, Indian, Filipino and international food). Calories are kcal, integers.'
 
@@ -14,22 +36,36 @@ const PROMPTS = {
   search: (q) => `${CONTEXT} The user typed "${q}" to log something they ate or drank. Work out what they mean, including brand names and restaurant or café chains (for example Starbucks, Costa, Tim Hortons, McDonald's, KFC, Jollibee, supermarket products). For branded or chain items, use the brand's published nutrition figures for that exact item, size and options (cup size such as tall, grande or venti; milk type such as skimmed, whole or oat; syrups, whipped cream), not a generic estimate. Put the best match for exactly what was typed first, then up to 5 close alternatives the user might have meant (other sizes, milk options or similar items). Each name must be specific: include the brand, the size and the options. Give the portion (for drinks, the size and ml). If something is unclear, assume the most common version in the UAE. Return JSON exactly like {"results": [{"name": "", "portion": "", "kcal": 0}]}.`,
 }
 
+async function ask(key, model, parts) {
+  const r = await fetch(`${API}/models/${model}:generateContent?key=${key}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json', temperature: 0.2 } }),
+  })
+  if (r.status === 404 || r.status === 400) return { gone: true, status: r.status } // retired or unsupported model: try the next one
+  if (r.status === 429) return { busy: true }
+  if (!r.ok) throw Object.assign(new Error('The online food search had a problem. Try again in a moment, or type the calories.'), { status: 502 })
+  const j = await r.json()
+  const text = j.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') ?? '{}'
+  try { return { out: JSON.parse(text.replace(/^```(?:json)?|```$/g, '').trim()) } } catch { return { out: {} } }
+}
+
 async function callGemini(key, parts) {
-  let last
-  for (const model of MODELS) {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json', temperature: 0.2 } }),
-    })
-    if (r.status === 404) { last = `model ${model} not found`; continue }
-    if (r.status === 429) throw Object.assign(new Error('Daily free limit reached. Try again later or type the calories.'), { status: 429 })
-    if (!r.ok) throw Object.assign(new Error(`AI error ${r.status}`), { status: 502 })
-    const j = await r.json()
-    const text = j.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') ?? '{}'
-    return JSON.parse(text)
+  const tried = new Set()
+  let busy = false
+  const attempt = async (model) => {
+    if (!model || tried.has(model)) return null
+    tried.add(model)
+    const r = await ask(key, model, parts)
+    if (r.busy) { busy = true; return null }
+    if (r.gone) { if (good === model) good = null; return null }
+    good = model
+    return r.out
   }
-  throw Object.assign(new Error(last || 'No AI model available'), { status: 502 })
+  for (const m of [good, ...OVERRIDE, 'gemini-flash-latest']) { const out = await attempt(m); if (out) return out }
+  for (const m of (await discover(key)).slice(0, 6)) { const out = await attempt(m); if (out) return out }
+  if (busy) throw Object.assign(new Error('Today’s free online searches are used up. Try again later, or type the calories.'), { status: 429 })
+  throw Object.assign(new Error('Online food search isn’t available right now. Type the calories for now.'), { status: 502 })
 }
 
 export default async function handler(req, res) {
