@@ -48,7 +48,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
     const past = recent.filter((r) => r.name.toLowerCase().includes(t) && !saved.some((s) => s.name.toLowerCase() === r.name.toLowerCase())).map((r) => ({ name: r.name, kcal: r.kcal, portion: 'your usual' }))
     const own = [...saved, ...past]
     const built = searchFoods(name).filter((f) => !own.some((o) => o.name.toLowerCase() === f.name.toLowerCase()))
-    return [...own, ...built].slice(0, 6)
+    return [...own, ...built].slice(0, 8)
   }, [name, recent, picked, myFoods])
 
   const spent = todays.reduce((a, e) => a + e.kcal, 0)

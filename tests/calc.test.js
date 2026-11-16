@@ -230,12 +230,16 @@ test('close-my-day windows end at midnight', () => {
 test('food search understands brands, sizes and milk wording', async () => {
   const f = await import('../src/foods.js')
   const top = (q) => f.matchFoods(q)[0]?.f.name
-  assert.match(top('starbucks double shot coffee dark roast with skimmed milk grande'), /Latte \(hot\), skimmed/)
-  assert.equal(f.matchFoods('starbucks double shot coffee dark roast with skimmed milk grande').slice(0, 3).every((m) => /\(hot\).*, skimmed/.test(m.f.name)), true)
+  assert.match(top('starbucks double shot coffee dark roast with skimmed milk grande'), /Latte \(hot, double shot\), skimmed/)
+  assert.equal(f.matchFoods('starbucks double shot coffee dark roast with skimmed milk grande').slice(0, 3).every((m) => /\(hot, double shot\), skimmed/.test(m.f.name)), true)
   assert.match(top('starbucks iced double shot skimmed grande'), /Doubleshot on Ice.*skimmed/)
-  assert.match(top('starbucks hot cappuccino skim'), /Cappuccino \(hot\), skimmed/)
-  assert.match(top('starbucks latte nonfat'), /Latte \(hot\), skimmed/)
+  assert.match(top('starbucks hot cappuccino skim'), /Cappuccino \(hot, double shot\), skimmed/)
+  assert.match(top('starbucks latte nonfat'), /Latte \(hot, double shot\), skimmed/)
   assert.match(top('sbux frap'), /Frappuccino/)
+  assert.equal(f.matchFoods('double shot').every((m) => /double ?shot/i.test(m.f.name)), true) // every result visibly says double shot
+  assert.match(top('double shot'), /^Starbucks Double ?shot/i)
+  assert.equal(f.matchFoods('double shot').some((m) => /Latte \(hot, double shot\), skimmed/.test(m.f.name)), true)
+  assert.equal(f.matchFoods('double shot').some((m) => /Doubleshot on Ice/.test(m.f.name)), true)
   assert.equal(top('okoy'), 'Okoy (shrimp fritter)')
   assert.equal(top('tortang talog'), 'Tortang talong')
   assert.equal(f.matchFoods('costa flat white medium oat').some((m) => m.strong), false) // no full match → looks online too
