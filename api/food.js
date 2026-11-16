@@ -11,7 +11,12 @@ const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/service_acco
 const OVERRIDE = (process.env.GEMINI_MODEL || '').split(',').map((s) => s.trim()).filter(Boolean)
 const API = 'https://generativelanguage.googleapis.com/v1beta'
 let cache = { at: 0, models: [] } // discovered models, kept for an hour while the function stays warm
-let good = null // the model that last worked
+// What last worked, remembered separately for typed searches (speed first) and photos (accuracy first)
+const good = { search: null, photo: null }
+// Newer Flash models "think" before answering, which adds seconds. A calorie lookup doesn't need it,
+// so we ask for the least thinking the model allows. The setting's name differs between model
+// generations, so each is tried once and the one that's accepted is remembered.
+const THINKING = [{ thinkingConfig: { thinkingLevel: 'minimal' } }, { thinkingConfig: { thinkingBudget: 0 } }, {}]
 
 async function discover(key) {
   if (Date.now() - cache.at < 3600e3 && cache.models.length) return cache.models
@@ -33,37 +38,54 @@ const CONTEXT = 'You are a nutrition assistant for people living in the UAE / GC
 
 const PROMPTS = {
   photo: `${CONTEXT} Look at this meal photo. Identify each food, estimate its portion and calories. Return JSON exactly like {"name": "short name for the whole plate", "kcal": 0, "items": [{"name": "", "portion": "", "kcal": 0}], "confidence": "low|medium|high"}. If there is no food, return {"name": "", "kcal": 0, "items": [], "confidence": "low"}.`,
-  search: (q) => `${CONTEXT} The user typed "${q}" to log something they ate or drank. Work out what they mean, including brand names and restaurant or café chains (for example Starbucks, Costa, Tim Hortons, McDonald's, KFC, Jollibee, supermarket products). For branded or chain items, use the brand's published nutrition figures for that exact item, size and options (cup size such as tall, grande or venti; milk type such as skimmed, whole or oat; syrups, whipped cream), not a generic estimate. Put the best match for exactly what was typed first, then up to 5 close alternatives the user might have meant (other sizes, milk options or similar items). Each name must be specific: include the brand, the size and the options. Give the portion (for drinks, the size and ml). If something is unclear, assume the most common version in the UAE. Return JSON exactly like {"results": [{"name": "", "portion": "", "kcal": 0}]}.`,
+  search: (q) => `${CONTEXT} The user typed "${q}" to log something they ate or drank. It may be a brand or chain item (Starbucks, Costa, Tim Hortons, McDonald's, KFC, Jollibee, supermarket products): for those, use the brand's published calories for that exact item, size and options (cup size, milk type, syrups, cream). List the best match first, then up to 3 close alternatives (other sizes, milk options or similar items). Names must include the brand, size and options. Portion: the serving, with ml for drinks. If unclear, assume the most common UAE version. Reply with JSON only, no explanation: {"results": [{"name": "", "portion": "", "kcal": 0}]}.`,
 }
 
-async function ask(key, model, parts) {
+async function ask(key, model, parts, extra, signal) {
   const r = await fetch(`${API}/models/${model}:generateContent?key=${key}`, {
-    method: 'POST',
+    method: 'POST', signal,
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json', temperature: 0.2 } }),
+    body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json', temperature: 0.2, ...extra } }),
   })
-  if (r.status === 404 || r.status === 400) return { gone: true, status: r.status } // retired or unsupported model: try the next one
+  if (r.status === 404) return { gone: true } // retired model: try the next one
+  if (r.status === 400) return { rejected: true } // this model doesn't accept that setting
   if (r.status === 429) return { busy: true }
   if (!r.ok) throw Object.assign(new Error('The online food search had a problem. Try again in a moment, or type the calories.'), { status: 502 })
   const j = await r.json()
-  const text = j.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') ?? '{}'
+  const text = j.candidates?.[0]?.content?.parts?.filter((p) => !p.thought).map((p) => p.text ?? '').join('') ?? '{}'
   try { return { out: JSON.parse(text.replace(/^```(?:json)?|```$/g, '').trim()) } } catch { return { out: {} } }
 }
 
-async function callGemini(key, parts) {
+async function callGemini(key, parts, kind) {
   const tried = new Set()
   let busy = false
-  const attempt = async (model) => {
+  const signal = AbortSignal.timeout(kind === 'photo' ? 25000 : 12000)
+  const attempt = async (model, known) => {
     if (!model || tried.has(model)) return null
     tried.add(model)
-    const r = await ask(key, model, parts)
-    if (r.busy) { busy = true; return null }
-    if (r.gone) { if (good === model) good = null; return null }
-    good = model
-    return r.out
+    for (const extra of known ? [known] : THINKING) {
+      const r = await ask(key, model, parts, extra, signal)
+      if (r.rejected) continue
+      if (r.busy) { busy = true; return null }
+      if (r.gone) break
+      good[kind] = { model, extra }
+      return r.out
+    }
+    if (good[kind]?.model === model) good[kind] = null
+    return null
   }
-  for (const m of [good, ...OVERRIDE, 'gemini-flash-latest']) { const out = await attempt(m); if (out) return out }
-  for (const m of (await discover(key)).slice(0, 6)) { const out = await attempt(m); if (out) return out }
+  try {
+    if (good[kind]) { const out = await attempt(good[kind].model, good[kind].extra); if (out) return out }
+    // typed searches use the lighter, faster models first; photos use the full model first
+    const alias = kind === 'photo' ? ['gemini-flash-latest'] : ['gemini-flash-lite-latest', 'gemini-flash-latest']
+    for (const m of [...OVERRIDE, ...alias]) { const out = await attempt(m); if (out) return out }
+    const found = await discover(key)
+    const ordered = kind === 'photo' ? found : [...found.filter((m) => /lite/.test(m)), ...found.filter((m) => !/lite/.test(m))]
+    for (const m of ordered.slice(0, 6)) { const out = await attempt(m); if (out) return out }
+  } catch (e) {
+    if (e.name === 'TimeoutError' || e.name === 'AbortError') throw Object.assign(new Error('The online search is taking too long. Try again, or type the calories.'), { status: 504 })
+    throw e
+  }
   if (busy) throw Object.assign(new Error('Today’s free online searches are used up. Try again later, or type the calories.'), { status: 429 })
   throw Object.assign(new Error('Online food search isn’t available right now. Type the calories for now.'), { status: 502 })
 }
@@ -84,13 +106,14 @@ export default async function handler(req, res) {
     if (body.mode === 'photo') {
       const m = /^data:(image\/\w+);base64,(.+)$/.exec(body.image || '')
       if (!m) return res.status(400).json({ error: 'No photo received.' })
-      const out = await callGemini(key, [{ text: PROMPTS.photo }, { inline_data: { mime_type: m[1], data: m[2] } }])
+      const out = await callGemini(key, [{ text: PROMPTS.photo }, { inline_data: { mime_type: m[1], data: m[2] } }], 'photo')
       return res.status(200).json(out)
     }
     if (body.mode === 'search') {
       const q = String(body.q || '').slice(0, 80).trim()
       if (q.length < 2) return res.status(400).json({ error: 'Type a little more.' })
-      const out = await callGemini(key, [{ text: PROMPTS.search(q) }])
+      const out = await callGemini(key, [{ text: PROMPTS.search(q) }], 'search')
+      res.setHeader('Cache-Control', 'private, max-age=3600')
       return res.status(200).json(out)
     }
     return res.status(400).json({ error: 'Unknown request.' })

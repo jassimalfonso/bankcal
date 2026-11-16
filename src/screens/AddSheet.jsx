@@ -8,6 +8,9 @@ import { IconCamera, IconClose } from '../icons'
 import { useEscape } from '../motion'
 import { useSheetDrag } from '../motion'
 
+// online answers, remembered while the app stays open
+const onlineCache = new Map()
+
 export default function AddSheet({ mine, todays, budget, onClose, onSave, profile, updateProfile }) {
   const myFoods = profile?.myFoods ?? []
   const [keep, setKeep] = useState(false)
@@ -63,14 +66,18 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
   const asked = useRef('')
   async function searchAi(auto = false) {
     const q = name.trim()
-    asked.current = q.toLowerCase()
+    const k = q.toLowerCase()
+    asked.current = k
+    // answers already fetched in this session come back instantly
+    if (onlineCache.has(k)) { setAi({ busy: false, err: '', results: onlineCache.get(k), items: null, confidence: '' }); return }
     setAi({ busy: true, err: '', results: null, items: null, confidence: '' })
     try {
       const j = await askFood({ mode: 'search', q })
-      if (asked.current !== q.toLowerCase()) return // they kept typing; a newer search is on its way
+      onlineCache.set(k, j.results ?? [])
+      if (asked.current !== k) return // they kept typing; a newer search is on its way
       setAi({ busy: false, err: '', results: j.results ?? [], items: null, confidence: '' })
     } catch (e) {
-      if (asked.current !== q.toLowerCase()) return
+      if (asked.current !== k) return
       // an automatic search that fails stays quiet; the button is still there to try again
       setAi({ busy: false, err: auto ? '' : e.message, results: null, items: null, confidence: '' })
     }
@@ -196,7 +203,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
             ))}
             {!ai.results && (
               <button className="suggest-ai" onClick={() => searchAi(false)} disabled={ai.busy}>
-                {ai.busy ? 'Searching online…' : `Search online for “${name.trim()}”`}
+                {ai.busy ? 'Searching online… you can pick from the list meanwhile' : `Search online for “${name.trim()}”`}
               </button>
             )}
           </div>
