@@ -25,6 +25,27 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
   const drag = useSheetDrag(onClose)
   useEscape(onClose)
   const meal = mealFor()
+  const inputRef = useRef(null)
+
+  // Keep the sheet inside the part of the screen the keyboard leaves visible (iPhone),
+  // so the results under the search box are never hidden behind the keyboard.
+  const [view, setView] = useState(null)
+  useEffect(() => {
+    const v = window.visualViewport
+    if (!v) return
+    const on = () => {
+      const kb = window.innerHeight - v.height > 120 // keyboard is up
+      setView(kb ? { top: v.offsetTop, height: v.height } : null)
+    }
+    on()
+    v.addEventListener('resize', on)
+    v.addEventListener('scroll', on)
+    return () => { v.removeEventListener('resize', on); v.removeEventListener('scroll', on) }
+  }, [])
+  // once the keyboard is up, bring the search box to the top of the sheet
+  useEffect(() => {
+    if (view && document.activeElement === inputRef.current) inputRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }, [view?.height]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // One-tap repeats: last distinct foods this person logged.
   const recent = useMemo(() => {
@@ -83,16 +104,25 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
     }
   }
 
-  // When the built-in list has no good match, look it up online automatically
-  // (after a short pause in typing, once per search, and only while online).
+  // Look it up online by itself once typing pauses, whenever the built-in list has only a
+  // few good matches, so there's no button to press. Once per search, only while online.
   useEffect(() => {
     const q = name.trim()
-    if (picked || photo || q.length < 4 || !navigator.onLine || asked.current === q.toLowerCase()) return
+    if (picked || photo || q.length < 3 || !navigator.onLine || asked.current === q.toLowerCase()) return
     const strong = matchFoods(q).filter((m) => m.strong).length + suggestions.filter((sg) => sg.portion === 'my food' || sg.portion === 'your usual').length
-    if (strong >= 1) return
-    const id = setTimeout(() => searchAi(true), 900)
+    if (strong >= 3) return
+    const id = setTimeout(() => searchAi(true), 700)
     return () => clearTimeout(id)
   }, [name, picked, photo]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The keyboard's Search key: put the keyboard away so all results show, and look online too.
+  function onEnter(e) {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    inputRef.current?.blur()
+    if (name.trim().length >= 2 && !ai.results && !ai.busy) searchAi(false)
+  }
+  const searching = name.trim().length > 0 && !picked
 
   async function onPhoto(ev) {
     const f = ev.target.files?.[0]
@@ -125,8 +155,8 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
   }
 
   return (
-    <div className="sheet-wrap" onClick={onClose}>
-      <div className="sheet" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Log food">
+    <div className="sheet-wrap" onClick={onClose} style={view ? { top: view.top, bottom: 'auto', height: view.height } : undefined}>
+      <div className={`sheet ${searching ? 'searching' : ''}`} style={view ? { ...drag.style, maxHeight: view.height - 8 } : drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Log food">
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
         <div className="sheet-head">
           <div>
@@ -136,7 +166,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
           <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
         </div>
 
-        <button className={`photo ${photo ? 'has' : ''}`} onClick={() => fileRef.current?.click()}>
+        {(photo || !searching) && <button className={`photo ${photo ? 'has' : ''}`} onClick={() => fileRef.current?.click()}>
           {photo ? (
             <img src={photo} alt="Your meal" />
           ) : (
@@ -147,7 +177,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
             </>
           )}
           {ai.busy && photo && <span className="photo-busy">Reading your plate…</span>}
-        </button>
+        </button>}
         <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} />
 
         {ai.items?.length > 0 && (
@@ -184,7 +214,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
 
         <label className="field">
           <span>Food</span>
-          <input value={name} onChange={(e) => { setName(e.target.value); setPicked(false) }} placeholder="Search or type, e.g. adobo…" aria-label="Food name" autoComplete="off" enterKeyHint="search" />
+          <input ref={inputRef} value={name} onKeyDown={onEnter} type="search" onChange={(e) => { setName(e.target.value); setPicked(false) }} placeholder="Search or type, e.g. adobo…" aria-label="Food name" autoComplete="off" enterKeyHint="search" />
         </label>
 
         {(suggestions.length > 0 || (name.trim().length >= 2 && !picked)) && (
@@ -203,7 +233,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, profil
             ))}
             {!ai.results && (
               <button className="suggest-ai" onClick={() => searchAi(false)} disabled={ai.busy}>
-                {ai.busy ? 'Searching online… you can pick from the list meanwhile' : `Search online for “${name.trim()}”`}
+                {ai.busy ? 'Also checking online…' : `Search online for “${name.trim()}”`}
               </button>
             )}
           </div>

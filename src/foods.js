@@ -75,7 +75,14 @@ export const FOODS = [
   ['Flat white', 'small cup', 120], ['Spanish latte', 'medium cup', 250], ['Iced Spanish latte', 'medium cup', 230], ['Mocha', 'medium cup', 290], ['Americano / black coffee', '1 cup', 5],
   ['Espresso', '1 shot', 5], ['Hot chocolate', 'medium cup', 300], ['Matcha latte', 'medium cup', 190], ['Iced caramel latte', 'medium cup', 220], ['Affogato', '1 serving', 150],
   ['Jollibee Chickenjoy + rice', '1 piece', 520], ['Jollibee Jolly Spaghetti', '1 serving', 480], ['Jollibee Yumburger', '1 burger', 290],
-  ['Chowking chao fan', '1 serving', 550], ['Mang Inasal PM1', '1 meal', 700], ['Max’s fried chicken', '1/4 chicken', 450],
+  ['Chowking chao fan', '1 serving', 550], ['Mang Inasal PM1', '1 meal', 700],
+  // Max's Restaurant (estimates; Max's doesn't publish calories)
+  ['Max’s Fried Chicken', '1/4 chicken', 450, 'max maxs restaurant'], ['Max’s Fried Chicken', '1/2 chicken', 900, 'max maxs restaurant'], ['Max’s Fried Chicken', 'whole chicken', 1800, 'max maxs restaurant'],
+  ['Max’s Fried Chicken + rice', '1/4 chicken + 1 cup rice', 655, 'max maxs meal'], ['Max’s Kare-Kare', '1 serving', 600, 'max maxs oxtail peanut'],
+  ['Max’s Sinigang na Baboy', '1 bowl', 350, 'max maxs pork soup'], ['Max’s Pancit Canton', '1 serving', 450, 'max maxs noodles pansit'],
+  ['Max’s Crispy Pata', '1/4 (shared)', 900, 'max maxs pork'], ['Max’s Lumpiang Shanghai', '6 pieces', 360, 'max maxs spring rolls'],
+  ['Max’s Chopsuey', '1 serving', 250, 'max maxs vegetables'], ['Max’s Garlic Rice', '1 cup', 350, 'max maxs sinangag'],
+  ['Max’s Halo-Halo', '1 glass', 450, 'max maxs dessert'], ['Max’s Caramel Bar', '1 bar', 180, 'max maxs dessert cake'],
   // Everyday & international
   ['Plain rice', '1 cup cooked', 205], ['Brown rice', '1 cup cooked', 215], ['Boiled eggs', '2 eggs', 155], ['Fried egg', '1 egg', 90],
   ['Omelette', '2 eggs', 200], ['Eggs & toast', '2 eggs + 2 toast', 420], ['Toast with butter', '2 slices', 250], ['Oats with milk', '1 bowl', 300],
@@ -90,7 +97,7 @@ export const FOODS = [
 
 // Words people type that should find the same dish
 const ALIASES = { talong: 'eggplant', okoy: 'ukoy', ukoy: 'okoy', pansit: 'pancit', pancit: 'pansit', sinangag: 'garlic rice', longsilog: 'longganisa', siopao: 'bun', dinamita: 'dynamite', dynamite: 'dinamita', sili: 'chili', camote: 'kamote', kamote: 'camote' }
-const norm = (x) => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()
+const norm = (x) => x.toLowerCase().replace(/['’‘`]/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()
 
 // one typo allowed for words of 5+ letters
 function close(a, b) {

@@ -245,3 +245,13 @@ test('food search understands brands, sizes and milk wording', async () => {
   assert.equal(f.matchFoods('costa flat white medium oat').some((m) => m.strong), false) // no full match → looks online too
   assert.equal(f.matchFoods('spanish latte')[0].strong, true)
 })
+
+test("Max's dishes come up however it's typed", async () => {
+  const { searchFoods } = await import('../src/foods.js')
+  for (const q of ['max', 'maxs', "max's", 'Max’s', 'max kare kare', 'maxs chicken']) {
+    const r = searchFoods(q)
+    assert.ok(r.length && r[0].name.startsWith('Max’s'), q)
+  }
+  assert.ok(searchFoods('max').length >= 8)
+  assert.ok(searchFoods('kare kare').some((f) => f.name.startsWith('Max’s')))
+})
