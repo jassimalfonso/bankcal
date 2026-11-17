@@ -6,12 +6,31 @@ import Character from '../Character'
 import BankCard from './BankCard'
 import VersionLine from './VersionLine'
 import { useEscape } from '../motion'
+import { IconHeart, IconShare } from '../icons'
+import { favItems, isFav, toggleFav, shareFav, KIND_LABEL } from '../favorites'
+import CollectionSheet from './Collection'
 
 // The verse and its reflection are one card: tap the verse to unfold the reflection.
 // The motivation sits quietly underneath.
-export function Words({ words, compact = false }) {
+// Save or share one of today's words. Only on the Today card, not the morning welcome.
+function Acts({ it, acts }) {
+  if (!it || !acts) return null
+  const on = isFav(acts.profile, it)
+  const what = KIND_LABEL[it.kind].toLowerCase()
+  return (
+    <div className="w-acts">
+      <button className={on ? 'on' : ''} onClick={() => toggleFav(acts.profile, acts.updateProfile, it, acts.notify)} aria-pressed={on} aria-label={on ? `Remove ${what} from favourites` : `Save ${what} to favourites`}>
+        <IconHeart filled={on} size={18} /><span>{on ? 'Saved' : 'Save'}</span>
+      </button>
+      <button onClick={() => shareFav(it, acts.notify)} aria-label={`Share ${what}`}><IconShare size={18} /><span>Share</span></button>
+    </div>
+  )
+}
+
+export function Words({ words, compact = false, acts = null }) {
   const [open, setOpen] = useState(!compact)
   const hasReflection = !!words.reflection
+  const items = acts ? favItems(words) : {}
   return (
     <div className="words">
       <button
@@ -28,18 +47,23 @@ export function Words({ words, compact = false }) {
           {hasReflection && <span className="w-toggle">{open ? 'Hide reflection' : 'Read reflection'}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>}
         </span>
       </button>
+      <Acts it={items.verse} acts={acts} />
       {hasReflection && (
         <div className={`w-fold ${open ? 'open' : ''}`} id="today-reflection" aria-hidden={!open}>
           <div>
             <div className="w-reflect">
               {words.context && <p className="w-context"><b>Context</b>{words.context}</p>}
               <p>{words.reflection}</p>
+              <Acts it={items.reflection} acts={acts} />
             </div>
           </div>
         </div>
       )}
       {words.motivation && (
-        <p className="w-motive">“{words.motivation.text}” <span>— {words.motivation.by}</span></p>
+        <div className="w-motive-wrap">
+          <p className="w-motive">“{words.motivation.text}” <span>— {words.motivation.by}</span></p>
+          <Acts it={items.motivation} acts={acts} />
+        </div>
       )}
     </div>
   )
@@ -176,11 +200,17 @@ export function DayResult({ profile, budget, spent, earn, streakDays, today, onC
   )
 }
 
-export function WordsCard({ words }) {
+export function WordsCard({ words, profile, updateProfile, notify }) {
+  const [shelf, setShelf] = useState(false)
+  const n = profile?.favorites?.length ?? 0
   return (
     <section className="today-words">
-      <h2 className="group-title">Today’s verse and reflection</h2>
-      <div className="card words-panel"><Words words={words} compact /></div>
+      <div className="block-head">
+        <h2 className="group-title">Today’s verse and reflection</h2>
+        {n > 0 && <button className="link-btn" onClick={() => setShelf(true)}>Favourites ({n})</button>}
+      </div>
+      <div className="card words-panel"><Words words={words} compact acts={{ profile, updateProfile, notify }} /></div>
+      {shelf && <CollectionSheet tab="favs" profile={profile} updateProfile={updateProfile} notify={notify} onClose={() => setShelf(false)} />}
     </section>
   )
 }

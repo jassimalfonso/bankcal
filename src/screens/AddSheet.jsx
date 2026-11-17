@@ -169,9 +169,11 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
           <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
         </div>
 
-        <label className="field">
+        <label className="field has-clear">
           <span>Food</span>
-          <input ref={inputRef} value={name} onKeyDown={onEnter} type="search" onChange={(e) => { setName(e.target.value); setPicked(false) }} placeholder="Search or type, e.g. adobo…" aria-label="Food name" autoComplete="off" enterKeyHint="search" />
+          {/* tapping a food that's already chosen selects the whole name, so typing replaces it */}
+          <input ref={inputRef} value={name} onKeyDown={onEnter} type="search" onFocus={(e) => { if (picked) e.target.select() }} onChange={(e) => { setName(e.target.value); setPicked(false) }} placeholder="Search or type, e.g. adobo…" aria-label="Food name" autoComplete="off" enterKeyHint="search" />
+          {name && <button type="button" className="field-clear" aria-label="Clear food" onClick={(e) => { e.preventDefault(); setName(''); setPicked(false); setAi((a) => ({ ...a, results: null, err: null })); inputRef.current?.focus() }}><IconClose size={18} /></button>}
         </label>
 
         {(suggestions.length > 0 || (name.trim().length >= 2 && !picked)) && (

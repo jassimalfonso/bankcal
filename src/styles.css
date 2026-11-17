@@ -1271,3 +1271,38 @@ body:has(.app)::after, body[data-bg]:not([data-bg='plain']):has(.app)::after { b
 .quick-ws .chip .pos { font-weight: 800; margin-left: 2px; }
 .own-adjust { padding: 8px; }
 .own-adjust .stepper button { width: 44px; min-width: 44px; padding: 0; display: grid; place-items: center; text-align: center; }
+
+/* Food box: clear button */
+.field.has-clear { position: relative; }
+.field.has-clear input { padding-right: 52px; }
+.field-clear { position: absolute; right: 6px; bottom: 6px; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; color: var(--muted); }
+
+/* Save / share under today's words */
+.w-acts { display: flex; gap: 4px; justify-content: flex-end; margin: 2px 4px 4px; }
+.w-acts button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 12px; border-radius: 12px; font-size: 13.5px; font-weight: 750; color: var(--muted); }
+.w-acts button:active { transform: scale(0.95); }
+.w-acts button.on { color: var(--accent); }
+.w-reflect .w-acts { margin: 6px -8px -6px 0; }
+.w-motive-wrap .w-motive { margin-bottom: 0; }
+.w-motive-wrap .w-acts { margin: 0 6px 4px; }
+
+/* Your collection */
+.collection .seg { display: grid; grid-template-columns: 1fr 1fr; width: 100%; margin-top: 4px; }
+.collection .seg button { padding: 10px 8px; min-height: 44px; }
+.col-search { margin-top: 12px; }
+.col-empty { margin: 22px 8px; color: var(--muted); font-size: 15px; line-height: 1.5; text-align: center; }
+.col-list { padding: 4px 0; }
+.col-note { display: flex; gap: 12px; width: 100%; padding: 13px 16px; text-align: left; border-top: 1px solid var(--line); align-items: flex-start; }
+.col-note:first-child { border-top: 0; }
+.col-mood { font-size: 24px; line-height: 1.2; flex: none; }
+.col-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.col-main b { font-size: 14px; font-weight: 800; }
+.col-main span { font-size: 15px; line-height: 1.45; color: color-mix(in srgb, var(--ink) 78%, var(--muted)); white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.col-fav { margin-top: 12px; padding: 16px 16px 6px; }
+.col-fav small { font-size: 12.5px; font-weight: 800; color: var(--accent); }
+.col-fav p { margin: 6px 0 4px; font-size: 16px; line-height: 1.5; text-wrap: pretty; }
+.col-fav p.q { font-weight: 650; }
+.col-ref { display: block; font-size: 13.5px; font-weight: 700; color: var(--muted); }
+.col-fav .w-acts { margin: 6px -8px 0 0; }
+.block-head .link-btn { white-space: nowrap; flex: none; }
+.collection .seg button { text-align: center; }

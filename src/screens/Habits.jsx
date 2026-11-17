@@ -3,6 +3,7 @@ import { HABITS, JOURNAL_PROMPTS, MOODS, habitById, habitDays, journalStarters, 
 import { sleepHours } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
+import CollectionSheet from './Collection'
 
 // Today: tick tiny habits. No streak pressure — just a quiet row of dots for the week.
 export function HabitsCard({ profile, updateProfile, dayLog, setDay, today, goSetup, celebrate }) {
@@ -76,15 +77,20 @@ export function HabitPicker({ profile, updateProfile }) {
 }
 
 // Today: a compact journal card. Tapping it opens a calm writing sheet.
-export function JournalCard({ dayLog, setDay, today, profile, todays = [], budget }) {
+export function JournalCard({ dayLog, setDay, today, profile, updateProfile, notify, todays = [], budget }) {
   const j = dayLog.journal ?? {}
   const [open, setOpen] = useState(false)
+  const [shelf, setShelf] = useState(false)
+  const count = Object.values(profile.days ?? {}).filter((d) => d?.journal?.text?.trim() || d?.journal?.mood).length
   const prompt = JOURNAL_PROMPTS[+today.slice(8) % JOURNAL_PROMPTS.length]
   const mood = MOODS.find((m) => m.id === j.mood)
   const has = !!(j.text?.trim() || j.mood)
   return (
     <section className="block">
-      <h2 className="group-title">Journal</h2>
+      <div className="block-head">
+        <h2 className="group-title">Journal</h2>
+        {count > 0 && <button className="link-btn" onClick={() => setShelf(true)}>All notes ({count})</button>}
+      </div>
       <button className={`card journal-card ${has ? 'has' : ''}`} onClick={() => setOpen(true)}>
         {has ? (
           <>
@@ -100,18 +106,19 @@ export function JournalCard({ dayLog, setDay, today, profile, todays = [], budge
         )}
       </button>
       {open && <JournalSheet {...{ j, prompt, setDay, today, dayLog, profile, todays, budget }} onClose={() => setOpen(false)} />}
+      {shelf && <CollectionSheet tab="journal" {...{ profile, updateProfile, setDay, today, notify }} onClose={() => setShelf(false)} />}
     </section>
   )
 }
 
-function JournalSheet({ j, prompt, setDay, today, dayLog, profile, todays, budget, onClose }) {
+export function JournalSheet({ j, prompt, setDay, today, day = today, dayLog, profile, todays, budget, onClose }) {
   const [text, setText] = useState(j.text ?? '')
   const [mood, setMood] = useState(j.mood ?? null)
   const [saved, setSaved] = useState(false)
   const area = useRef()
   const timer = useRef()
   const drag = useSheetDrag(() => close())
-  const persist = (t = text, m = mood) => { setDay(today, { journal: { text: t, mood: m, at: Date.now() } }); setSaved(true) }
+  const persist = (t = text, m = mood) => { setDay(day, { journal: { text: t, mood: m, at: Date.now() } }); setSaved(true) }
   const close = () => { clearTimeout(timer.current); if (text !== (j.text ?? '') || mood !== (j.mood ?? null)) persist(); onClose() }
   useEscape(close)
   const onType = (v) => { setText(v); setSaved(false); clearTimeout(timer.current); timer.current = setTimeout(() => persist(v, mood), 900) }
@@ -130,7 +137,7 @@ function JournalSheet({ j, prompt, setDay, today, dayLog, profile, todays, budge
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
         <div className="sheet-head">
           <div>
-            <p className="muted">{new Date(today + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+            <p className="muted">{new Date(day + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
             <h2>{prompt}</h2>
           </div>
           <button className="icon-btn" onClick={close} aria-label="Close"><IconClose /></button>
@@ -147,7 +154,7 @@ function JournalSheet({ j, prompt, setDay, today, dayLog, profile, todays, budge
         <textarea ref={area} value={text} onChange={(e) => onType(e.target.value)} rows={6} maxLength={3000} placeholder="Write as much or as little as you like…" aria-label="Journal note" />
         <p className="j-status" role="status">{saved ? 'Saved ✓' : text.trim() ? 'Saving…' : ' '}</p>
 
-        {text.trim().length < 40 && (
+        {day === today && text.trim().length < 40 && (
           <div className="j-starters">
             <span>Not sure where to begin? Tap one to start:</span>
             {starters.map((s) => <button key={s} onClick={() => start(s)}>{s.trim().replace(/:$/, '')}…</button>)}
@@ -155,7 +162,7 @@ function JournalSheet({ j, prompt, setDay, today, dayLog, profile, todays, budge
         )}
 
         <button className="btn-primary" onClick={close}>Done</button>
-        <p className="fine center">Private to you. You can read past notes in Progress → Calendar.</p>
+        <p className="fine center">Private to you. All your notes are kept under Journal → All notes.</p>
       </div>
     </div>
   )

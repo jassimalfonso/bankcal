@@ -49,3 +49,13 @@ export const IconSwap = (p) => (
     <path d="M7 4L4 7l3 3M4 7h13M17 20l3-3-3-3M20 17H7" />
   </S>
 )
+export const IconHeart = ({ filled, ...p }) => (
+  <svg width={p.size ?? 20} height={p.size ?? 20} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 20s-7.5-4.6-9.2-9.4C1.7 7.3 3.9 4.5 7 4.5c2 0 3.6 1.2 5 3 1.4-1.8 3-3 5-3 3.1 0 5.3 2.8 4.2 6.1C19.5 15.4 12 20 12 20z" />
+  </svg>
+)
+export const IconShare = (p) => (
+  <S size={p.size ?? 20}>
+    <path d="M12 3v12M8 7l4-4 4 4M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+  </S>
+)

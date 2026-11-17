@@ -125,7 +125,7 @@ export default function Today(props) {
       {showWeek && <WeeklyCard {...props} onClose={hideWeek} />}
       <CardStack order={fullLayout(profile.layout2)} names={SECTION_NAMES} icons={SECTION_ICONS} arranging={arranging} setArranging={setArranging}
         onChange={(layout2) => props.updateProfile({ layout2 })} render={(id) => {
-        if (id === 'words') return <WordsCard key="words" words={words} />
+        if (id === 'words') return <WordsCard key="words" words={words} profile={profile} updateProfile={props.updateProfile} notify={props.notify} />
         if (id === 'weigh') return budget != null ? <WeighCard key="weigh" {...props} /> : null
         if (id === 'habits') return <HabitsCard key="habits" {...props} />
         if (id === 'partner') return props.partner ? <PartnerCard key="partner" partner={props.partner} today={props.today} notify={notify} profile={profile} myTicks={weekTicks(profile, props.today)} /> : null
