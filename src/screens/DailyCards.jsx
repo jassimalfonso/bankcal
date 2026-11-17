@@ -200,7 +200,7 @@ export function DayResult({ profile, budget, spent, earn, streakDays, today, onC
   )
 }
 
-export function WordsCard({ words, profile, updateProfile, notify }) {
+export function WordsCard({ words, profile, updateProfile, notify, onReplay }) {
   const [shelf, setShelf] = useState(false)
   const n = profile?.favorites?.length ?? 0
   return (
@@ -210,6 +210,7 @@ export function WordsCard({ words, profile, updateProfile, notify }) {
         {n > 0 && <button className="link-btn" onClick={() => setShelf(true)}>Favourites ({n})</button>}
       </div>
       <div className="card words-panel"><Words words={words} compact acts={{ profile, updateProfile, notify }} /></div>
+      {onReplay && <button className="link-btn words-replay" onClick={onReplay}>☀️ See the morning welcome again</button>}
       {shelf && <CollectionSheet tab="favs" profile={profile} updateProfile={updateProfile} notify={notify} onClose={() => setShelf(false)} />}
     </section>
   )

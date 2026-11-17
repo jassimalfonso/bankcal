@@ -85,6 +85,9 @@ function Bank({ user }) {
   useEffect(() => { try { setMorning(!localStorage.getItem(seenKey)) } catch { /* ignore */ } }, [seenKey])
   // Welcome back on every fresh open, and again after being away for 30+ minutes
   const [hello, setHello] = useState(true)
+  // The morning welcome: first open of the day (unless switched off in Settings), or on request
+  const [replay, setReplay] = useState(false)
+  const showM = replay || (morning && profile?.morningCard !== false)
   // Leaving the welcome: the card lifts away while the app rises in underneath
   const [leaving, setLeaving] = useState(false)
   const leave = useCallback((then) => {
@@ -102,7 +105,7 @@ function Bank({ user }) {
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [])
-  const closeMorning = () => { try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } leave(() => { setHello(false); setMorning(false) }) }
+  const closeMorning = () => { try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } leave(() => { setHello(false); setMorning(false); setReplay(false) }) }
   // Remember each day's base budget, so later weight or plan changes don't rewrite past days
   useEffect(() => {
     if (!profile?.onboarded) return
@@ -142,13 +145,13 @@ function Bank({ user }) {
   // At bedtime, offer to close the day once (if anything was logged and it isn't closed yet).
   const bedKey = `bankcal:bedtime:${user.uid}:${today}`
   useEffect(() => {
-    if (!profile?.onboarded || morning) return
+    if (!profile?.onboarded || showM) return
     const dl = profile.days?.[today]
     if (isBedtime(profile) && !dl?.closed && entries.some((e) => e.day === today)) {
       try { if (localStorage.getItem(bedKey)) return; localStorage.setItem(bedKey, '1') } catch { /* ignore */ }
       setResult(true)
     }
-  }, [profile, today, entries, morning, bedKey])
+  }, [profile, today, entries, showM, bedKey])
 
 
   // (calculations tolerate a profile that hasn't loaded yet so the hooks below always run in the same order)
@@ -175,23 +178,23 @@ function Bank({ user }) {
   const reachedIds = profile?.onboarded ? reached({ entries, profile: pf, streakDays }) : []
   const newIds = reachedIds.filter((id) => !pf.badges?.[id])
   useEffect(() => {
-    if (!newIds.length || morning || hello) return // wait until the welcome screen is out of the way
+    if (!newIds.length || showM || hello) return // wait until the welcome screen is out of the way
     store.updateProfile({ badges: { ...(pf.badges ?? {}), ...Object.fromEntries(newIds.map((id) => [id, today])) } })
     const m = MILESTONES.find((x) => x.id === newIds[0])
     celebrate(newIds.length > 1 ? `${newIds.length} milestones reached! ${m.emoji}` : `Milestone: ${m.label} ${m.emoji}`)
-  }, [newIds.join(','), morning, hello]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [newIds.join(','), showM, hello]) // eslint-disable-line react-hooks/exhaustive-deps
   const focus = profile?.onboarded ? oneThing({ profile: pf, todayKey: today, yesterday, plans: PLANS }) : null
 
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const ctx = { ...store, partner, notify, celebrate, focus, goTab: setTab, editEntry: (e) => setAdding(e), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setMorning(true), goSetup: (section) => {
+  const ctx = { ...store, partner, notify, celebrate, focus, goTab: setTab, editEntry: (e) => setAdding(e), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setReplay(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }
 
   return (
-    <div className={`app theme-${profile.theme} ${(morning || hello) && !leaving ? 'behind' : ''} ${leaving ? 'entering' : ''}`}>
+    <div className={`app theme-${profile.theme} ${(showM || hello) && !leaving ? 'behind' : ''} ${leaving ? 'entering' : ''}`}>
       <main className={`screen slide-${dir}`} key={tab}>
         {tab === 'today' && <Today {...ctx} />}
         {tab === 'week' && <Statement {...ctx} />}
@@ -222,8 +225,8 @@ function Bank({ user }) {
           {toast.undo && <button onClick={() => { toast.undo(); setToast(null) }}>Undo</button>}
         </div>
       )}
-      {!morning && hello && profile.onboarded && <WelcomeBack leaving={leaving} profile={profile} left={budget != null ? budget - spent : null} onDone={doneHello} />}
-      {morning && <MorningCard focus={focus} leaving={leaving} profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
+      {!showM && hello && profile.onboarded && <WelcomeBack leaving={leaving} profile={profile} left={budget != null ? budget - spent : null} onDone={doneHello} />}
+      {showM && <MorningCard focus={focus} leaving={leaving} profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
       {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true)} today={today} onClose={() => setResult(false)} />}
 
       {adding && (

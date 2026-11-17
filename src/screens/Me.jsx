@@ -25,7 +25,7 @@ export const toFtIn = (cm) => {
 }
 export const toCm = (ft, inch) => (+ft > 0 ? Math.round(((+ft || 0) * 12 + (+inch || 0)) * 2.54) : '')
 
-export default function Me({ user, profile: p, updateProfile, resetProgress, partner }) {
+export default function Me({ user, profile: p, updateProfile, resetProgress, partner, openWords }) {
   const [confirmReset, setConfirmReset] = useState(false)
   const set = updateProfile
   const num = (k) => (e) => set({ [k]: e.target.value.replace(/[^\d.]/g, '') })
@@ -172,8 +172,13 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
       <div className="card form-list">
         <Line label="Wake up"><input className="date-in" type="time" value={p.wakeTime ?? DEFAULT_WAKE} onChange={(e) => set({ wakeTime: e.target.value })} /></Line>
         <Line label="Bedtime"><input className="date-in" type="time" value={p.bedTime ?? DEFAULT_BED} onChange={(e) => set({ bedTime: e.target.value })} /></Line>
+        <label className="line toggle-line">
+          <span className="line-label">Morning welcome<small>Verse and motivation on your first open each day</small></span>
+          <input type="checkbox" className="switch" checked={p.morningCard !== false} onChange={(e) => set({ morningCard: e.target.checked })} />
+        </label>
+        {openWords && <button className="line link-line" onClick={openWords}>Show it now</button>}
       </div>
-      <p className="fine">A new day starts at midnight, and your morning card greets you the first time you open the app. An hour before bed, “Close my day” appears, and at bedtime BankCal offers to close it for you. Anything eaten after midnight counts toward the new day.</p>
+      <p className="fine">A new day starts at midnight. If the morning welcome is on, it greets you the first time you open the app that day. An hour before bed, “Close my day” appears, and at bedtime BankCal offers to close it for you. Anything eaten after midnight counts toward the new day.</p>
 
       <HabitPicker profile={p} updateProfile={set} />
 
