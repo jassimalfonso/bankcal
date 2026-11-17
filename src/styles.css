@@ -1306,3 +1306,33 @@ body:has(.app)::after, body[data-bg]:not([data-bg='plain']):has(.app)::after { b
 .col-fav .w-acts { margin: 6px -8px 0 0; }
 .block-head .link-btn { white-space: nowrap; flex: none; }
 .collection .seg button { text-align: center; }
+
+/* Notes between partners */
+.sticky-note { position: relative; margin: 4px 10px 16px; padding: 18px 18px 8px; border-radius: 4px 4px 18px 4px; background: #fff3a8; color: #3a3320; transform: rotate(-1.2deg); box-shadow: 0 10px 22px -12px rgba(80, 60, 0, 0.45), 0 2px 0 rgba(0, 0, 0, 0.04); animation: note-in 0.5s var(--spring) both; }
+.sticky-note::before { content: ''; position: absolute; top: -9px; left: 50%; width: 70px; height: 20px; translate: -50% 0; rotate: 2deg; background: rgba(255, 255, 255, 0.55); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
+.sn-sticker { position: absolute; top: -16px; right: 12px; font-size: 34px; animation: sn-wiggle 2.4s ease-in-out 0.6s 2; }
+.sticky-note p { margin: 0 34px 6px 0; font-size: 18px; line-height: 1.4; font-weight: 750; text-wrap: pretty; white-space: pre-wrap; }
+.sticky-note small { font-size: 13px; font-weight: 700; opacity: 0.65; }
+.sn-acts { display: flex; gap: 4px; margin: 6px -8px 0; }
+.sn-acts button { min-height: 40px; padding: 8px 12px; border-radius: 12px; font-size: 14.5px; font-weight: 800; color: #3a3320; }
+.sn-acts button:active { background: rgba(0, 0, 0, 0.06); }
+.sn-acts button:last-child { margin-left: auto; }
+@keyframes note-in { from { opacity: 0; transform: translateY(-14px) rotate(-6deg) scale(0.92); } to { opacity: 1; transform: rotate(-1.2deg); } }
+@keyframes sn-wiggle { 0%, 100% { rotate: 0deg; } 20% { rotate: -14deg; } 40% { rotate: 10deg; } 60% { rotate: -6deg; } 80% { rotate: 3deg; } }
+@media (prefers-reduced-motion: reduce) { .sticky-note, .sn-sticker { animation: none; } }
+
+.note-box { background: var(--card); border-radius: 20px; padding: 10px; box-shadow: var(--shadow); }
+.nb-stickers { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; padding-bottom: 6px; }
+.nb-stickers::-webkit-scrollbar { display: none; }
+.nb-stickers button { flex: none; width: 44px; height: 44px; border-radius: 14px; font-size: 24px; transition: transform 0.2s var(--spring), background 0.2s; }
+.nb-stickers button.on { background: var(--soft); transform: scale(1.12); }
+.nb-write { display: flex; gap: 8px; align-items: flex-end; }
+.nb-write textarea { flex: 1; resize: none; border: 0; outline: none; padding: 12px 14px; border-radius: 14px; background: var(--bg); font: inherit; font-size: 16px; line-height: 1.4; min-height: 48px; }
+.nb-write .btn-primary { width: auto; padding: 0 20px; min-height: 48px; margin: 0; }
+.nb-count { display: block; text-align: right; margin-top: 4px; font-size: 12.5px; color: var(--muted); font-weight: 700; }
+.quick-notes { display: flex; flex-wrap: wrap; gap: 8px; }
+.quick-notes .chip { min-height: 40px; }
+.nb-stickers { padding: 4px 4px 8px; }
+.quick-notes { display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, auto); justify-content: start; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px 4px; }
+.quick-notes::-webkit-scrollbar { display: none; }
+.quick-notes .chip { white-space: nowrap; }

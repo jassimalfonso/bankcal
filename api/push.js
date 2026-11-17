@@ -57,9 +57,10 @@ export default async function handler(req, res) {
   if (!subs.length) return res.json({ sent: 0 }) // they haven't turned notifications on
 
   const from = fields.cheers?.[me]?.name || 'Your partner'
-  const msg = String(body.msg || '👏').slice(0, 60)
+  const msg = String(body.msg || '👏').slice(0, 120)
+  const st = String(body.s || '').slice(0, 8)
   const payload = JSON.stringify({
-    title: msg === '👏' ? `👏 ${from} cheered you on` : `${from} cheered you on`,
+    title: msg === '👏' ? `👏 ${from} cheered you on` : st ? `${st} ${from} left you a note` : `${from} cheered you on`,
     body: msg === '👏' ? 'Open BankCal to see your day.' : msg,
     tag: `cheer-${me}`,
   })

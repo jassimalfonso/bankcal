@@ -1,9 +1,16 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Character from '../Character'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
 
-const CHEERS = ['👏 Go you!', '💪 You’ve got this', '❤️ Proud of you', '🙏 Praying for you']
+// One tap sends these. [sticker, words]
+const QUICK = [
+  ['👋', 'Just dropping by to say hi'], ['💪', 'You’ve got this'], ['❤️', 'Proud of you'], ['🙏', 'Praying for you'],
+  ['🥚', 'You’re egg-cellent'], ['🥑', 'Holy guacamole, look at you go'], ['💧', 'Drink some water!'], ['🚶', 'Walk with me later?'],
+  ['😘', 'Thinking of you'], ['🍽️', 'What’s for dinner?'], ['🔥', 'Keep that streak going'], ['😴', 'Sleep early tonight'],
+]
+const STICKERS = ['💌', '👋', '😘', '🥳', '💪', '🔥', '🌟', '🤗', '🥚', '🥑']
+const SEEN = (me, id) => `bankcal:note:${me}:${id}`
 
 const ago = (t) => {
   const m = Math.round((Date.now() - t) / 60000)
@@ -14,7 +21,7 @@ const ago = (t) => {
   const d = new Date(t)
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
-const cheerText = (msg) => (!msg || msg === '👏' ? '👏 Cheer' : msg)
+const cheerText = (c) => (!c.msg || c.msg === '👏' ? '👏 Cheer' : `${c.s ? c.s + ' ' : ''}${c.msg}`)
 // How many cheers a record holds. Cheers sent before counting began count as one.
 const countOf = (c) => (c ? c.count ?? (c.log?.length || 1) : 0)
 
@@ -23,17 +30,19 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0 }) {
   const { partners, shares, cheer, me: myId, received = {} } = partner
   const [open, setOpen] = useState(null)
   const [justSent, setJustSent] = useState(null)
+  const [replyTo, setReplyTo] = useState(false)
+  const [, bump] = useState(0)
   const list = partners.map((id) => [id, shares[id]]).filter(([, s]) => s)
   if (!list.length) return null
   // Shared weekly goal: each habit on 5 of 7 days, added up across everyone linked
   const habitsAll = (profile?.habits ?? []).length + list.reduce((a, [, s]) => a + (s.habitsTotal ?? 0), 0)
   const team = habitsAll > 0 ? { target: habitsAll * 5, ticks: myTicks + list.reduce((a, [, s]) => a + (s.weekTicks ?? 0), 0) } : null
   if (team) team.done = team.ticks >= team.target
-  const send = async (id, name, msg = '👏') => {
+  const send = async (id, name, msg = '👏', sticker = '') => {
     try {
-      await cheer(id, msg)
+      await cheer(id, msg, sticker)
       setJustSent(id); setTimeout(() => setJustSent((x) => (x === id ? null : x)), 1800)
-      notify(`Sent to ${name}: ${msg}`)
+      notify(msg === '👏' ? `Cheer sent to ${name}` : `${sticker || '💌'} Note sent to ${name}`)
     } catch { notify('Couldn’t send that. Check your connection.') }
   }
   const today_ = (s) => {
@@ -46,10 +55,34 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0 }) {
     ].filter(Boolean) }
   }
   const sel = open && shares[open]
+  // Their newest note you haven't read yet sits on the card like a sticky note
+  const unread = (id) => {
+    const c = received[id]
+    if (!c || !c.msg || c.msg === '👏' || Date.now() - c.at > 3 * 864e5) return null
+    let seen = 0
+    try { seen = +localStorage.getItem(SEEN(myId, id)) || 0 } catch { /* ignore */ }
+    return c.at > seen ? c : null
+  }
+  const markRead = (id, c) => { try { localStorage.setItem(SEEN(myId, id), String(c.at)) } catch { /* ignore */ } bump((n) => n + 1) }
   return (
     <section className="block">
       <h2 className="group-title">Together</h2>
       {team && <TeamGoal team={team} />}
+      {list.map(([id, s]) => {
+        const c = unread(id)
+        return c && (
+          <div key={'n' + id} className="sticky-note" role="status">
+            <span className="sn-sticker" aria-hidden="true">{c.s || '💌'}</span>
+            <p>{c.msg}</p>
+            <small>{s.name} · {ago(c.at)}</small>
+            <div className="sn-acts">
+              <button onClick={() => { send(id, s.name, 'Loved your note', '❤️'); markRead(id, c) }}>❤️ Love it</button>
+              <button onClick={() => { markRead(id, c); setReplyTo(true); setOpen(id) }}>Reply</button>
+              <button onClick={() => markRead(id, c)} aria-label="Mark as read">✓</button>
+            </div>
+          </div>
+        )
+      })}
       <div className="card partner-list">
         {list.map(([id, s]) => {
           const { fresh, bits } = today_(s)
@@ -68,7 +101,7 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0 }) {
           )
         })}
       </div>
-      {sel && <PartnerSheet s={sel} sent={sel.cheers?.[myId]} got={received[open]} info={today_(sel)} team={team} myTicks={myTicks} me={profile?.name} onCheer={(msg) => send(open, sel.name, msg)} onClose={() => setOpen(null)} />}
+      {sel && <PartnerSheet s={sel} sent={sel.cheers?.[myId]} got={received[open]} info={today_(sel)} team={team} myTicks={myTicks} me={profile?.name} reply={replyTo} onCheer={(msg, st) => send(open, sel.name, msg, st)} onClose={() => { setOpen(null); setReplyTo(false) }} />}
     </section>
   )
 }
@@ -84,7 +117,12 @@ function TeamGoal({ team, split }) {
   )
 }
 
-function PartnerSheet({ s, sent, got, info, team, myTicks, me, onCheer, onClose }) {
+function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, onClose }) {
+  const [note, setNote] = useState('')
+  const [sticker, setSticker] = useState('💌')
+  const noteRef = useRef(null)
+  const focusNote = (el) => { noteRef.current = el; if (el && reply && !el.dataset.done) { el.dataset.done = 1; setTimeout(() => { el.scrollIntoView({ block: 'center' }); el.focus() }, 350) } }
+  const drop = () => { if (!note.trim()) return; onCheer(note.trim(), sticker); setNote('') }
   const log = [
     ...(sent?.log ?? []).map((c) => ({ ...c, who: 'You' })),
     ...(got?.log ?? []).map((c) => ({ ...c, who: s.name })),
@@ -118,13 +156,25 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, onCheer, onClose 
 
         {team && <TeamGoal team={team} split={`${me ?? 'You'}: ${myTicks} · ${s.name}: ${s.weekTicks ?? 0}`} />}
 
-        <h3 className="ex-h">Send a cheer</h3>
-        <div className="psh-cheers">
-          {CHEERS.map((c) => <button key={c} className="btn-soft" onClick={() => onCheer(c)}>{c}</button>)}
+        <h3 className="ex-h">Drop {s.name} a note</h3>
+        <div className="note-box">
+          <div className="nb-stickers" role="radiogroup" aria-label="Sticker">
+            {STICKERS.map((e) => <button key={e} role="radio" aria-checked={sticker === e} className={sticker === e ? 'on' : ''} onClick={() => setSticker(e)}>{e}</button>)}
+          </div>
+          <div className="nb-write">
+            <textarea ref={focusNote} value={note} onChange={(e) => setNote(e.target.value.slice(0, 120))} rows={2} placeholder={`Write something for ${s.name}…`} aria-label="Your note" enterKeyHint="send"
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); drop() } }} />
+            <button className="btn-primary" disabled={!note.trim()} onClick={drop}>Send</button>
+          </div>
+          {note.length > 90 && <small className="nb-count">{120 - note.length} left</small>}
         </div>
-        <p className="fine center">Cheer as often as you like. If {s.name} has notifications on, their phone lets them know straight away.</p>
+        <p className="fine">Or send one with a tap:</p>
+        <div className="quick-notes">
+          {QUICK.map(([e, t]) => <button key={t} className="chip" onClick={() => onCheer(t, e)}>{e} {t}</button>)}
+        </div>
+        <p className="fine center">It lands on {s.name}’s Today like a sticky note{' '}and, if they have notifications on, on their phone too.</p>
 
-        <h3 className="ex-h">Cheers between you</h3>
+        <h3 className="ex-h">Notes and cheers between you</h3>
         <div className="cheer-stats">
           <span><b>{countOf(sent)}</b>sent</span>
           <span><b>{countOf(got)}</b>received</span>
@@ -133,10 +183,10 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, onCheer, onClose 
         {log.length > 0 ? (
           <ul className="cheer-log">
             {log.slice(0, 15).map((c, i) => (
-              <li key={i} className={c.who === 'You' ? 'mine' : ''}><span><b>{c.who}</b> {cheerText(c.msg)}</span><small>{ago(c.at)}</small></li>
+              <li key={i} className={c.who === 'You' ? 'mine' : ''}><span><b>{c.who}</b> {cheerText(c)}</span><small>{ago(c.at)}</small></li>
             ))}
           </ul>
-        ) : <p className="fine">No cheers yet. Send the first one!</p>}
+        ) : <p className="fine">Nothing yet. Send the first one!</p>}
       </div>
     </div>
   )

@@ -47,7 +47,7 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
     const trim = Object.fromEntries(Object.entries(cheers).filter(([, v]) => (v.log?.length ?? 0) > 30).map(([k, v]) => [`cheers.${k}.log`, [...v.log].sort((a, b) => a.at - b.at).slice(-30)]))
     if (Object.keys(trim).length) updateDoc(doc(db, 'shares', uid), trim).catch(() => {})
     const c = fresh.sort((a, b) => b.at - a.at)[0]
-    ;(celebrate ?? notify)(c.msg && c.msg !== '👏' ? `${c.name}: ${c.msg}` : `👏 ${c.name} cheered you on`)
+    ;(celebrate ?? notify)(c.msg && c.msg !== '👏' ? `${c.s ? c.s + ' ' : ''}${c.name}: ${c.msg}` : `👏 ${c.name} cheered you on`)
   }, [mineShare?.cheers]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // my pending invite: when the partner accepts, link them here too
@@ -84,13 +84,15 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
 
   const removePartner = useCallback((p) => updateProfile({ partners: partners.filter((x) => x !== p) }), [partners.join(','), updateProfile]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const cheer = useCallback(async (p, msg = '👏') => {
+  // A cheer, or a short note with a sticker (s)
+  const cheer = useCallback(async (p, msg = '👏', sticker = '') => {
     const at = Date.now()
-    const m = String(msg).slice(0, 40)
+    const m = String(msg).trim().slice(0, 120) || '👏'
+    const st = String(sticker).slice(0, 8)
     const k = `cheers.${uid}`
-    await updateDoc(doc(db, 'shares', p), { [`${k}.at`]: at, [`${k}.name`]: profile.name, [`${k}.msg`]: m, [`${k}.count`]: increment(1), [`${k}.log`]: arrayUnion({ at, msg: m }) })
+    await updateDoc(doc(db, 'shares', p), { [`${k}.at`]: at, [`${k}.name`]: profile.name, [`${k}.msg`]: m, [`${k}.s`]: st, [`${k}.count`]: increment(1), [`${k}.log`]: arrayUnion(st ? { at, msg: m, s: st } : { at, msg: m }) })
     // ping their phone too (only if they've turned notifications on); never blocks the cheer
-    auth.currentUser?.getIdToken().then((t) => fetch('/api/push', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${t}` }, body: JSON.stringify({ to: p, msg: m }) })).catch(() => {})
+    auth.currentUser?.getIdToken().then((t) => fetch('/api/push', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${t}` }, body: JSON.stringify({ to: p, msg: m, s: st }) })).catch(() => {})
   }, [uid, profile?.name])
 
   // Notifications on this phone
