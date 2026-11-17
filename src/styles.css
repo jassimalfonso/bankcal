@@ -1336,3 +1336,6 @@ body:has(.app)::after, body[data-bg]:not([data-bg='plain']):has(.app)::after { b
 .quick-notes { display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, auto); justify-content: start; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px 4px; }
 .quick-notes::-webkit-scrollbar { display: none; }
 .quick-notes .chip { white-space: nowrap; }
+.cheer-log li { flex-wrap: wrap; }
+.cl-acts { display: flex; gap: 4px; width: 100%; justify-content: flex-end; margin: -2px -8px -4px 0; }
+.cl-acts button { min-height: 36px; padding: 6px 12px; border-radius: 10px; font-size: 13.5px; font-weight: 800; color: var(--accent); background: var(--soft); }

@@ -183,7 +183,16 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
         {log.length > 0 ? (
           <ul className="cheer-log">
             {log.slice(0, 15).map((c, i) => (
-              <li key={i} className={c.who === 'You' ? 'mine' : ''}><span><b>{c.who}</b> {cheerText(c)}</span><small>{ago(c.at)}</small></li>
+              <li key={i} className={c.who === 'You' ? 'mine' : ''}>
+                <span><b>{c.who}</b> {cheerText(c)}</span>
+                <small>{ago(c.at)}</small>
+                {c.who !== 'You' && c.msg && c.msg !== '👏' && c.msg !== 'Loved your note' && (
+                  <span className="cl-acts">
+                    <button onClick={() => onCheer('Loved your note', '❤️')} aria-label={`Love ${s.name}’s note`}>❤️</button>
+                    <button onClick={() => { noteRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }); noteRef.current?.focus() }}>Reply</button>
+                  </span>
+                )}
+              </li>
             ))}
           </ul>
         ) : <p className="fine">Nothing yet. Send the first one!</p>}
