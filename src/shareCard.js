@@ -49,10 +49,6 @@ function svgImage(svg, size) {
   })
 }
 
-function loadImg(src) {
-  return new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src })
-}
-
 function sticker(ctx, img, cx, cy, size, rot) {
   if (!img) return
   ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot)
@@ -330,20 +326,9 @@ export async function drawShare(kind, data, { theme, buddySvgs = [], format = 's
   confetti(ctx, rng(seed * 7 + kind.length), [t.accent, t.accent2, '#ffd166', '#ffffff', mix(t.accent, '#000000', 0.15)], H,
     [{ x: ox + 80 * scale, y: oy + 20, w: dw - 160 * scale, h: dh - 40 }, { x: W / 2 - 200, y: H - 150, w: 400, h: 120 }])
   ctx.drawImage(layer, 0, 0, W, used, ox, oy, dw, dh)
-  // sign-off: just the BankCal logo (icon + name), small and quiet. No link.
-  const logo = await loadImg('/icon.svg')
-  ctx.font = font(900, 38)
-  const word = 'BankCal'
-  const ww = ctx.measureText(word).width
-  const L = 58; const gap = 14
-  const lx = W / 2 - (L + gap + ww) / 2
-  const ly = H - 58 - L / 2 - 12
-  if (logo) {
-    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.10)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 4
-    ctx.drawImage(logo, lx, ly, L, L); ctx.restore()
-  }
-  ctx.fillStyle = alpha(INK, 0.75); ctx.textAlign = 'left'
-  ctx.fillText(word, logo ? lx + L + gap : W / 2 - ww / 2, ly + L / 2 + 13)
+  // sign-off: just the name, small and quiet. No link.
+  ctx.font = font(900, 38); ctx.fillStyle = alpha(INK, 0.6); ctx.textAlign = 'center'
+  ctx.fillText('BankCal', W / 2, H - 62)
   ctx.textAlign = 'center'
   return new Promise((ok) => c.toBlob(ok, 'image/png'))
 }
