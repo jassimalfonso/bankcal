@@ -235,6 +235,13 @@ function Bank({ user }) {
       </button>
       {working && (
         <WorkoutSheet profile={profile} mine={myWorkouts(profile, dayLog.workouts ?? [])} onClose={() => setWorking(false)}
+          steps={dayLog.steps} onSteps={(v) => {
+            const goal = +profile.stepsGoal || 8000
+            store.setDay(today, { steps: v })
+            if (v >= goal && !((+dayLog.steps || 0) >= goal)) celebrate(`${fmt(goal)} steps reached! 👟`)
+            else notify(`Steps saved: ${fmt(v)}`)
+            setWorking(false)
+          }}
           onKeep={(item) => store.updateProfile({ routine: [...(profile.routine ?? []), item] })}
           onSave={(w) => {
             store.setDay(today, { workouts: [...(dayLog.workouts ?? []), { id: Date.now().toString(36), ...w }] })

@@ -1483,3 +1483,12 @@ button.ms:active { transform: scale(0.96); }
 .bc-swipe { display: grid; justify-items: center; gap: 2px; pointer-events: auto; user-select: none; -webkit-user-select: none; }
 .toast.swipeable { user-select: none; -webkit-user-select: none; }
 .ai-retry { margin-left: 8px; font-weight: 850; }
+.ws-steps { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 6px; }
+.ws-steps .ex-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.ws-steps .ex-main small { color: var(--muted); font-size: 12.5px; }
+.ws-steps input { margin-top: 6px; width: 100%; max-width: 160px; border: 0; border-radius: 12px; background: var(--bg); padding: 10px 12px; font: inherit; font-size: 18px; font-weight: 850; font-variant-numeric: tabular-nums; }
+.ws-steps-go { width: auto; margin: 0; padding: 0 16px; min-height: 52px; display: flex; flex-direction: column; justify-content: center; line-height: 1.1; }
+.ws-steps-go small { font-size: 12px; font-weight: 750; opacity: 0.9; }
+.ws-empty { margin: 0 4px 6px; font-size: 14px; color: var(--muted); line-height: 1.45; }
+.ws-steps input::-webkit-outer-spin-button, .ws-steps input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ws-steps input { -moz-appearance: textfield; appearance: textfield; }

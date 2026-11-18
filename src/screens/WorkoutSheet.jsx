@@ -1,5 +1,5 @@
 import { Children, cloneElement, isValidElement, useState } from 'react'
-import { WORKOUTS, fmt, workoutKcal, workoutMinutes } from '../calc'
+import { WORKOUTS, earned, fmt, workoutKcal, workoutMinutes } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
 import { exerciseIndex, routineWorkout, searchExercises } from '../training'
@@ -8,7 +8,10 @@ import { Stepper } from './Routine'
 
 // Pick an exercise, enter amounts, see the calories it earns, deposit.
 // `mine` = your routine and your own exercises, shown first since they're what you usually do.
-export default function WorkoutSheet({ profile, mine = [], start = null, onClose, onSave, onKeep }) {
+export default function WorkoutSheet({ profile, mine = [], start = null, onClose, onSave, onKeep, steps, onSteps }) {
+  const [stepsIn, setStepsIn] = useState(steps ? String(steps) : '')
+  const stepsN = Math.max(0, Math.round(+stepsIn || 0))
+  const stepsKcal = Math.round(earned({ steps: stepsN }, profile.weight).steps)
   const [type, setType] = useState(null)
   const [own, setOwn] = useState(start) // one of `mine`, being adjusted
   const [it, setIt] = useState(start?.item ?? null)
@@ -93,9 +96,22 @@ export default function WorkoutSheet({ profile, mine = [], start = null, onClose
               </div>
             )
           ) : (<>
+          {onSteps && (
+            <div className="card ws-steps">
+              <span className="w-emoji small">👣</span>
+              <label className="ex-main"><b>Steps today</b><small>Total from your phone or watch</small>
+                <input type="number" inputMode="numeric" min="0" value={stepsIn} placeholder="0" aria-label="Steps today"
+                  onChange={(e) => setStepsIn(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && stepsN !== (+steps || 0)) onSteps(stepsN) }} />
+              </label>
+              <button className="btn-primary ws-steps-go" disabled={stepsN === (+steps || 0)} onClick={() => onSteps(stepsN)}>
+                Save{stepsKcal > 0 ? <small>+{fmt(stepsKcal)} kcal</small> : null}
+              </button>
+            </div>
+          )}
+          <h3 className="ex-h">Yours</h3>
+          {mine.length === 0 && <p className="ws-empty">Nothing saved yet. Search an exercise above, and tick <b>Save to My routine</b> when you deposit it. It’ll wait here for next time.</p>}
           {mine.length > 0 && (
             <>
-              <h3 className="ex-h">Yours</h3>
               <div className="card mine-list">
                 {mine.map((m) => (
                   <button key={m.key} className={`mine-row ${m.done ? 'done' : ''}`} onClick={() => pickOwn(m)}>
@@ -105,9 +121,9 @@ export default function WorkoutSheet({ profile, mine = [], start = null, onClose
                   </button>
                 ))}
               </div>
-              <h3 className="ex-h">Everything else</h3>
             </>
           )}
+          <h3 className="ex-h">Everything else</h3>
           <div className="workout-grid">
             {WORKOUTS.map((w) => (
               <button key={w.id} className="workout-choice" onClick={() => setType(w.id)}>
