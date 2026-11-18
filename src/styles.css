@@ -1492,3 +1492,8 @@ button.ms:active { transform: scale(0.96); }
 .ws-empty { margin: 0 4px 6px; font-size: 14px; color: var(--muted); line-height: 1.45; }
 .ws-steps input::-webkit-outer-spin-button, .ws-steps input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .ws-steps input { -moz-appearance: textfield; appearance: textfield; }
+.qty-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 8px 8px 8px 16px; border-radius: 18px; background: var(--card); box-shadow: var(--shadow); }
+.qty-row > span { flex: 1; font-weight: 800; color: var(--muted); font-size: 15px; }
+.qty-row button { width: 44px; height: 44px; border-radius: 14px; background: var(--soft); color: var(--accent); font-size: 24px; font-weight: 800; display: grid; place-items: center; }
+.qty-row button:disabled { opacity: 0.35; }
+.qty-row b { min-width: 34px; text-align: center; font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }

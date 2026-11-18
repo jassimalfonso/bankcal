@@ -20,7 +20,17 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
   const [photo, setPhoto] = useState(editing?.photo ?? null)
   const [name, setName] = useState(editing?.name ?? '')
   const [kcal, setKcal] = useState(editing ? String(editing.kcal) : '')
-  const [picked, setPicked] = useState(!!editing) // hide suggestions after choosing one
+  const [picked, setPicked] = useState(!!editing)
+  // Quantity of an item already logged ("Black coffee ×2"): changing it scales the calories
+  const qtyOf = (nm) => +(String(nm).match(/\s×(\d+)$/)?.[1] ?? 1)
+  const baseName = (nm) => String(nm).replace(/\s×\d+$/, '')
+  const [qty, setQtyRaw] = useState(editing ? qtyOf(editing.name) : 1)
+  const setQty = (q) => {
+    const per = (+kcal || 0) / qty
+    setQtyRaw(q)
+    setKcal(String(Math.round(per * q)))
+    setName((nm) => (q > 1 ? `${baseName(nm)} ×${q}` : baseName(nm)))
+  } // hide suggestions after choosing one
   const [ai, setAi] = useState({ busy: false, err: '', results: null, items: null, confidence: '' })
   const fileRef = useRef(null)
   const drag = useSheetDrag(onClose)
@@ -173,9 +183,10 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
   function save() {
     if (!valid) return
     const nm = name.trim()
-    const had = myFoods.find((f) => f.name.toLowerCase() === nm.toLowerCase())
+    const one = baseName(nm) // My foods keeps a single serving, not "×3"
+    const had = myFoods.find((f) => f.name.toLowerCase() === one.toLowerCase())
     if (keep && !had) {
-      updateProfile({ myFoods: [{ id: String(Date.now()), name: nm, kcal: n, portion: 'my food' }, ...myFoods].slice(0, 60) })
+      updateProfile({ myFoods: [{ id: String(Date.now()), name: one, kcal: Math.round(n / qty), portion: 'my food' }, ...myFoods].slice(0, 60) })
     } else if (had && myFoods[0] !== had && !editing) {
       // the ones you use most float to the top
       updateProfile({ myFoods: [had, ...myFoods.filter((f) => f !== had)] })
@@ -295,6 +306,14 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
         )}
 
 
+        {editing && (
+          <div className="qty-row">
+            <span>Quantity</span>
+            <button onClick={() => setQty(qty - 1)} disabled={qty <= 1} aria-label="One less">−</button>
+            <b aria-live="polite">{qty}</b>
+            <button onClick={() => setQty(qty + 1)} disabled={qty >= 20} aria-label="One more">+</button>
+          </div>
+        )}
         {editing && (
           <div className="meal-pick" role="radiogroup" aria-label="Meal">
             {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((m) => (

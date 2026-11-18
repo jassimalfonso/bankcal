@@ -296,6 +296,19 @@ function Bank({ user }) {
               setAdding(false)
               return
             }
+            // the same food again in the same meal today: bump that line's quantity instead
+            const base = (nm) => String(nm).replace(/\s×\d+$/, '')
+            const q = (nm) => +(String(nm).match(/\s×(\d+)$/)?.[1] ?? 1)
+            const same = !e.photo && todays.find((x) => x.meal === e.meal && base(x.name).toLowerCase() === e.name.toLowerCase() && Math.round(x.kcal / q(x.name)) === e.kcal)
+            if (same) {
+              const n = q(same.name) + 1
+              store.updateEntry(same.id, { name: `${base(same.name)} ×${n}`, kcal: same.kcal + e.kcal })
+              navigator.vibrate?.(12)
+              notify(`${base(same.name)} ×${n}: +${e.kcal.toLocaleString('en-US')} kcal`, () => store.updateEntry(same.id, { name: same.name, kcal: same.kcal }))
+              setAdding(false)
+              setTab('today')
+              return
+            }
             const id = store.addEntry({ ...e, day: today })
             navigator.vibrate?.(12)
             notify(`Spent ${e.kcal.toLocaleString('en-US')} kcal on ${e.name}`, () => store.removeEntry(id))
