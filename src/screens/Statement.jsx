@@ -1,7 +1,7 @@
 import Calendar from './Calendar'
 import { MILESTONES } from '../milestones'
 import { useState } from 'react'
-import { dayKey, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
+import { dayKey, deficitDays, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
 import { Row } from './Today'
 import BodyCard from './BodyCard'
 import Progress from './Progress'
@@ -23,7 +23,6 @@ export default function Statement(props) {
   const sel = days.find((d) => d.key === pick)
   const logged = days.filter((d) => d.net != null)
   const weekNet = logged.reduce((a, d) => a + d.net, 0)
-  const kg = weekNet / KCAL_PER_KG
   const top = Math.max(budget ?? 0, ...days.map((d) => d.spent), 1) * 1.1
 
   return (
@@ -54,14 +53,16 @@ export default function Statement(props) {
         </div>
       </section>
 
+      <DeficitCard {...props} keys={days.map((d) => d.key)} />
+
       <div className="tiles">
         <div className="card tile-stat">
-          <span>{weekNet >= 0 ? 'Saved' : 'Overspent'}</span>
+          <span>{weekNet >= 0 ? 'Under budget' : 'Over budget'}</span>
           <b className={weekNet < 0 ? 'neg' : 'pos'}>{fmt(Math.abs(weekNet))}<small> kcal</small></b>
         </div>
         <div className="card tile-stat">
-          <span>{kg >= 0 ? 'Weight lost' : 'Weight gained'}</span>
-          <b>{Math.abs(kg).toFixed(2)}<small> kg</small></b>
+          <span>Days on budget</span>
+          <b>{logged.filter((d) => d.net >= 0).length}<small> of {logged.length || 0}</small></b>
         </div>
         <div className="card tile-stat">
           <span>Days logged</span>
@@ -147,5 +148,59 @@ function Milestones({ badges, character, notify }) {
         {next.length > 3 && <button className="link-btn" onClick={() => setAll((x) => !x)}>{all ? 'Show fewer' : `Show all ${next.length}`}</button>}
       </div>
     </>
+  )
+}
+
+// The real calorie deficit this week: what your body used minus what you ate.
+// This is what turns into fat loss (about 7,700 kcal per kg), so it's the motivating number.
+function DeficitCard({ mine, profile, keys, today }) {
+  const rows = deficitDays({ entries: mine, profile, keys, todayKey: today })
+  if (!rows) return null
+  const done = rows.filter((r) => r.deficit != null && !r.today)
+  const now = rows.find((r) => r.today && r.deficit != null)
+  const total = done.reduce((a, r) => a + r.deficit, 0) + (now?.deficit ?? 0)
+  const kg = total / KCAL_PER_KG
+  const maintain = profile.goal === 'maintain' && !(+profile.targetWeight > 0 && +profile.weight > +profile.targetWeight)
+  const counted = done.length + (now ? 1 : 0)
+  if (!counted) {
+    return <section className="card deficit empty"><h3>Calorie deficit</h3><p>Log your meals and your weekly deficit shows up here: the calories your body burned beyond what you ate.</p></section>
+  }
+  const inDeficit = done.filter((r) => r.deficit > 0).length
+  const avg = Math.round(total / counted)
+  const top = Math.max(300, ...rows.map((r) => Math.abs(r.deficit ?? 0)))
+  const headline = maintain
+    ? Math.abs(avg) <= 200 ? 'Right on balance ⚖️' : avg > 0 ? 'A little under maintenance' : 'A little over maintenance'
+    : total > 0 ? (kg >= 0.25 ? 'Fat is melting 🔥' : 'Nice, you’re in a deficit 💪') : 'No deficit this week, yet'
+  const line = maintain
+    ? `You average ${fmt(Math.abs(avg))} kcal a day ${avg >= 0 ? 'under' : 'over'} what your body uses. For maintaining, close to zero is the goal.`
+    : total > 0
+      ? `Your body burned ${fmt(total)} kcal more than you ate. That's about ${kg.toFixed(2)} kg of fat${inDeficit ? `, with ${inDeficit} of ${done.length} full days in a deficit` : ''}.`
+      : `You ate ${fmt(-total)} kcal more than your body used. A few lighter days or an extra walk turns it around.`
+  return (
+    <section className={`card deficit ${maintain ? 'maint' : total > 0 ? 'good' : 'over'}`}>
+      <div className="df-head">
+        <div>
+          <p className="df-label">Calorie deficit · this week</p>
+          <h3>{headline}</h3>
+        </div>
+        {!maintain && total > 0 && <div className="df-kg"><b>{kg >= 0.1 ? kg.toFixed(1) : kg.toFixed(2)}</b><small>kg fat</small></div>}
+      </div>
+      <p className="df-line">{line}</p>
+      <div className={`df-days ${rows.some((r) => r.deficit != null && r.deficit <= 0) ? '' : 'no-down'}`} aria-label="Deficit by day">
+        {rows.map((r) => {
+          const d = new Date(r.key + 'T12:00')
+          const h = r.deficit == null ? 0 : Math.max(6, (Math.abs(r.deficit) / top) * 44)
+          return (
+            <div key={r.key} className={`df-day ${r.deficit == null ? 'none' : r.deficit > 0 ? 'plus' : 'minus'} ${r.today ? 'today' : ''}`}
+              title={r.deficit == null ? 'Nothing logged' : `${r.deficit > 0 ? '−' : '+'}${fmt(Math.abs(r.deficit))} kcal`}>
+              <span className="df-up">{r.deficit > 0 && <i style={{ height: h }} />}</span>
+              <span className="df-down">{r.deficit != null && r.deficit <= 0 && <i style={{ height: h }} />}</span>
+              <small>{r.today ? 'Today' : d.toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)}</small>
+            </div>
+          )
+        })}
+      </div>
+      <p className="df-foot">Up = burned more than you ate. {now ? 'Today counts as you go.' : ''} Days with nothing logged are left out.</p>
+    </section>
   )
 }

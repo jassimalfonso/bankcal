@@ -448,3 +448,19 @@ export function partnerProgress({ entries, profile, budgetFor, todayKey }) {
   }
   return out
 }
+
+// ───────── Real calorie deficit ─────────
+// What the body used (maintenance at rest ×1.2, plus logged steps and workouts) minus what was eaten.
+// Unlike "under budget", this includes the planned deficit already built into the budget,
+// so it's the number that actually drives fat loss. Days with no food logged are left out.
+export function deficitDays({ entries, profile, keys, todayKey }) {
+  const b = breakdown(profile)
+  if (!b) return null
+  return keys.map((k) => {
+    const items = entries.filter((e) => e.day === k)
+    if (!items.length) return { key: k, deficit: null, today: k === todayKey }
+    const used = b.tdee + earned(profile.days?.[k], profile.weight).total
+    const ate = items.reduce((a, e) => a + e.kcal, 0)
+    return { key: k, deficit: Math.round(used - ate), used: Math.round(used), ate, today: k === todayKey }
+  })
+}

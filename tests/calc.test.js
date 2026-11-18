@@ -255,3 +255,12 @@ test("Max's dishes come up however it's typed", async () => {
   assert.ok(searchFoods('max').length >= 8)
   assert.ok(searchFoods('kare kare').some((f) => f.name.startsWith('Max’s')))
 })
+
+test('deficit counts maintenance plus deposits, minus food', async () => {
+  const { deficitDays, breakdown } = await import('../src/calc.js')
+  const profile = { sex: 'm', weight: 80, height: 175, birthDate: '1994-05-01', goal: 'lose05', days: { '2026-11-17': { steps: 3000 } } }
+  const tdee = breakdown(profile).tdee
+  const r = deficitDays({ entries: [{ day: '2026-11-17', kcal: 1500 }, { day: '2026-11-17', kcal: 300 }], profile, keys: ['2026-11-16', '2026-11-17'], todayKey: '2026-11-18' })
+  assert.equal(r[0].deficit, null) // nothing logged: unknown, not zero
+  assert.equal(r[1].deficit, tdee - 1800)
+})
