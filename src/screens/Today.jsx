@@ -122,13 +122,13 @@ export default function Today(props) {
       </section>
 
 
-      {showWeek && <WeeklyCard {...props} onClose={hideWeek} />}
+      {showWeek && <WeeklyCard {...props} onClose={hideWeek} notify={props.notify} streakDays={props.streakDays} />}
       <CardStack order={fullLayout(profile.layout2)} names={SECTION_NAMES} icons={SECTION_ICONS} arranging={arranging} setArranging={setArranging}
         onChange={(layout2) => props.updateProfile({ layout2 })} render={(id) => {
         if (id === 'words') return <WordsCard key="words" words={words} profile={profile} updateProfile={props.updateProfile} notify={props.notify} onReplay={openWords} />
         if (id === 'weigh') return budget != null ? <WeighCard key="weigh" {...props} /> : null
         if (id === 'habits') return <HabitsCard key="habits" {...props} />
-        if (id === 'partner') return props.partner ? <PartnerCard key="partner" partner={props.partner} today={props.today} notify={notify} profile={profile} myTicks={weekTicks(profile, props.today)} /> : null
+        if (id === 'partner') return props.partner ? <PartnerCard key="partner" partner={props.partner} today={props.today} notify={notify} profile={profile} myTicks={weekTicks(profile, props.today)} streakDays={props.streakDays} /> : null
         if (id === 'journal') return <JournalCard key="journal" {...props} />
         if (id === 'deposits') return budget != null ? <section key="deposits" className="block"><Activity {...props} /></section> : null
         if (id === 'eat') return recent.length > 0 ? (

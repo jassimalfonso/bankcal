@@ -5,6 +5,7 @@ import { dayKey, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '..
 import { Row } from './Today'
 import BodyCard from './BodyCard'
 import Progress from './Progress'
+import ShareSheet from './ShareSheet'
 
 export default function Statement(props) {
   const { mine, base: budget, budgetFor } = props
@@ -74,7 +75,7 @@ export default function Statement(props) {
       <h2 className="group-title">Progress</h2>
       <Progress {...props} />
 
-      <Milestones badges={props.profile?.badges ?? {}} />
+      <Milestones badges={props.profile?.badges ?? {}} character={props.profile?.character} notify={props.notify} />
 
       <h2 className="group-title">Your body</h2>
       <BodyCard {...props} />
@@ -121,8 +122,9 @@ function SleepWeek({ days, log }) {
   )
 }
 
-function Milestones({ badges }) {
+function Milestones({ badges, character, notify }) {
   const [all, setAll] = useState(false)
+  const [pic, setPic] = useState(null)
   const got = MILESTONES.filter((m) => badges[m.id])
   const next = MILESTONES.filter((m) => !badges[m.id])
   const shown = all ? next : next.slice(0, 3)
@@ -133,9 +135,11 @@ function Milestones({ badges }) {
         {got.length === 0 && <p className="ms-empty">Your first milestone is one logged meal away.</p>}
         {got.length > 0 && (
           <div className="ms-grid">
-            {got.map((m) => <div className="ms on" key={m.id}><span>{m.emoji}</span><b>{m.label}</b></div>)}
+            {got.map((m) => <button className="ms on" key={m.id} onClick={() => setPic(m)} aria-label={`Share milestone: ${m.label}`}><span>{m.emoji}</span><b>{m.label}</b></button>)}
           </div>
         )}
+        {got.length > 0 && <p className="ms-tip">Tap a milestone to share it</p>}
+        {pic && <ShareSheet kind="milestone" title="Share this milestone" file="milestone.png" buddies={[character]} notify={notify} data={{ emoji: pic.emoji, label: pic.label }} onClose={() => setPic(null)} />}
         {next.length > 0 && <p className="ms-next">Coming up</p>}
         <ul className="ms-list">
           {shown.map((m) => <li key={m.id}><span>{m.emoji}</span>{m.hint}</li>)}

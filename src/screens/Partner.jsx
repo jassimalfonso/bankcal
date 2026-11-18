@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import ShareSheet from './ShareSheet'
 import Character from '../Character'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
@@ -26,11 +27,12 @@ const cheerText = (c) => (!c.msg || c.msg === '👏' ? '👏 Cheer' : `${c.s ? c
 const countOf = (c) => (c ? c.count ?? (c.log?.length || 1) : 0)
 
 // Today: how your partner is doing. Tap them for the full picture; cheer as often as you like.
-export function PartnerCard({ partner, today, notify, profile, myTicks = 0 }) {
+export function PartnerCard({ partner, today, notify, profile, myTicks = 0, streakDays = 0 }) {
   const { partners, shares, cheer, me: myId, received = {} } = partner
   const [open, setOpen] = useState(null)
   const [justSent, setJustSent] = useState(null)
   const [replyTo, setReplyTo] = useState(false)
+  const [together, setTogether] = useState(null) // partner id, for the shared picture
   const [, bump] = useState(0)
   const list = partners.map((id) => [id, shares[id]]).filter(([, s]) => s)
   if (!list.length) return null
@@ -101,7 +103,18 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0 }) {
           )
         })}
       </div>
-      {sel && <PartnerSheet s={sel} sent={sel.cheers?.[myId]} got={received[open]} info={today_(sel)} team={team} myTicks={myTicks} me={profile?.name} reply={replyTo} onCheer={(msg, st) => send(open, sel.name, msg, st)} onClose={() => { setOpen(null); setReplyTo(false) }} />}
+      {together && shares[together] && (() => {
+        const p = shares[together]
+        const n = countOf(p.cheers?.[myId]) + countOf(received[together])
+        return (
+          <ShareSheet kind="together" title={`Share you and ${p.name}`} file="together.png" buddies={[profile?.character, p.character]} notify={notify} onClose={() => setTogether(null)}
+            data={{ names: `${profile?.name}\n& ${p.name}`, team: team && { ticks: team.ticks, target: team.target }, stats: [
+              (streakDays > 0 || p.streak > 0) && { emoji: '🔥', value: `${streakDays} + ${p.streak ?? 0}`, label: 'day streaks' },
+              n > 0 && { emoji: '💌', value: String(n), label: 'cheers & notes' },
+            ].filter(Boolean) }} />
+        )
+      })()}
+      {sel && <PartnerSheet s={sel} sent={sel.cheers?.[myId]} got={received[open]} info={today_(sel)} team={team} myTicks={myTicks} me={profile?.name} reply={replyTo} onShare={() => setTogether(open)} onCheer={(msg, st) => send(open, sel.name, msg, st)} onClose={() => { setOpen(null); setReplyTo(false) }} />}
     </section>
   )
 }
@@ -117,7 +130,7 @@ function TeamGoal({ team, split }) {
   )
 }
 
-function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, onClose }) {
+function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, onShare, onClose }) {
   const [note, setNote] = useState('')
   const [sticker, setSticker] = useState('💌')
   const noteRef = useRef(null)
@@ -155,6 +168,7 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
         {s.kgChange == null && <p className="fine">{s.name} hasn’t switched on sharing weight progress.</p>}
 
         {team && <TeamGoal team={team} split={`${me ?? 'You'}: ${myTicks} · ${s.name}: ${s.weekTicks ?? 0}`} />}
+        <button className="btn-soft share-us" onClick={onShare}>💞 Share us as a picture</button>
 
         <h3 className="ex-h">Drop {s.name} a note</h3>
         <div className="note-box">

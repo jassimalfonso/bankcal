@@ -5,6 +5,7 @@ import { useStore } from './store'
 import { useDemoStore, demoPartner } from './demoStore'
 import { BUDDIES, Buddy } from './buddies'
 import { setBackHandlers } from './motion'
+import ShareSheet from './screens/ShareSheet'
 
 const DEMO = import.meta.env.MODE === 'demo'
 import { partnerProgress, dailyBudget, dayKey, earned, isBedtime, isBirthday, isWindDown, logicalDayKey, streak } from './calc'
@@ -128,16 +129,17 @@ function Bank({ user }) {
   const [cheer, setCheer] = useState(null)
   const cheerTimer = useRef()
   const cheerQueue = useRef([])
-  const celebrate = useCallback((text) => {
+  const [msShare, setMsShare] = useState(null) // a milestone to share, from the pop-up
+  const celebrate = useCallback((text, share = null) => {
     // one at a time: a second celebration waits for the first to finish
     const show = () => {
       const next = cheerQueue.current[0]
       if (!next) { setCheer(null); return }
       try { navigator.vibrate?.([12, 40, 12]) } catch { /* not allowed yet */ }
-      setCheer({ text: next, key: Date.now() })
-      cheerTimer.current = setTimeout(() => { cheerQueue.current.shift(); show() }, 3200)
+      setCheer({ ...next, key: Date.now() })
+      cheerTimer.current = setTimeout(() => { cheerQueue.current.shift(); show() }, next.share ? 6000 : 3200)
     }
-    cheerQueue.current.push(text)
+    cheerQueue.current.push({ text, share })
     if (cheerQueue.current.length === 1) show()
   }, [])
   const notify = (text, undo) => {
@@ -189,7 +191,7 @@ function Bank({ user }) {
     if (!newIds.length || showM || hello) return // wait until the welcome screen is out of the way
     store.updateProfile({ badges: { ...(pf.badges ?? {}), ...Object.fromEntries(newIds.map((id) => [id, today])) } })
     const m = MILESTONES.find((x) => x.id === newIds[0])
-    celebrate(newIds.length > 1 ? `${newIds.length} milestones reached! ${m.emoji}` : `Milestone: ${m.label} ${m.emoji}`)
+    celebrate(newIds.length > 1 ? `${newIds.length} milestones reached! ${m.emoji}` : `Milestone: ${m.label} ${m.emoji}`, m)
   }, [newIds.join(','), showM, hello]) // eslint-disable-line react-hooks/exhaustive-deps
   const focus = profile?.onboarded ? oneThing({ profile: pf, todayKey: today, yesterday, plans: PLANS }) : null
 
@@ -222,11 +224,14 @@ function Bank({ user }) {
       </nav>
 
       {cheer && (
-        <div className="buddy-cheer" role="status" key={cheer.key}>
-          <span className="bc-bubble">{cheer.text}</span>
+        <div className="buddy-cheer" role="status" key={cheer.key} style={cheer.share ? { animationDuration: '6s' } : undefined}>
+          <span className="bc-bubble">{cheer.text}
+            {cheer.share && <button className="bc-share" onClick={() => setMsShare(cheer.share)}>Share it</button>}
+          </span>
           <Character kind={profile.character} mood="happy" size={84} />
         </div>
       )}
+      {msShare && <ShareSheet kind="milestone" title="Share this milestone" file="milestone.png" buddies={[profile.character]} notify={notify} data={{ emoji: msShare.emoji, label: msShare.label }} onClose={() => setMsShare(null)} />}
       {toast && !cheer && (
         <div className="toast" role="status" key={toast.key}>
           <span>{toast.text}</span>

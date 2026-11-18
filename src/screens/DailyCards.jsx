@@ -2,7 +2,7 @@ import { weekSummary, fmt, fmtSleep, sleepHours, SLEEP_TARGET, DEFAULT_BED, DEFA
 import { GOOD_REFS, OVER_REFS, pick, useVerse } from '../quotes'
 import { BOUNCE_BACK, GOOD_DAY } from '../motivation'
 import { useEffect, useRef, useState } from 'react'
-import { shareMorning } from '../shareCard'
+import ShareSheet from './ShareSheet'
 import Character from '../Character'
 import BankCard from './BankCard'
 import VersionLine from './VersionLine'
@@ -14,7 +14,8 @@ import CollectionSheet from './Collection'
 // The verse and its reflection are one card: tap the verse to unfold the reflection.
 // The motivation sits quietly underneath.
 // Save or share one of today's words. Only on the Today card, not the morning welcome.
-function Acts({ it, acts }) {
+function Acts({ it, acts, verse }) {
+  const [pic, setPic] = useState(false)
   if (!it || !acts) return null
   const on = isFav(acts.profile, it)
   const what = KIND_LABEL[it.kind].toLowerCase()
@@ -23,7 +24,12 @@ function Acts({ it, acts }) {
       <button className={on ? 'on' : ''} onClick={() => toggleFav(acts.profile, acts.updateProfile, it, acts.notify)} aria-pressed={on} aria-label={on ? `Remove ${what} from favourites` : `Save ${what} to favourites`}>
         <IconHeart filled={on} size={18} /><span>{on ? 'Saved' : 'Save'}</span>
       </button>
-      <button onClick={() => shareFav(it, acts.notify)} aria-label={`Share ${what}`}><IconShare size={18} /><span>Share</span></button>
+      {/* the verse shares as a picture (with a text option); reflections and quotes as text */}
+      <button onClick={() => (verse ? setPic(true) : shareFav(it, acts.notify))} aria-label={`Share ${what}`}><IconShare size={18} /><span>Share</span></button>
+      {pic && (
+        <ShareSheet kind="verse" title="Share today’s verse" file="todays-verse.png" data={{ verse }} notify={acts.notify} onClose={() => setPic(false)}
+          extra={<button className="link-btn share-text" onClick={() => { setPic(false); shareFav(it, acts.notify) }}>Share as text instead</button>} />
+      )}
     </div>
   )
 }
@@ -48,7 +54,7 @@ export function Words({ words, compact = false, acts = null }) {
           {hasReflection && <span className="w-toggle">{open ? 'Hide reflection' : 'Read reflection'}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>}
         </span>
       </button>
-      <Acts it={items.verse} acts={acts} />
+      <Acts it={items.verse} acts={acts} verse={words.verse} />
       {hasReflection && (
         <div className={`w-fold ${open ? 'open' : ''}`} id="today-reflection" aria-hidden={!open}>
           <div>
@@ -77,21 +83,7 @@ const longDate = () => new Date().toLocaleDateString('en-GB', { weekday: 'long',
 export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose, sleep, onSleep, budget, leaving, focus, notify, isNew }) {
   useEscape(onClose)
   const [step, setStep] = useState(0)
-  const rootRef = useRef(null)
-  const budRef = useRef(null)
   const [sharing, setSharing] = useState(false)
-  const share = async () => {
-    if (sharing) return
-    setSharing(true)
-    const cs = getComputedStyle(rootRef.current)
-    const v = (n) => cs.getPropertyValue(n).trim()
-    await shareMorning({
-      words, name: profile.name, greeting: helloFor(), streakDays,
-      colors: { accent: v('--accent'), accent2: v('--accent-2'), soft: v('--soft') },
-      buddySvg: budRef.current?.querySelector('svg'),
-    }, notify).catch(() => notify?.('Couldn’t share right now'))
-    setSharing(false)
-  }
   const now = new Date()
   const [bed, setBed] = useState(sleep?.bed ?? profile.bedTime ?? DEFAULT_BED)
   // default to the usual wake time; only use "now" if it's earlier than that (an early start)
@@ -104,12 +96,13 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
   const next = () => { save(); setStep(1) }
   const skip = () => { save(); onClose() }
   return (
-    <div ref={rootRef} className={`dawn theme-${profile.theme} ${leaving ? 'leaving' : ''}`} role="dialog" aria-label="Good morning">
+    <div className={`dawn theme-${profile.theme} ${leaving ? 'leaving' : ''}`} role="dialog" aria-label="Good morning">
       <div className="dawn-glow" aria-hidden="true" />
-      <button className={`dawn-share ${isNew ? 'is-new' : ''}`} onClick={share} disabled={sharing} aria-label="Share my morning on socials">
-        <IconShare size={18} /><span>{sharing ? 'Making it…' : 'Share'}</span>{isNew && <i>New</i>}
+      <button className={`dawn-share ${isNew ? 'is-new' : ''}`} onClick={() => setSharing(true)} aria-label="Share my morning on socials">
+        <IconShare size={18} /><span>Share</span>{isNew && <i>New</i>}
       </button>
-      <span ref={budRef} className="dawn-bud-src" aria-hidden="true"><Character kind={profile.character} size={300} /></span>
+      {sharing && <ShareSheet kind="morning" title="Share my morning" file="my-morning.png" buddies={[profile.character]} notify={notify}
+        data={{ words, name: profile.name, greeting: helloFor(), streakDays }} onClose={() => setSharing(false)} />}
       {birthday && <div className="confetti" aria-hidden="true">{Array.from({ length: 18 }, (_, i) => <i key={i} style={{ '--i': i }} />)}</div>}
 
       {step === 0 ? (
@@ -237,8 +230,9 @@ export function WordsCard({ words, profile, updateProfile, notify, onReplay }) {
 }
 
 // Sunday: a calm look back at the week. Encouraging, never a report card.
-export function WeeklyCard({ profile, mine, budgetFor, today, onClose }) {
+export function WeeklyCard({ profile, mine, budgetFor, today, onClose, notify, streakDays }) {
   const w = weekSummary({ entries: mine, profile, budgetFor, todayKey: today })
+  const [pic, setPic] = useState(false)
   if (w.logged === 0 && w.habitDone === 0 && w.workouts === 0) return null
   const line = w.logged < 3 ? 'A lighter week of logging, and that’s okay. Each new week is a fresh page.'
     : w.within >= 5 ? 'A strong, steady week. This is exactly how lasting change is built.'
@@ -249,8 +243,21 @@ export function WeeklyCard({ profile, mine, budgetFor, today, onClose }) {
     <section className="block">
       <div className="block-head">
         <h2 className="group-title">Your week</h2>
-        <button className="link-btn" onClick={onClose}>Hide</button>
+        <span className="head-links">
+          <button className="link-btn" onClick={() => setPic(true)}>Share</button>
+          <button className="link-btn" onClick={onClose}>Hide</button>
+        </span>
       </div>
+      {pic && (
+        <ShareSheet kind="week" title="Share my week" file="my-week.png" buddies={[profile.character]} notify={notify} onClose={() => setPic(false)}
+          data={{ from: w.from, to: w.to, line, say: w.within >= 5 ? 'What a week!' : 'Still showing up!', stats: [
+            w.logged > 0 && { emoji: '🎯', value: `${w.within}/${w.logged}`, label: 'days on budget' },
+            w.workouts > 0 && { emoji: '💪', value: String(w.workouts), label: w.workouts > 1 ? 'workouts' : 'workout' },
+            w.habitDone > 0 && { emoji: '✅', value: String(w.habitDone), label: 'habit ticks' },
+            streakDays > 1 && { emoji: '🔥', value: String(streakDays), label: 'day streak' },
+            w.logged > 0 && { emoji: '📝', value: String(w.logged), label: w.logged > 1 ? 'days logged' : 'day logged' },
+          ].filter(Boolean).slice(0, 4) }} />
+      )}
       <div className="card weekly">
         <p className="wk-range">{d(w.from)} – {d(w.to)}</p>
         <p className="wk-line">{line}</p>
