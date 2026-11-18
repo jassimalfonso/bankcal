@@ -7,6 +7,7 @@ import { BUDDIES, Buddy } from './buddies'
 import { setBackHandlers } from './motion'
 import ShareSheet from './screens/ShareSheet'
 import WorkoutSheet from './screens/WorkoutSheet'
+import Swipeable from './Swipeable'
 import { myWorkouts } from './training'
 
 const DEMO = import.meta.env.MODE === 'demo'
@@ -134,6 +135,7 @@ function Bank({ user }) {
   const cheerTimer = useRef()
   const cheerQueue = useRef([])
   const [msShare, setMsShare] = useState(null) // a milestone to share, from the pop-up
+  const showNext = useRef(null)
   const celebrate = useCallback((text, share = null) => {
     // one at a time: a second celebration waits for the first to finish
     const show = () => {
@@ -143,9 +145,13 @@ function Bank({ user }) {
       setCheer({ ...next, key: Date.now() })
       cheerTimer.current = setTimeout(() => { cheerQueue.current.shift(); show() }, next.share ? 6000 : 3200)
     }
+    showNext.current = show
     cheerQueue.current.push({ text, share })
     if (cheerQueue.current.length === 1) show()
   }, [])
+  // swipe or tap a pop-up away: the next one (if any) comes straight after
+  const dismissCheer = () => { clearTimeout(cheerTimer.current); cheerQueue.current.shift(); showNext.current?.() }
+  const dismissToast = () => { clearTimeout(toastTimer.current); setToast(null) }
   const notify = (text, undo) => {
     clearTimeout(toastTimer.current)
     setToast({ text, undo, key: Date.now() })
@@ -246,18 +252,20 @@ function Bank({ user }) {
 
       {cheer && (
         <div className="buddy-cheer" role="status" key={cheer.key} style={cheer.share ? { animationDuration: '6s' } : undefined}>
-          <span className="bc-bubble">{cheer.text}
-            {cheer.share && <button className="bc-share" onClick={() => setMsShare(cheer.share)}>Share it</button>}
-          </span>
-          <Character kind={profile.character} mood="happy" size={84} />
+          <Swipeable className="bc-swipe" onGone={dismissCheer} aria-label="Swipe or tap to dismiss">
+            <span className="bc-bubble">{cheer.text}
+              {cheer.share && <button className="bc-share" onClick={() => setMsShare(cheer.share)}>Share it</button>}
+            </span>
+            <Character kind={profile.character} mood="happy" size={84} />
+          </Swipeable>
         </div>
       )}
       {msShare && <ShareSheet kind="milestone" title="Share this milestone" file="milestone.png" buddies={[profile.character]} notify={notify} data={{ emoji: msShare.emoji, label: msShare.label }} onClose={() => setMsShare(null)} />}
       {toast && !cheer && (
-        <div className="toast" role="status" key={toast.key}>
+        <Swipeable className="toast" role="status" key={toast.key} onGone={dismissToast}>
           <span>{toast.text}</span>
           {toast.undo && <button onClick={() => { toast.undo(); setToast(null) }}>Undo</button>}
-        </div>
+        </Swipeable>
       )}
       {!showM && hello && profile.onboarded && <WelcomeBack leaving={leaving} profile={profile} left={budget != null ? budget - spent : null} onDone={doneHello} />}
       {showM && <MorningCard notify={notify} isNew={shareNew} focus={focus} leaving={leaving} profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}

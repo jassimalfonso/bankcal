@@ -1478,3 +1478,7 @@ button.ms:active { transform: scale(0.96); }
 .portion button { min-height: 40px; min-width: 44px; padding: 0 12px; border-radius: 12px; background: var(--card); box-shadow: var(--shadow); font-weight: 850; font-size: 15px; }
 .portion button.on { background: var(--accent); color: var(--on-accent); }
 .portion button small { font-weight: 700; font-size: 12px; opacity: 0.8; }
+
+/* pop-ups you can swipe or tap away */
+.bc-swipe { display: grid; justify-items: center; gap: 2px; pointer-events: auto; user-select: none; -webkit-user-select: none; }
+.toast.swipeable { user-select: none; -webkit-user-select: none; }

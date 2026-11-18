@@ -122,7 +122,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
     if (picked || photo || q.length < 3 || !navigator.onLine || asked.current === q.toLowerCase()) return
     const strong = matchFoods(q).filter((m) => m.strong).length + suggestions.filter((sg) => sg.portion === 'my food' || sg.portion === 'your usual').length
     if (strong >= 3) return
-    const id = setTimeout(() => searchAi(true), 700)
+    const id = setTimeout(() => searchAi(true), 500)
     return () => clearTimeout(id)
   }, [name, picked, photo]) // eslint-disable-line react-hooks/exhaustive-deps
 

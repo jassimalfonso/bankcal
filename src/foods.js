@@ -91,12 +91,19 @@ export const FOODS = [
   ['Club sandwich', '1 sandwich', 600], ['Cheeseburger', '1 burger', 550], ['Fries', 'medium', 350], ['Pizza margherita', '2 slices', 500],
   ['Pepperoni pizza', '2 slices', 600], ['Spaghetti bolognese', '1 plate', 650], ['Sushi', '8 pieces', 350], ['Chicken noodles', '1 plate', 550],
   ['Fried chicken', '2 pieces', 500], ['Croissant', '1', 270], ['Cappuccino', 'regular', 120], ['Latte', 'regular', 190], ['Iced latte', 'regular', 150],
-  ['Black coffee', '1 cup', 5], ['Orange juice', '1 glass', 110], ['Soft drink', '1 can', 140], ['Protein shake', '1 scoop + water', 120],
+  ['Black coffee', '1 cup', 5], ['Orange juice', '1 glass', 110], ['Soft drink', '1 can', 140, 'soda'],
+  // everyday drinks and fast food (brand-published figures where available)
+  ['Water', '1 glass', 0, 'mineral sparkling'], ['Coca-Cola', '330 ml can', 139, 'coke cola soda'], ['Coke Zero', '330 ml can', 1, 'coca cola zero diet soda'], ['Diet Coke', '330 ml can', 1, 'coca cola light soda'],
+  ['Sprite', '330 ml can', 139, 'soda 7up'], ['Pepsi', '330 ml can', 142, 'cola soda'], ['Iced tea (sweetened)', '1 bottle 500 ml', 180, 'lipton'],
+  ['Milk tea with pearls (boba)', 'medium, 50% sugar', 350, 'bubble tea tapioca chatime'], ['Milk tea (no pearls)', 'medium, 50% sugar', 240, 'bubble tea'],
+  ['McDonald’s Big Mac', '1 burger', 550, 'mcdo mcdonalds'], ['McDonald’s McChicken', '1 burger', 400, 'mcdo mcdonalds'], ['McDonald’s fries', 'medium', 320, 'mcdo mcdonalds'],
+  ['McDonald’s Chicken McNuggets', '6 pieces', 250, 'mcdo mcdonalds'], ['McDonald’s Cheeseburger', '1 burger', 300, 'mcdo mcdonalds'], ['McDonald’s McFlurry Oreo', 'regular', 340, 'mcdo mcdonalds ice cream'],
+  ['KFC Original Recipe chicken', '1 piece', 290, 'kentucky fried'], ['KFC Zinger burger', '1 burger', 610, 'kentucky'], ['KFC fries', 'regular', 290, 'kentucky'], ['Protein shake', '1 scoop + water', 120],
   ['Mixed nuts', '30 g', 175], ['Dark chocolate', '2 squares', 110], ['Ice cream', '1 scoop', 140], ['Donut', '1', 260], ['Chips', 'small bag', 160],
 ].map(([name, portion, kcal, words]) => ({ name, portion, kcal, words }))
 
 // Words people type that should find the same dish
-const ALIASES = { talong: 'eggplant', okoy: 'ukoy', ukoy: 'okoy', pansit: 'pancit', pancit: 'pansit', sinangag: 'garlic rice', longsilog: 'longganisa', siopao: 'bun', dinamita: 'dynamite', dynamite: 'dinamita', sili: 'chili', camote: 'kamote', kamote: 'camote' }
+const ALIASES = { mcdo: 'mcdonalds', boba: 'pearls', coke: 'cola', talong: 'eggplant', okoy: 'ukoy', ukoy: 'okoy', pansit: 'pancit', pancit: 'pansit', sinangag: 'garlic rice', longsilog: 'longganisa', siopao: 'bun', dinamita: 'dynamite', dynamite: 'dinamita', sili: 'chili', camote: 'kamote', kamote: 'camote' }
 const norm = (x) => x.toLowerCase().replace(/['’‘`]/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()
 
 // one typo allowed for words of 5+ letters
@@ -143,7 +150,15 @@ export function matchFoods(q, limit = 8) {
       const first = Math.min(...use.map((w) => { const i = shown.indexOf(w); return i < 0 ? 999 : i }))
       const strong = hits === use.length
       const partial = hits >= 2 || (hits === 1 && use.some((w) => w.length > 3 && hit(w)))
-      const score = plain.startsWith(phrase) ? 1000 : plain.includes(phrase) ? 900 : strong ? 500 + seen * 10 + hits : partial ? seen * 10 + hits : 0
+      let score = plain.startsWith(phrase) ? 1000 : plain.includes(phrase) ? 900 : strong ? 500 + seen * 10 + hits : partial ? seen * 10 + hits : 0
+      if (score) {
+        // whole words beat parts of words ("adobo" → Chicken adobo before Adobong kangkong),
+        // and an exact name wins outright ("banana" → Banana before Banana cue)
+        const one = (w) => w.replace(/(es|s)$/, '')
+        const toks = new Set(plain.split(' ').map(one))
+        if (use.every((w) => toks.has(one(w)))) score += 150
+        if (one(plain) === one(phrase) || plain.replace(/ \(.*\)$/, '') === phrase) score += 200
+      }
       return { f, score, strong, idx, first }
     })
     .filter((x) => x.score > 0)
