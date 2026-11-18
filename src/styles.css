@@ -1392,3 +1392,52 @@ body:has(.app)::after, body[data-bg]:not([data-bg='plain']):has(.app)::after { b
 button.ms { font: inherit; color: inherit; text-align: inherit; }
 button.ms:active { transform: scale(0.96); }
 @keyframes pop-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+
+/* ───────── Computers and wide tablets (phones are unchanged) ─────────
+   The tab bar becomes a rail on the left with + on top; Today goes two-column with the
+   balance pinned on the left; other tabs get a comfortable centred column; sheets open
+   as centred windows. */
+@media (min-width: 1024px) {
+  .app { max-width: 1180px; padding-left: 132px; }
+  .screen { padding: 36px 32px 64px; }
+  .screen > * { max-width: 720px; margin-left: auto; margin-right: auto; }
+
+  /* rail */
+  .tabbar {
+    top: 50%; bottom: auto; left: max(20px, calc(50% - 590px)); transform: translateY(-50%);
+    width: 92px; max-width: none; grid-template-columns: 1fr; gap: 4px; padding: 8px 6px; border-radius: 28px;
+  }
+  .tab { padding: 12px 0; font-size: 12px; border-radius: 20px; }
+  .fab { left: calc(max(20px, calc(50% - 590px)) + 18px); right: auto; top: calc(50% - 154px - 74px); bottom: auto; }
+  .app.entering .tabbar { animation: rail-in 0.6s var(--ease) 0.4s both; }
+  @keyframes rail-in { from { opacity: 0; transform: translate(-30px, -50%); } }
+
+  /* Today: balance on the left, cards on the right */
+  .screen.tab-today { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); column-gap: 36px; align-items: start; max-width: 1040px; margin: 0 auto; }
+  .screen.tab-today > * { grid-column: 2; max-width: none; margin-left: 0; margin-right: 0; min-width: 0; }
+  .screen.tab-today > .large-title { grid-column: 1 / -1; }
+  .screen.tab-today > .hero { grid-column: 1; grid-row: 2 / span 4; position: sticky; top: 28px; align-self: start; margin-top: 0; }
+
+  /* sheets as centred windows */
+  .sheet-wrap { align-items: center; padding: 28px; }
+  .sheet { max-width: 560px; max-height: 88dvh; border-radius: 28px; padding-bottom: 24px; animation: win-in 0.3s var(--ease); }
+  .grabber-zone { display: none; }
+  @keyframes win-in { from { opacity: 0; transform: translateY(14px) scale(0.98); } }
+
+  /* morning welcome: Share sits with the content, not in the far corner */
+  .dawn-share { left: calc(50% - 250px); top: 28px; }
+
+  /* toasts and the buddy pop-up sit over the content, clear of the rail */
+  .toast { left: calc(50% + 66px); }
+  .buddy-cheer { left: 132px; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover:not(.on) { color: var(--ink); background: color-mix(in srgb, var(--soft) 60%, transparent); }
+  .mf-row:hover, .col-note:hover, .mine-row:hover { background: color-mix(in srgb, var(--soft) 50%, transparent); }
+  .chip:hover, .btn-soft:hover { filter: brightness(0.98); }
+  .link-btn:hover { text-decoration: underline; text-underline-offset: 3px; }
+}
+/* short laptop screens: let the balance card scroll normally instead of pinning it */
+@media (min-width: 1024px) and (max-height: 860px) {
+  .screen.tab-today > .hero { position: static; }
+}

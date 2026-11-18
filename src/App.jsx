@@ -205,7 +205,7 @@ function Bank({ user }) {
 
   return (
     <div className={`app theme-${profile.theme} ${(showM || hello) && !leaving ? 'behind' : ''} ${leaving ? 'entering' : ''}`}>
-      <main className={`screen slide-${dir}`} key={tab}>
+      <main className={`screen slide-${dir} tab-${tab}`} key={tab}>
         {tab === 'today' && <Today {...ctx} />}
         {tab === 'week' && <Statement {...ctx} />}
         {tab === 'train' && <Train {...ctx} />}
