@@ -1482,3 +1482,4 @@ button.ms:active { transform: scale(0.96); }
 /* pop-ups you can swipe or tap away */
 .bc-swipe { display: grid; justify-items: center; gap: 2px; pointer-events: auto; user-select: none; -webkit-user-select: none; }
 .toast.swipeable { user-select: none; -webkit-user-select: none; }
+.ai-retry { margin-left: 8px; font-weight: 850; }

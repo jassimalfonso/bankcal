@@ -135,23 +135,37 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
   }
   const searching = name.trim().length > 0 && !picked
 
+  const lastPhoto = useRef(null) // kept so "Try again" doesn't need a new photo
+  const [slow, setSlow] = useState(false)
   async function onPhoto(ev) {
     const f = ev.target.files?.[0]
     ev.target.value = ''
     if (!f) return
     try {
-      const [thumb, big] = await Promise.all([compressPhoto(f), compressPhoto(f, 768)])
+      // 1024 px keeps small print on packets readable
+      const [thumb, big] = await Promise.all([compressPhoto(f), compressPhoto(f, 1024)])
       setPhoto(thumb)
+      lastPhoto.current = big
+      await readPhoto(big)
+    } catch {
+      setAi({ busy: false, err: 'Couldn’t open that photo. Try another one, or type the food.', results: null, items: null, confidence: '', photoErr: true })
+    }
+  }
+  async function readPhoto(big) {
+    setSlow(false)
+    const t = setTimeout(() => setSlow(true), 10000)
+    try {
       setAi({ busy: true, err: '', results: null, items: null, confidence: '' })
       const j = await askFood({ mode: 'photo', image: big })
-      if (!j.kcal) throw new Error('Couldn’t spot food in that photo. Type it in instead.')
+      if (!j.kcal) throw new Error('Couldn’t spot food or a calorie label in that photo. Type it in instead.')
       setName(j.name || 'Meal')
       setKcal(String(Math.round(j.kcal)))
       setPicked(true)
       setAi({ busy: false, err: '', results: null, items: j.items ?? [], confidence: j.confidence ?? '' })
     } catch (e) {
-      setAi({ busy: false, err: e.message || 'Couldn’t read that photo.', results: null, items: null, confidence: '' })
-    }
+      const msg = /too long|taking/i.test(e.message || '') ? 'Reading the photo took too long. Try again, or type the food.' : e.message || 'Couldn’t read that photo.'
+      setAi({ busy: false, err: msg, results: null, items: null, confidence: '', photoErr: true })
+    } finally { clearTimeout(t); setSlow(false) }
   }
 
   const bump = (d) => setKcal(String(Math.max(0, n + d)))
@@ -223,7 +237,11 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
             ))}
           </div>
         )}
-        {ai.err && <p className="ai-err">{ai.err}</p>}
+        {ai.err && (
+          <p className="ai-err">{ai.err}
+            {ai.photoErr && lastPhoto.current && <button className="link-btn ai-retry" onClick={() => readPhoto(lastPhoto.current)}>Try again</button>}
+          </p>
+        )}
         {myFoods.length > 0 && !name && (
           <div className="myfoods">
             <div className="mf-head"><b>⭐ My foods</b><button className="link-btn" onClick={() => setEditMine((x) => !x)}>{editMine ? 'Done' : 'Edit'}</button></div>
@@ -260,10 +278,10 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
           ) : (
             <>
               <IconCamera size={26} />
-              <span>Snap your plate<small>AI reads the calories for you</small></span>
+              <span>Snap your plate<small>Food, drinks or a packet label</small></span>
             </>
           )}
-          {ai.busy && photo && <span className="photo-busy">Reading your plate…</span>}
+          {ai.busy && photo && <span className="photo-busy">{slow ? 'Still reading… labels can take a little longer' : 'Reading your photo…'}</span>}
         </button>}
         <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} />
 

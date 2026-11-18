@@ -10,6 +10,8 @@ const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/service_acco
 // whatever current Flash models the API itself lists for this key.
 const OVERRIDE = (process.env.GEMINI_MODEL || '').split(',').map((s) => s.trim()).filter(Boolean)
 const API = 'https://generativelanguage.googleapis.com/v1beta'
+// photos can take a while; let the function run long enough (Vercel)
+export const config = { maxDuration: 60 }
 let cache = { at: 0, models: [] } // discovered models, kept for an hour while the function stays warm
 // What last worked, remembered separately for typed searches (speed first) and photos (accuracy first)
 const good = { search: null, photo: null }
@@ -37,7 +39,7 @@ async function discover(key) {
 const CONTEXT = 'You are a nutrition assistant for people living in the UAE / GCC. Use typical portions served in UAE restaurants, cafeterias, supermarkets and homes (Arabic, Indian, Filipino and international food). Calories are kcal, integers.'
 
 const PROMPTS = {
-  photo: `${CONTEXT} Look at this meal photo. Identify each food, estimate its portion and calories. Return JSON exactly like {"name": "short name for the whole plate", "kcal": 0, "items": [{"name": "", "portion": "", "kcal": 0}], "confidence": "low|medium|high"}. If there is no food, return {"name": "", "kcal": 0, "items": [], "confidence": "low"}.`,
+  photo: `${CONTEXT} Look at this photo. It may be a plate of food, a drink, or a packet / product. If a nutrition label or calorie number is printed on the packaging (in any language, e.g. Japanese, Arabic), read it and use the calories for the whole pack (or one serving if that is all that's shown), and name the product in English. Otherwise identify each food, estimate its portion and calories. Return JSON exactly like {"name": "short name for the whole plate", "kcal": 0, "items": [{"name": "", "portion": "", "kcal": 0}], "confidence": "low|medium|high"}. If there is no food, return {"name": "", "kcal": 0, "items": [], "confidence": "low"}.`,
   search: (q) => `${CONTEXT} The user typed "${q}" to log something they ate or drank. It may be a brand or chain item (Starbucks, Costa, Tim Hortons, McDonald's, KFC, Jollibee, supermarket products): for those, use the brand's published calories for that exact item, size and options (cup size, milk type, syrups, cream). List the best match first, then up to 3 close alternatives (other sizes, milk options or similar items). Names must include the brand, size and options. Portion: the serving, with ml for drinks. If unclear, assume the most common UAE version. Reply with JSON only, no explanation: {"results": [{"name": "", "portion": "", "kcal": 0}]}.`,
 }
 
@@ -59,7 +61,7 @@ async function ask(key, model, parts, extra, signal) {
 async function callGemini(key, parts, kind) {
   const tried = new Set()
   let busy = false
-  const signal = AbortSignal.timeout(kind === 'photo' ? 25000 : 12000)
+  const signal = AbortSignal.timeout(kind === 'photo' ? 45000 : 12000)
   const attempt = async (model, known) => {
     if (!model || tried.has(model)) return null
     tried.add(model)
@@ -75,6 +77,21 @@ async function callGemini(key, parts, kind) {
     return null
   }
   try {
+    // Photos: start the full model; if it hasn't answered in 8 s, start the quicker "lite"
+    // model too, and use whichever answers first.
+    if (kind === 'photo') {
+      let done = false
+      const first = good.photo?.model ?? 'gemini-flash-latest'
+      const lite = 'gemini-flash-lite-latest'
+      const out = await new Promise((resolve) => {
+        let left = 2
+        const fin = (o) => { if (o && !done) { done = true; resolve(o) } else if (--left === 0 && !done) resolve(null) }
+        attempt(first, good.photo?.model === first ? good.photo.extra : undefined).then(fin, () => fin(null))
+        setTimeout(() => { if (done) return fin(null); attempt(lite).then(fin, () => fin(null)) }, 8000)
+      })
+      done = true
+      if (out) return out
+    }
     if (good[kind]) { const out = await attempt(good[kind].model, good[kind].extra); if (out) return out }
     // typed searches use the lighter, faster models first; photos use the full model first
     const alias = kind === 'photo' ? ['gemini-flash-latest'] : ['gemini-flash-lite-latest', 'gemini-flash-latest']
@@ -90,6 +107,7 @@ async function callGemini(key, parts, kind) {
   throw Object.assign(new Error('Online food search isn’t available right now. Type the calories for now.'), { status: 502 })
 }
 
+export { callGemini as _callGemini } // for tests
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST' })
   try {

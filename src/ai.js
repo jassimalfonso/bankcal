@@ -7,7 +7,7 @@ export async function askFood(body) {
   if (!user) throw new Error('Sign in to use AI.')
   const token = await user.getIdToken()
   // give up after a while so the screen never sits on "Searching…" forever
-  const signal = AbortSignal.timeout?.(body.mode === 'photo' ? 30000 : 15000)
+  const signal = AbortSignal.timeout?.(body.mode === 'photo' ? 50000 : 15000)
   const r = await fetch('/api/food', {
     method: 'POST', signal,
     headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
