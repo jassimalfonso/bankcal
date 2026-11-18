@@ -15,6 +15,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
   const myFoods = profile?.myFoods ?? []
   const [keep, setKeep] = useState(false)
   const [editMine, setEditMine] = useState(false)
+  const [allMine, setAllMine] = useState(false)
   const removeMine = (id) => updateProfile({ myFoods: myFoods.filter((f) => f.id !== id) })
   const [photo, setPhoto] = useState(editing?.photo ?? null)
   const [name, setName] = useState(editing?.name ?? '')
@@ -151,8 +152,12 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
   function save() {
     if (!valid) return
     const nm = name.trim()
-    if (keep && !myFoods.some((f) => f.name.toLowerCase() === nm.toLowerCase())) {
+    const had = myFoods.find((f) => f.name.toLowerCase() === nm.toLowerCase())
+    if (keep && !had) {
       updateProfile({ myFoods: [{ id: String(Date.now()), name: nm, kcal: n, portion: 'my food' }, ...myFoods].slice(0, 60) })
+    } else if (had && myFoods[0] !== had && !editing) {
+      // the ones you use most float to the top
+      updateProfile({ myFoods: [had, ...myFoods.filter((f) => f !== had)] })
     }
     onSave({ name: nm, kcal: n, meal, photo })
   }
@@ -200,13 +205,19 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
         {ai.err && <p className="ai-err">{ai.err}</p>}
         {myFoods.length > 0 && !name && (
           <div className="myfoods">
-            <div className="mf-head"><b>My foods</b><button className="link-btn" onClick={() => setEditMine((x) => !x)}>{editMine ? 'Done' : 'Edit'}</button></div>
-            <div className="recent">
-              {myFoods.map((f) => editMine ? (
-                <button key={f.id} className="chip mine edit" onClick={() => removeMine(f.id)} aria-label={`Remove ${f.name}`}>{f.name} <span>✕</span></button>
-              ) : (
-                <button key={f.id} className="chip mine" onClick={() => choose(f)}>⭐ {f.name} <span>{fmt(f.kcal)}</span></button>
+            <div className="mf-head"><b>⭐ My foods</b><button className="link-btn" onClick={() => setEditMine((x) => !x)}>{editMine ? 'Done' : 'Edit'}</button></div>
+            <div className="mf-list">
+              {(allMine || editMine ? myFoods : myFoods.slice(0, 4)).map((f) => (
+                <button key={f.id} className={`mf-row ${editMine ? 'edit' : ''}`} onClick={() => (editMine ? removeMine(f.id) : choose(f))} aria-label={editMine ? `Remove ${f.name}` : `${f.name}, ${fmt(f.kcal)} kcal`}>
+                  <span className="mf-name">{f.name}</span>
+                  {editMine ? <span className="mf-x">Remove</span> : <span className="mf-kcal">{fmt(f.kcal)}</span>}
+                </button>
               ))}
+              {myFoods.length > 4 && !editMine && (
+                <button className="mf-more" onClick={() => setAllMine((x) => !x)} aria-expanded={allMine}>
+                  {allMine ? 'Show fewer' : `Show all ${myFoods.length}`} <span className={`chev ${allMine ? 'up' : ''}`}>⌄</span>
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -1,7 +1,8 @@
 import { weekSummary, fmt, fmtSleep, sleepHours, SLEEP_TARGET, DEFAULT_BED, DEFAULT_WAKE } from '../calc'
 import { GOOD_REFS, OVER_REFS, pick, useVerse } from '../quotes'
 import { BOUNCE_BACK, GOOD_DAY } from '../motivation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { shareMorning } from '../shareCard'
 import Character from '../Character'
 import BankCard from './BankCard'
 import VersionLine from './VersionLine'
@@ -73,9 +74,24 @@ const helloFor = (h = new Date().getHours()) => (h < 12 ? 'Good morning' : h < 1
 const longDate = () => new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
 // First open of the day: a calm, two-step welcome. Greeting first, then today's word, then the app.
-export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose, sleep, onSleep, budget, leaving, focus }) {
+export function MorningCard({ profile, words, yesterday, streakDays, birthday, onClose, sleep, onSleep, budget, leaving, focus, notify, isNew }) {
   useEscape(onClose)
   const [step, setStep] = useState(0)
+  const rootRef = useRef(null)
+  const budRef = useRef(null)
+  const [sharing, setSharing] = useState(false)
+  const share = async () => {
+    if (sharing) return
+    setSharing(true)
+    const cs = getComputedStyle(rootRef.current)
+    const v = (n) => cs.getPropertyValue(n).trim()
+    await shareMorning({
+      words, name: profile.name, greeting: helloFor(), streakDays,
+      colors: { accent: v('--accent'), accent2: v('--accent-2'), soft: v('--soft') },
+      buddySvg: budRef.current?.querySelector('svg'),
+    }, notify).catch(() => notify?.('Couldn’t share right now'))
+    setSharing(false)
+  }
   const now = new Date()
   const [bed, setBed] = useState(sleep?.bed ?? profile.bedTime ?? DEFAULT_BED)
   // default to the usual wake time; only use "now" if it's earlier than that (an early start)
@@ -88,8 +104,12 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
   const next = () => { save(); setStep(1) }
   const skip = () => { save(); onClose() }
   return (
-    <div className={`dawn theme-${profile.theme} ${leaving ? 'leaving' : ''}`} role="dialog" aria-label="Good morning">
+    <div ref={rootRef} className={`dawn theme-${profile.theme} ${leaving ? 'leaving' : ''}`} role="dialog" aria-label="Good morning">
       <div className="dawn-glow" aria-hidden="true" />
+      <button className={`dawn-share ${isNew ? 'is-new' : ''}`} onClick={share} disabled={sharing} aria-label="Share my morning on socials">
+        <IconShare size={18} /><span>{sharing ? 'Making it…' : 'Share'}</span>{isNew && <i>New</i>}
+      </button>
+      <span ref={budRef} className="dawn-bud-src" aria-hidden="true"><Character kind={profile.character} size={300} /></span>
       {birthday && <div className="confetti" aria-hidden="true">{Array.from({ length: 18 }, (_, i) => <i key={i} style={{ '--i': i }} />)}</div>}
 
       {step === 0 ? (

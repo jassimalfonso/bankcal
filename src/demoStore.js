@@ -8,6 +8,7 @@ export function useDemoStore() {
     activity: 'sedentary', goal: 'lose025', customBudget: '', mode: 'light', onboarded: new URLSearchParams(location.search).get('new') !== '1',
     ...(new URLSearchParams(location.search).has('seed') ? {
       birthDate: new URLSearchParams(location.search).has('bday') ? '1994' + dayKey().slice(4) : '1994-03-08', height: 173, weight: 83.4, targetWeight: 78,
+      myFoods: [['Starbucks brewed coffee, black (dark roast, Pike Place)', 5], ['Max’s Restaurant Plain Rice', 200], ['Proben', 280], ['Overnight oats with banana', 340], ['Chicken adobo, 1 cup', 420], ['Greek yoghurt + honey', 180], ['Pandesal x2', 240]].map(([name, kcal], i) => ({ id: 'mf' + i, name, kcal, portion: 'my food' })),
       days: Object.fromEntries(Array.from({ length: 15 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (14 - i)); return [dayKey(d), { weight: Math.round((85.2 - i * 0.13 + (i % 3 === 0 ? 0.2 : 0)) * 10) / 10 }] })),
     } : {}),
   })

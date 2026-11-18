@@ -88,6 +88,14 @@ function Bank({ user }) {
   // The morning welcome: first open of the day (unless switched off in Settings), or on request
   const [replay, setReplay] = useState(false)
   const showM = replay || (morning && profile?.morningCard !== false)
+  // One time after the share update: show the morning welcome again so the new Share button is seen
+  const SHARE_INTRO = `bankcal:intro-share:${user.uid}`
+  const [shareNew, setShareNew] = useState(() => { try { return !localStorage.getItem(SHARE_INTRO) } catch { return false } })
+  useEffect(() => {
+    if (!shareNew || !profile?.onboarded) return
+    try { localStorage.setItem(SHARE_INTRO, '1') } catch { /* ignore */ }
+    setReplay(true)
+  }, [shareNew, profile?.onboarded]) // eslint-disable-line react-hooks/exhaustive-deps
   // Leaving the welcome: the card lifts away while the app rises in underneath
   const [leaving, setLeaving] = useState(false)
   const leave = useCallback((then) => {
@@ -105,7 +113,7 @@ function Bank({ user }) {
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [])
-  const closeMorning = () => { try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } leave(() => { setHello(false); setMorning(false); setReplay(false) }) }
+  const closeMorning = () => { try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } leave(() => { setHello(false); setMorning(false); setReplay(false); setShareNew(false) }) }
   // Remember each day's base budget, so later weight or plan changes don't rewrite past days
   useEffect(() => {
     if (!profile?.onboarded) return
@@ -226,7 +234,7 @@ function Bank({ user }) {
         </div>
       )}
       {!showM && hello && profile.onboarded && <WelcomeBack leaving={leaving} profile={profile} left={budget != null ? budget - spent : null} onDone={doneHello} />}
-      {showM && <MorningCard focus={focus} leaving={leaving} profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
+      {showM && <MorningCard notify={notify} isNew={shareNew} focus={focus} leaving={leaving} profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
       {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true)} today={today} onClose={() => setResult(false)} />}
 
       {adding && (
