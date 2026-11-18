@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BASE_STEPS, DEFAULT_BED, DEFAULT_WAKE, describeWorkout, fmt, fmtSleep, sleepHours, SLEEP_TARGET, WORKOUTS, workoutKcal } from '../calc'
 import WorkoutSheet from './WorkoutSheet'
-import { routineFromCustom, routineWorkout } from '../training'
+import { myWorkouts, routineWorkout } from '../training'
 import { workoutKcal as kcalOf } from '../calc'
 
 // Today's "deposits": steps and treadmill time earn calories back into the budget.
@@ -23,13 +23,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
     celebrate?.(`Nice work! +${fmt(workoutKcal(w, profile.weight))} kcal 💪`)
     setAdding(false)
   }
-  // your routine first, then your own exercises that aren't in it
-  const routine = profile.routine ?? []
-  const doseOf = (it) => (it.kind === 'time' ? `${it.sets} × ${it.sec} s` : `${it.sets} × ${it.reps}${it.each ? ' each side' : ''}`) + (it.kg ? ` · ${it.kg} kg` : '')
-  const mine = [
-    ...routine.map((it) => ({ key: it.id, item: it, done: workouts.some((w) => w.rid === it.id) })),
-    ...(profile.customEx ?? []).filter((c) => !routine.some((r) => r.ex === c.id)).map((c) => ({ key: c.id, item: { ...routineFromCustom(c), id: undefined } })),
-  ].map((m) => ({ ...m, dose: doseOf(m.item) }))
+  const mine = myWorkouts(profile, workouts)
   const removeWorkout = (id) => setDay(today, { workouts: workouts.filter((w) => w.id !== id) })
 
   return (
@@ -102,7 +96,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
       </div>
       <p className="fine">First {fmt(BASE_STEPS)} steps are everyday movement and already in your budget.</p>
       </>}
-      {adding && <WorkoutSheet profile={profile} mine={mine} start={adding === true ? null : adding} onClose={() => setAdding(false)} onSave={saveWorkout} />}
+      {adding && <WorkoutSheet profile={profile} mine={mine} start={adding === true ? null : adding} onClose={() => setAdding(false)} onSave={saveWorkout} onKeep={(item) => updateProfile({ routine: [...(profile.routine ?? []), item] })} />}
     </>
   )
 }

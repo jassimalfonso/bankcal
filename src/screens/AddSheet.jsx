@@ -81,12 +81,19 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
   const after = budget != null && !otherDay ? budget - spent - n : null
   const valid = name.trim() && n > 0
 
+  // a chosen food can be scaled: ½, 1, 1½, 2 or 3 portions
+  const [base, setBase] = useState(null)
+  const [mult, setMult] = useState(1)
   function choose(f) {
     setName(f.name)
     setKcal(String(f.kcal))
     setPicked(true)
+    setBase({ kcal: f.kcal, portion: f.portion })
+    setMult(1)
     setAi((a) => ({ ...a, results: null }))
+    inputRef.current?.blur() // put the keyboard away so the amount and Spend are in view
   }
+  const portion = (m) => { setMult(m); if (base) setKcal(String(Math.round(base.kcal * m))) }
 
   const asked = useRef('')
   async function searchAi(auto = false) {
@@ -159,7 +166,8 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
       // the ones you use most float to the top
       updateProfile({ myFoods: [had, ...myFoods.filter((f) => f !== had)] })
     }
-    onSave({ name: nm, kcal: n, meal, photo })
+    const label = { 0.5: '½', 1.5: '1½', 2: '2', 3: '3' }[mult]
+    onSave({ name: picked && label ? `${nm} ×${label}` : nm, kcal: n, meal, photo })
   }
 
   return (
@@ -181,25 +189,38 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
           {name && <button type="button" className="field-clear" aria-label="Clear food" onClick={(e) => { e.preventDefault(); setName(''); setPicked(false); setAi((a) => ({ ...a, results: null, err: null })); inputRef.current?.focus() }}><IconClose size={18} /></button>}
         </label>
 
-        {(suggestions.length > 0 || (name.trim().length >= 2 && !picked)) && (
-          <div className="card suggest">
-            {suggestions.map((f) => (
-              <button key={f.name} className="suggest-row" onClick={() => choose(f)}>
-                <span><b>{f.name}</b><small>{f.portion}</small></span>
-                <span className="suggest-kcal">{fmt(f.kcal)}</span>
-              </button>
+        {(suggestions.length > 0 || (name.trim().length >= 2 && !picked)) && (() => {
+          const own = suggestions.filter((f) => f.portion === 'my food' || f.portion === 'your usual')
+          const rest = suggestions.filter((f) => !own.includes(f))
+          const row = (f, key, note) => (
+            <button key={key} className="suggest-row" onClick={() => choose(f)}>
+              <span><b><Hl text={f.name} q={name} /></b><small>{note ? `${f.portion} · ${note}` : f.portion}</small></span>
+              <span className="suggest-kcal">{fmt(f.kcal)}<i>kcal</i></span>
+            </button>
+          )
+          return (
+            <div className="card suggest">
+              {own.length > 0 && <p className="sg-h">Yours</p>}
+              {own.map((f) => row(f, 'm' + f.name))}
+              {rest.length > 0 && own.length > 0 && <p className="sg-h">More</p>}
+              {rest.map((f) => row(f, f.name))}
+              {(ai.busy || ai.results?.length > 0) && <p className="sg-h">Online · AI estimate</p>}
+              {ai.busy && <div className="sg-skel" aria-label="Checking online"><i /><i /></div>}
+              {ai.results?.map((f) => row(f, 'ai' + f.name))}
+              {!ai.results && !ai.busy && (
+                <button className="suggest-ai" onClick={() => searchAi(false)}>
+                  {suggestions.length ? `Not it? Search online for “${name.trim()}”` : `Search online for “${name.trim()}”`}
+                </button>
+              )}
+            </div>
+          )
+        })()}
+        {picked && base && !editing && (
+          <div className="portion" role="radiogroup" aria-label="How much">
+            <span>How much?</span>
+            {[[0.5, '½'], [1, '1'], [1.5, '1½'], [2, '2'], [3, '3']].map(([m, l]) => (
+              <button key={m} role="radio" aria-checked={mult === m} className={mult === m ? 'on' : ''} onClick={() => portion(m)}>{l}{m === 1 && base.portion && base.portion !== 'my food' && base.portion !== 'your usual' ? <small> {base.portion}</small> : '×'}</button>
             ))}
-            {ai.results?.map((f) => (
-              <button key={'ai' + f.name} className="suggest-row" onClick={() => choose(f)}>
-                <span><b>{f.name}</b><small>{f.portion} · AI estimate</small></span>
-                <span className="suggest-kcal">{fmt(f.kcal)}</span>
-              </button>
-            ))}
-            {!ai.results && (
-              <button className="suggest-ai" onClick={() => searchAi(false)} disabled={ai.busy}>
-                {ai.busy ? 'Also checking online…' : `Search online for “${name.trim()}”`}
-              </button>
-            )}
           </div>
         )}
         {ai.err && <p className="ai-err">{ai.err}</p>}
@@ -293,4 +314,12 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
       </div>
     </div>
   )
+}
+
+// Bold the parts of a name that match what was typed
+function Hl({ text, q }) {
+  const words = q.toLowerCase().split(/[^a-z0-9]+/i).filter((w) => w.length > 1)
+  if (!words.length) return text
+  const re = new RegExp(`(${words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'ig')
+  return String(text).split(re).map((part, i) => (i % 2 ? <mark key={i}>{part}</mark> : part))
 }

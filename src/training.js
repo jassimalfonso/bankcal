@@ -335,3 +335,60 @@ export function routineWorkout(item) {
   const dose = item.kind === 'time' ? `${sets} × ${item.sec} s` : `${sets} × ${item.reps}${item.each ? ' each side' : ''}`
   return { type: 'custom', rid: item.id, min: Math.round((total / 60) * 10) / 10, met: Math.round(met * 100) / 100, label: item.name, note: `${dose}${item.kg ? ` @ ${item.kg} kg` : ''}` }
 }
+
+// ---------- Your workouts + exercise search (used by "Log a workout") ----------
+const doseOf = (it) => (it.kind === 'time' ? `${it.sets} × ${it.sec} s` : `${it.sets} × ${it.reps}${it.each ? ' each side' : ''}`) + (it.kg ? ` · ${it.kg} kg` : '')
+
+// Your routine first, then your own exercises that aren't in it
+export function myWorkouts(profile, todaysWorkouts = []) {
+  const routine = profile.routine ?? []
+  return [
+    ...routine.map((it) => ({ key: it.id, item: it, done: todaysWorkouts.some((w) => w.rid === it.id) })),
+    ...(profile.customEx ?? []).filter((c) => !routine.some((r) => r.ex === c.id)).map((c) => ({ key: c.id, item: { ...routineFromCustom(c), id: undefined } })),
+  ].map((m) => ({ ...m, dose: doseOf(m.item) }))
+}
+
+// Extra words people type for each exercise or activity
+const EX_WORDS = {
+  squat: 'squats legs thighs', goblet: 'squat dumbbell legs', lunge: 'lunges legs', rdl: 'deadlift hamstrings', bridge: 'glute hips bum',
+  pushup: 'push ups press up chest', press: 'bench chest dumbbell', shoulder: 'overhead press arms', row: 'back dumbbell', curl: 'biceps arms dumbbell bicep',
+  hang: 'bar grip', plank: 'core abs', deadbug: 'core abs', jacks: 'jumping cardio', burpee: 'burpees cardio',
+}
+const ACT_WORDS = {
+  cycling: 'bike spin cycle', swim: 'swimming pool', padel: 'tennis squash badminton', football: 'soccer futsal', stairs: 'steps climb',
+  yoga: 'stretch stretching pilates mobility', rope: 'skipping jump rope', hiit: 'interval tabata', strength: 'gym weights lifting', circuit: 'class bootcamp',
+  custom: 'other workout', walk: 'walking stroll', run: 'running jog jogging', treadmill: 'incline walk',
+}
+
+// One searchable list: yours, the exercise library (sets × reps), and activities (minutes)
+export function exerciseIndex(profile, mine, WORKOUT_TYPES) {
+  const level = profile.level ?? 'beginner'
+  const lifts = profile.lifts ?? {}
+  const kgFor = (ex) => lifts[ex.id] ?? weightRange(ex, profile.sex, level)?.[0] ?? 0
+  const lib = EXERCISES.filter((ex) => ex.levels && ex.log).map((ex) => {
+    const item = { ...routineFromExercise(ex, level, kgFor(ex)), id: undefined }
+    return { key: 'x' + ex.id, kind: 'lib', item, dose: doseOf(item), words: `${ex.name} ${ex.muscles ?? ''} ${ex.equipment ?? ''} ${ex.group ?? ''} ${EX_WORDS[ex.id] ?? ''}`, logType: ex.log.type }
+  })
+  const libTypes = new Set(lib.map((l) => l.logType))
+  const acts = WORKOUT_TYPES.filter((w) => !libTypes.has(w.id)).map((w) => ({ key: 'a' + w.id, kind: 'act', type: w.id, item: { name: w.label, emoji: w.emoji }, dose: w.kind === 'min' ? 'minutes' : w.kind === 'sec' ? 'seconds' : 'reps', words: `${w.label} ${ACT_WORDS[w.id] ?? ''}` }))
+  const yours = mine.map((m) => ({ ...m, kind: 'mine', words: m.item.name }))
+  return [...yours, ...lib, ...acts]
+}
+
+const nrm = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()
+export function searchExercises(q, index) {
+  const t = nrm(q)
+  if (!t) return []
+  const words = t.split(' ').map((w) => w.replace(/s$/, ''))
+  return index
+    .map((e) => {
+      const name = nrm(e.item.name)
+      const all = `${name} ${nrm(e.words)}`
+      if (!words.every((w) => all.includes(w))) return null
+      const score = (name.startsWith(t) ? 100 : name.includes(t) ? 60 : words.every((w) => name.includes(w)) ? 40 : 10) + (e.kind === 'mine' ? 30 : 0)
+      return { ...e, score }
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 12)
+}

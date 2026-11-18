@@ -6,9 +6,11 @@ import { useDemoStore, demoPartner } from './demoStore'
 import { BUDDIES, Buddy } from './buddies'
 import { setBackHandlers } from './motion'
 import ShareSheet from './screens/ShareSheet'
+import WorkoutSheet from './screens/WorkoutSheet'
+import { myWorkouts } from './training'
 
 const DEMO = import.meta.env.MODE === 'demo'
-import { partnerProgress, dailyBudget, dayKey, earned, isBedtime, isBirthday, isWindDown, logicalDayKey, streak } from './calc'
+import { partnerProgress, dailyBudget, dayKey, earned, fmt, isBedtime, isBirthday, isWindDown, logicalDayKey, streak, workoutKcal } from './calc'
 import { useDailyWords } from './quotes'
 import { MorningCard, DayResult, WelcomeBack } from './screens/DailyCards'
 import Today from './screens/Today'
@@ -88,6 +90,8 @@ function Bank({ user }) {
   const [hello, setHello] = useState(true)
   // The morning welcome: first open of the day (unless switched off in Settings), or on request
   const [replay, setReplay] = useState(false)
+  const [plus, setPlus] = useState(false) // the + menu
+  const [working, setWorking] = useState(false) // Log a workout, from +
   const showM = replay || (morning && profile?.morningCard !== false)
   // One time after the share update: show the morning welcome again so the new Share button is seen
   const SHARE_INTRO = `bankcal:intro-share:${user.uid}`
@@ -149,7 +153,7 @@ function Bank({ user }) {
   }
   // Phone Back button: other tabs go back to Today; on Today, a second press closes the app
   setBackHandlers(
-    () => { if (tab !== 'today') { setTab('today'); return true } return false },
+    () => { if (plus) { setPlus(false); return true } if (tab !== 'today') { setTab('today'); return true } return false },
     () => notify('Press Back again to close BankCal'),
   )
   // At bedtime, offer to close the day once (if anything was logged and it isn't closed yet).
@@ -212,9 +216,26 @@ function Bank({ user }) {
         {tab === 'me' && <Me {...ctx} />}
       </main>
 
-      <button className="fab" onClick={() => setAdding(true)} aria-label="Log food">
+      {/* + opens a small menu: spend (food) or deposit (workout) */}
+      {plus && <div className="plus-veil" onClick={() => setPlus(false)} />}
+      {plus && (
+        <div className="plus-menu" role="menu">
+          <button role="menuitem" onClick={() => { setPlus(false); setWorking(true) }}><span>💪</span><b>Log a workout</b><small>Deposit calories</small></button>
+          <button role="menuitem" onClick={() => { setPlus(false); setAdding(true) }}><span>🍽️</span><b>Log food</b><small>Spend calories</small></button>
+        </div>
+      )}
+      <button className={`fab ${plus ? 'open' : ''}`} onClick={() => setPlus((x) => !x)} aria-label={plus ? 'Close menu' : 'Log food or a workout'} aria-expanded={plus}>
         <IconPlus size={30} />
       </button>
+      {working && (
+        <WorkoutSheet profile={profile} mine={myWorkouts(profile, dayLog.workouts ?? [])} onClose={() => setWorking(false)}
+          onKeep={(item) => store.updateProfile({ routine: [...(profile.routine ?? []), item] })}
+          onSave={(w) => {
+            store.setDay(today, { workouts: [...(dayLog.workouts ?? []), { id: Date.now().toString(36), ...w }] })
+            celebrate(`Nice work! +${fmt(workoutKcal(w, profile.weight))} kcal 💪`)
+            setWorking(false)
+          }} />
+      )}
 
       <nav className="tabbar">
         <TabBtn id="today" tab={tab} setTab={setTab} label="Today" Icon={IconToday} />

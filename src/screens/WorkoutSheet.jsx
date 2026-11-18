@@ -2,16 +2,31 @@ import { Children, cloneElement, isValidElement, useState } from 'react'
 import { WORKOUTS, fmt, workoutKcal, workoutMinutes } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
-import { routineWorkout } from '../training'
+import { exerciseIndex, routineWorkout, searchExercises } from '../training'
+import { useMemo } from 'react'
 import { Stepper } from './Routine'
 
 // Pick an exercise, enter amounts, see the calories it earns, deposit.
 // `mine` = your routine and your own exercises, shown first since they're what you usually do.
-export default function WorkoutSheet({ profile, mine = [], start = null, onClose, onSave }) {
+export default function WorkoutSheet({ profile, mine = [], start = null, onClose, onSave, onKeep }) {
   const [type, setType] = useState(null)
   const [own, setOwn] = useState(start) // one of `mine`, being adjusted
   const [it, setIt] = useState(start?.item ?? null)
-  const pickOwn = (m) => { setOwn(m); setIt(m.item) }
+  const pickOwn = (m) => { setOwn(m); setIt(m.item); setKeep(m.kind === 'lib') }
+  // search: yours, the exercise library and activities, like the food search
+  const [q, setQ] = useState('')
+  const [keep, setKeep] = useState(false) // save a library exercise to My routine
+  const index = useMemo(() => exerciseIndex(profile, mine, WORKOUTS), [profile, mine])
+  const found = q.trim() ? searchExercises(q, index) : []
+  const pick = (r) => { if (r.kind === 'act') setType(r.type); else pickOwn(r) }
+  const deposit = (w) => {
+    if (keep && own?.kind === 'lib' && onKeep) {
+      const id = `r${Date.now().toString(36)}`
+      onKeep({ ...it, id })
+      return onSave({ ...w, rid: id }) // counts as today's tick for the new routine item
+    }
+    onSave(w)
+  }
   const ownW = it ? routineWorkout(it) : null
   const ownKcal = ownW ? workoutKcal(ownW, profile.weight) : 0
   const drag = useSheetDrag(onClose)
@@ -47,11 +62,37 @@ export default function WorkoutSheet({ profile, mine = [], start = null, onClose
             </div>
             <p className="earn-line"><b className="pos">+{fmt(ownKcal)} kcal</b> earned<span> · about {Math.round(ownW.min)} min with rests</span></p>
             {own.done && <p className="fine center">Already done once today. This logs it again.</p>}
-            <button className="btn-primary" onClick={() => onSave({ ...ownW, ...(own.done ? { rid: undefined } : {}) })}>Deposit {fmt(ownKcal)} kcal</button>
-            <p className="fine">Change the numbers for today only. To change your usual amounts, use Adjust in My routine on the Train tab.</p>
+            {own.kind === 'lib' && onKeep && (
+              <label className="keep-food"><input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
+                <span>Save to <b>My routine</b>, ready to deposit next time</span></label>
+            )}
+            <button className="btn-primary" onClick={() => deposit({ ...ownW, ...(own.done || own.kind === 'lib' ? { rid: undefined } : {}) })}>Deposit {fmt(ownKcal)} kcal</button>
+            <p className="fine">{own.kind === 'lib' ? 'Set it to what you actually did.' : 'Change the numbers for today only. To change your usual amounts, use Adjust in My routine on the Train tab.'}</p>
           </>
         ) : !def ? (
           <>
+          <label className="field has-clear ws-search">
+            <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search, e.g. squats, cycling, curls…" aria-label="Search exercises" autoComplete="off" enterKeyHint="search" />
+            {q && <button type="button" className="field-clear" aria-label="Clear search" onClick={(e) => { e.preventDefault(); setQ('') }}><IconClose size={18} /></button>}
+          </label>
+          {q.trim() ? (
+            found.length ? (
+              <div className="card mine-list ws-results">
+                {found.map((r) => (
+                  <button key={r.key} className={`mine-row ${r.done ? 'done' : ''}`} onClick={() => pick(r)}>
+                    <span className="w-emoji small">{r.item.emoji}</span>
+                    <span className="ex-main"><b>{r.item.name}</b><small>{r.kind === 'mine' ? (r.done ? 'Yours · done today ✓' : `Yours · ${r.dose}`) : r.kind === 'lib' ? `Sets × reps · ${r.dose}` : `Log ${r.dose}`}</small></span>
+                    {r.kind !== 'act' ? <span className="pos">+{fmt(workoutKcal(routineWorkout(r.item), profile.weight))}</span> : <span className="ws-go">›</span>}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="ws-none">
+                <p>No match for “{q.trim()}”.</p>
+                <button className="btn-soft" onClick={() => setType('custom')}>Log “{q.trim()}” by minutes</button>
+              </div>
+            )
+          ) : (<>
           {mine.length > 0 && (
             <>
               <h3 className="ex-h">Yours</h3>
@@ -75,6 +116,7 @@ export default function WorkoutSheet({ profile, mine = [], start = null, onClose
               </button>
             ))}
           </div>
+          </>)}
           </>
         ) : (
           <>
@@ -89,7 +131,7 @@ export default function WorkoutSheet({ profile, mine = [], start = null, onClose
               <b className="pos">+{fmt(kcal)} kcal</b> earned
               {mins > 0 && <span> · about {mins < 1 ? `${Math.round(mins * 60)} s` : `${Math.round(mins)} min`} of effort</span>}
             </p>
-            <button className="btn-primary" disabled={kcal <= 0 && mins <= 0} onClick={() => onSave({ ...entry, kcal })}>
+            <button className="btn-primary" disabled={kcal <= 0 && mins <= 0} onClick={() => onSave({ ...entry, kcal, ...(type === 'custom' && q.trim() ? { label: q.trim().replace(/^./, (c) => c.toUpperCase()) } : {}) })}>
               {kcal > 0 ? `Deposit ${fmt(kcal)} kcal` : 'Log it'}
             </button>
             <p className="fine">Estimates use your weight ({profile.weight || '—'} kg) and standard exercise intensity values.</p>
