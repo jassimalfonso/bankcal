@@ -1531,3 +1531,7 @@ button.ms:active { transform: scale(0.96); }
 .crash p { color: #6a6a72; margin: 0 0 18px; line-height: 1.45; }
 .crash .btn-primary { background: #45b866; color: #fff; }
 .crash small { display: block; margin-top: 14px; color: #aaa; font-size: 11.5px; word-break: break-word; }
+
+/* "New version ready" */
+.update-pill { position: fixed; z-index: 60; top: calc(env(safe-area-inset-top) + 10px); left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 8px 0 16px; border-radius: 99px; background: var(--ink); color: var(--bg); font-size: 14.5px; font-weight: 750; white-space: nowrap; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22); animation: rc-in 0.45s var(--spring) both; }
+.update-pill b { padding: 6px 12px; border-radius: 99px; background: var(--accent); color: var(--on-accent); font-weight: 900; }

@@ -8,6 +8,8 @@ import { setBackHandlers } from './motion'
 import ShareSheet from './screens/ShareSheet'
 import WorkoutSheet from './screens/WorkoutSheet'
 import Swipeable from './Swipeable'
+import ErrorBoundary from './ErrorBoundary'
+import { applyUpdate, onUpdateReady } from './update'
 import { myWorkouts } from './training'
 
 const DEMO = import.meta.env.MODE === 'demo'
@@ -92,6 +94,8 @@ function Bank({ user }) {
   // The morning welcome: first open of the day (unless switched off in Settings), or on request
   const [replay, setReplay] = useState(false)
   const [plus, setPlus] = useState(false) // the + menu
+  const [newVersion, setNewVersion] = useState(false)
+  useEffect(() => onUpdateReady(setNewVersion), [])
   const [working, setWorking] = useState(false) // Log a workout, from +
   const showM = replay || (morning && profile?.morningCard !== false)
   // One time after the share update: show the morning welcome again so the new Share button is seen
@@ -250,6 +254,7 @@ function Bank({ user }) {
         <IconPlus size={30} />
       </button>
       {working && (
+        <ErrorBoundary onError={() => { setWorking(false); notify('That screen hit a problem and was closed. Please try again.') }}>
         <WorkoutSheet profile={profile} mine={myWorkouts(profile, dayLog.workouts ?? [])} onClose={() => setWorking(false)}
           steps={dayLog.steps} onSteps={(v) => {
             const goal = +profile.stepsGoal || 8000
@@ -267,6 +272,7 @@ function Bank({ user }) {
             setWorking(false)
             setTab('today')
           }} />
+        </ErrorBoundary>
       )}
 
       <nav className="tabbar">
@@ -287,6 +293,9 @@ function Bank({ user }) {
         </div>
       )}
       {msShare && <ShareSheet kind="milestone" title="Share this milestone" file="milestone.png" buddies={[profile.character]} notify={notify} data={{ emoji: msShare.emoji, label: msShare.label }} onClose={() => setMsShare(null)} />}
+      {newVersion && !adding && !working && (
+        <button className="update-pill" onClick={applyUpdate}>✨ New version ready <b>Update</b></button>
+      )}
       {receiptMsg && (
         <Swipeable className={`receipt ${receiptMsg.kind}`} role="status" key={receiptMsg.key} onGone={() => setReceiptMsg(null)}>
           <span className="rc-icon" aria-hidden="true">{{ spend: '🍽️', deposit: '💪', steps: '👣', edit: '✏️' }[receiptMsg.kind]}</span>
@@ -308,6 +317,7 @@ function Bank({ user }) {
       {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true)} today={today} onClose={() => setResult(false)} />}
 
       {adding && (
+        <ErrorBoundary onError={() => { setAdding(false); notify('That screen hit a problem and was closed. Please try again.') }}>
         <AddSheet
           {...ctx}
           editing={adding === true ? null : adding}
@@ -343,6 +353,7 @@ function Bank({ user }) {
             setTab('today')
           }}
         />
+        </ErrorBoundary>
       )}
     </div>
   )

@@ -2,6 +2,12 @@
 import { auth } from './firebase'
 
 export async function askFood(body) {
+  if (import.meta.env.MODE === 'demo') {
+    await new Promise((ok) => setTimeout(ok, 600))
+    return body.mode === 'photo'
+      ? { name: 'Demo plate', kcal: 480, items: [{ name: 'Rice', portion: '1 cup', kcal: 205 }], confidence: 'medium' }
+      : { results: [{ name: `${body.q} (demo online result)`, portion: '1 serving', kcal: 321 }, { name: `${body.q}, large`, portion: { amount: 1, unit: 'large bag' }, kcal: '640 kcal' }] }
+  }
   if (!navigator.onLine) throw new Error('You’re offline. Type the calories for now.')
   const user = auth.currentUser
   if (!user) throw new Error('Sign in to use AI.')

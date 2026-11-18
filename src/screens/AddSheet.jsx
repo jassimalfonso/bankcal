@@ -221,6 +221,12 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
         </label>
 
         {(suggestions.length > 0 || (name.trim().length >= 2 && !picked)) && (() => {
+          const row = (f, key, note) => (
+            <button key={key} className="suggest-row" onClick={() => choose(f)}>
+              <span><b><Hl text={f.name} q={name} /></b><small>{note ? `${f.portion} · ${note}` : f.portion}</small></span>
+              <span className="suggest-kcal">{fmt(f.kcal)}<i>kcal</i></span>
+            </button>
+          )
           const own = suggestions.filter((f) => f.portion === 'my food' || f.portion === 'your usual')
           // nothing in the built-in list matches every word: the online answer is likely the right one,
           // so it goes first and only a few loose matches follow
@@ -232,12 +238,6 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
               {ai.busy && <div className="sg-skel" aria-label="Checking online"><i /><i /></div>}
               {ai.results?.map((f) => row(f, 'ai' + f.name))}
             </>
-          )
-          const row = (f, key, note) => (
-            <button key={key} className="suggest-row" onClick={() => choose(f)}>
-              <span><b><Hl text={f.name} q={name} /></b><small>{note ? `${f.portion} · ${note}` : f.portion}</small></span>
-              <span className="suggest-kcal">{fmt(f.kcal)}<i>kcal</i></span>
-            </button>
           )
           return (
             <div className="card suggest">
