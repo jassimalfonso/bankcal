@@ -3,6 +3,7 @@ import { maintainStatus, targetCheck, KCAL_PER_KG, ageOf, DEFAULT_BED, DEFAULT_W
 import Character from '../Character'
 import { HabitPicker } from './Habits'
 import { BUILD, VERSION } from '../update'
+import { lastLookup } from '../ai'
 import { PartnerSettings } from './Partner'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
@@ -251,6 +252,10 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
       <button className="btn-plain" onClick={logOut}>Sign out</button>
       <p className="fine disclaimer">BankCal gives estimates from standard methods: the Mifflin-St Jeor equation for calories burned at rest, the Compendium of Physical Activities for exercise, about 7,700 kcal per kg of body fat, and WHO BMI categories. Real results vary from person to person. It isn’t medical advice, so check with a doctor before big changes, especially if you’re pregnant, under 18, or managing a health condition.</p>
       <p className="foot">BankCal version {VERSION} ({BUILD}). Updates itself. Synced to your Google account and works offline.</p>
+      {(() => {
+        const l = lastLookup()
+        return l && <p className="foot">Last online {l.kind === 'photo' ? 'photo' : 'food'} lookup: {(l.total / 1000).toFixed(1)} s, of which the AI took {(l.ai / 1000).toFixed(1)} s ({l.model.replace('gemini-', '')}).</p>
+      })()}
     </>
   )
 }

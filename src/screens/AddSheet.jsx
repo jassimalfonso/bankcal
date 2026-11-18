@@ -2,14 +2,23 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { compressPhoto } from '../store'
 import { fmt, mealFor } from '../calc'
 import { searchFoods } from '../foods'
-import { askFood, cleanFoods } from '../ai'
+import { askFood, cleanFoods, warmFood } from '../ai'
 import { matchFoods } from '../foods'
 import { IconCamera, IconClose } from '../icons'
 import { useEscape } from '../motion'
 import { useSheetDrag } from '../motion'
 
-// online answers, remembered while the app stays open
+// Online answers are kept on this phone for two weeks, so a food looked up once comes back instantly.
+const CACHE_KEY = 'bankcal:online-foods'
 const onlineCache = new Map()
+try {
+  for (const [k, v, at] of JSON.parse(localStorage.getItem(CACHE_KEY) || '[]')) if (Date.now() - at < 14 * 864e5) onlineCache.set(k, Object.assign(v, { at }))
+} catch { /* start empty */ }
+function keepOnline(k, found) {
+  onlineCache.set(k, Object.assign(found, { at: Date.now() }))
+  if (!found.length) return // "nothing found" is only remembered until the app is closed
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify([...onlineCache].filter(([, v]) => v.length).sort((a, b) => b[1].at - a[1].at).slice(0, 80).map(([key, v]) => [key, [...v], v.at]))) } catch { /* full: fine */ }
+}
 
 export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemove, editing, today, profile, updateProfile }) {
   const myFoods = profile?.myFoods ?? []
@@ -37,6 +46,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
   useEscape(onClose)
   const [meal, setMeal] = useState(editing?.meal ?? mealFor())
   const inputRef = useRef(null)
+  useEffect(() => { warmFood() }, []) // wake the online search while the person is still typing
 
   // Keep the sheet inside the part of the screen the keyboard leaves visible (iPhone),
   // so the results under the search box are never hidden behind the keyboard.
@@ -116,7 +126,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
     try {
       const j = await askFood({ mode: 'search', q })
       const found = cleanFoods(j.results)
-      onlineCache.set(k, found)
+      keepOnline(k, found)
       if (asked.current !== k) return // they kept typing; a newer search is on its way
       setAi({ busy: false, err: '', results: found, items: null, confidence: '' })
     } catch (e) {
@@ -135,7 +145,8 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
     if (picked || photo || q.length < 3 || !navigator.onLine || asked.current === q.toLowerCase()) return
     const strong = matchFoods(q).filter((m) => m.strong).length + suggestions.filter((sg) => sg.portion === 'my food' || sg.portion === 'your usual').length
     if (strong >= 3) return
-    const id = setTimeout(() => searchAi(true), 500)
+    if (onlineCache.has(q.toLowerCase())) { searchAi(true); return } // already looked up: show it now
+    const id = setTimeout(() => searchAi(true), 700) // long enough that slow typing doesn't fire a search per letter
     return () => clearTimeout(id)
   }, [name, picked, photo]) // eslint-disable-line react-hooks/exhaustive-deps
 

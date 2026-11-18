@@ -59,19 +59,27 @@ async function ask(key, model, parts, extra, signal) {
   const text = j.candidates?.[0]?.content?.parts?.filter((p) => !p.thought).map((p) => p.text ?? '').join('') ?? ''
   let out = null
   try { out = JSON.parse(text.replace(/^```(?:json)?|```$/g, '').trim()) } catch { /* not JSON */ }
-  // an empty or unreadable answer counts as a miss, so the next model gets a go
   const useful = out && ((Array.isArray(out.results) && out.results.some((x) => x?.name && Number.isFinite(Number(x.kcal)))) || Number.isFinite(Number(out.kcal)))
-  return useful ? { out } : { overloaded: true }
+  if (useful) return { out }
+  // a readable answer with nothing in it ("no such food"): one more model gets a go, then it's accepted
+  if (out && Array.isArray(out.results)) return { empty: true, out }
+  return { overloaded: true } // unreadable: retry
 }
 
-async function callGemini(key, parts, kind) {
+// `hint` = the model and thinking setting that worked last time on this phone. The function
+// goes to sleep between uses (there are only a few users), so without the hint every search
+// would spend a second or two re-learning which setting the model accepts.
+async function callGemini(key, parts, kind, hint) {
   const tried = new Set()
   let busy = false
+  let empties = 0
+  let emptyOut = null
+  if (!good[kind] && hint && /^gemini-[\w.-]+$/.test(hint.model || '') && THINKING[hint.x]) good[kind] = { model: hint.model, extra: THINKING[hint.x] }
   const signal = AbortSignal.timeout(kind === 'photo' ? 45000 : 12000)
   const attempt = async (model, known) => {
     if (!model || tried.has(model)) return null
     tried.add(model)
-    for (const extra of known ? [known] : THINKING) {
+    for (const extra of known ? [known, ...THINKING.filter((t) => t !== known)] : THINKING) {
       let r = await ask(key, model, parts, extra, signal)
       if (r.overloaded) { await new Promise((ok) => setTimeout(ok, 700)); r = await ask(key, model, parts, extra, signal) } // one quick retry
       if (r.overloaded) break // try another model
@@ -79,34 +87,39 @@ async function callGemini(key, parts, kind) {
       if (r.busy) { busy = true; return null }
       if (r.gone) break
       good[kind] = { model, extra }
+      if (r.empty) { empties++; emptyOut = r.out; return null }
       return r.out
     }
     if (good[kind]?.model === model) good[kind] = null
     return null
   }
   try {
-    // Photos: start the full model; if it hasn't answered in 8 s, start the quicker "lite"
-    // model too, and use whichever answers first.
-    if (kind === 'photo') {
+    // Start the preferred model. If it hasn't answered after a few seconds, start the other
+    // one too and use whichever answers first. Typed searches prefer the quick "lite" model
+    // (the full one joins after 3 s); photos prefer the full model (lite joins after 8 s).
+    const lite = 'gemini-flash-lite-latest'
+    const full = 'gemini-flash-latest'
+    const first = good[kind]?.model ?? OVERRIDE[0] ?? (kind === 'photo' ? full : lite)
+    const second = first === full ? lite : full
+    const known = good[kind]?.model === first ? good[kind].extra : undefined
+    const out = await new Promise((resolve) => {
       let done = false
-      const first = good.photo?.model ?? 'gemini-flash-latest'
-      const lite = 'gemini-flash-lite-latest'
-      const out = await new Promise((resolve) => {
-        let left = 2
-        const fin = (o) => { if (o && !done) { done = true; resolve(o) } else if (--left === 0 && !done) resolve(null) }
-        attempt(first, good.photo?.model === first ? good.photo.extra : undefined).then(fin, () => fin(null))
-        setTimeout(() => { if (done) return fin(null); attempt(lite).then(fin, () => fin(null)) }, 8000)
-      })
-      done = true
-      if (out) return out
-    }
-    if (good[kind]) { const out = await attempt(good[kind].model, good[kind].extra); if (out) return out }
-    // typed searches use the lighter, faster models first; photos use the full model first
-    const alias = kind === 'photo' ? ['gemini-flash-latest'] : ['gemini-flash-lite-latest', 'gemini-flash-latest']
-    for (const m of [...OVERRIDE, ...alias]) { const out = await attempt(m); if (out) return out }
+      let left = 2
+      let started = false
+      let t = null
+      const fin = (o) => { if (done) return; if (o) { done = true; resolve(o) } else if (--left === 0) { done = true; resolve(null) } }
+      const startSecond = () => { if (started) return; started = true; clearTimeout(t); if (!done) attempt(second).then(fin, () => fin(null)) }
+      t = setTimeout(startSecond, kind === 'photo' ? 8000 : 3000)
+      // if the first one fails before the timer, the second starts straight away
+      attempt(first, known).then((o) => { if (!o) startSecond(); fin(o) }, () => { startSecond(); fin(null) })
+    })
+    if (out) return out
+    if (emptyOut && tried.has(first) && tried.has(second)) return emptyOut // two models agree there's nothing
+    for (const m of [...OVERRIDE, lite, full]) { const o = await attempt(m); if (o) return o }
+    if (emptyOut) return emptyOut
     const found = await discover(key)
     const ordered = kind === 'photo' ? found : [...found.filter((m) => /lite/.test(m)), ...found.filter((m) => !/lite/.test(m))]
-    for (const m of ordered.slice(0, 6)) { const out = await attempt(m); if (out) return out }
+    for (const m of ordered.slice(0, 6)) { const o = await attempt(m); if (o) return o; if (emptyOut) return emptyOut }
   } catch (e) {
     if (e.name === 'TimeoutError' || e.name === 'AbortError') throw Object.assign(new Error('The online search is taking too long. Try again, or type the calories.'), { status: 504 })
     throw e
@@ -128,21 +141,30 @@ export default async function handler(req, res) {
   if (!key) return res.status(500).json({ error: 'GEMINI_API_KEY is not set on the server.' })
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {}
+  const t0 = Date.now()
+  // which model answered and how long it took, so the phone can skip the warm-up next time
+  const via = (kind) => ({ model: good[kind]?.model ?? '', x: Math.max(0, THINKING.indexOf(good[kind]?.extra)), ms: Date.now() - t0 })
   try {
+    // "warm": the app calls this when the food sheet opens, so the function is awake
+    // (and its sign-in keys loaded) by the time a search is typed
+    if (body.mode === 'warm') {
+      await Promise.race([discover(key).catch(() => {}), new Promise((ok) => setTimeout(ok, 1500))])
+      return res.status(204).end()
+    }
     if (body.mode === 'photo') {
       const m = /^data:(image\/\w+);base64,(.+)$/.exec(body.image || '')
       if (!m) return res.status(400).json({ error: 'No photo received.' })
-      const out = await callGemini(key, [{ text: PROMPTS.photo }, { inline_data: { mime_type: m[1], data: m[2] } }], 'photo')
-      return res.status(200).json(out)
+      const out = await callGemini(key, [{ text: PROMPTS.photo }, { inline_data: { mime_type: m[1], data: m[2] } }], 'photo', body.hint)
+      return res.status(200).json({ ...out, via: via('photo') })
     }
     if (body.mode === 'search') {
       const q = String(body.q || '').slice(0, 80).trim()
       if (q.length < 2) return res.status(400).json({ error: 'Type a little more.' })
-      const raw = await callGemini(key, [{ text: PROMPTS.search(q) }], 'search')
+      const raw = await callGemini(key, [{ text: PROMPTS.search(q) }], 'search', body.hint)
       const txt = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v) : '').trim()
       const out = { results: (Array.isArray(raw?.results) ? raw.results : [])
         .map((x) => ({ name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: Math.round(Number(x?.kcal)) }))
-        .filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000).slice(0, 6) }
+        .filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000).slice(0, 6), via: via('search') }
       res.setHeader('Cache-Control', 'private, max-age=3600')
       return res.status(200).json(out)
     }
