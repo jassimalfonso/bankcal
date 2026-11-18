@@ -52,10 +52,16 @@ async function ask(key, model, parts, extra, signal) {
   if (r.status === 404) return { gone: true } // retired model: try the next one
   if (r.status === 400) return { rejected: true } // this model doesn't accept that setting
   if (r.status === 429) return { busy: true }
-  if (!r.ok) throw Object.assign(new Error('The online food search had a problem. Try again in a moment, or type the calories.'), { status: 502 })
-  const j = await r.json()
-  const text = j.candidates?.[0]?.content?.parts?.filter((p) => !p.thought).map((p) => p.text ?? '').join('') ?? '{}'
-  try { return { out: JSON.parse(text.replace(/^```(?:json)?|```$/g, '').trim()) } } catch { return { out: {} } }
+  if (r.status >= 500) return { overloaded: true } // Google's side is busy: retry, then try another model
+  if (r.status === 401 || r.status === 403) throw Object.assign(new Error('Online search isn’t set up correctly on the server.'), { status: 502 })
+  if (!r.ok) return { overloaded: true }
+  const j = await r.json().catch(() => ({}))
+  const text = j.candidates?.[0]?.content?.parts?.filter((p) => !p.thought).map((p) => p.text ?? '').join('') ?? ''
+  let out = null
+  try { out = JSON.parse(text.replace(/^```(?:json)?|```$/g, '').trim()) } catch { /* not JSON */ }
+  // an empty or unreadable answer counts as a miss, so the next model gets a go
+  const useful = out && ((Array.isArray(out.results) && out.results.some((x) => x?.name && +x.kcal >= 0)) || 'kcal' in out)
+  return useful ? { out } : { overloaded: true }
 }
 
 async function callGemini(key, parts, kind) {
@@ -66,7 +72,9 @@ async function callGemini(key, parts, kind) {
     if (!model || tried.has(model)) return null
     tried.add(model)
     for (const extra of known ? [known] : THINKING) {
-      const r = await ask(key, model, parts, extra, signal)
+      let r = await ask(key, model, parts, extra, signal)
+      if (r.overloaded) { await new Promise((ok) => setTimeout(ok, 700)); r = await ask(key, model, parts, extra, signal) } // one quick retry
+      if (r.overloaded) break // try another model
       if (r.rejected) continue
       if (r.busy) { busy = true; return null }
       if (r.gone) break

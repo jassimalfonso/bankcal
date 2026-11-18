@@ -106,7 +106,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
   const portion = (m) => { setMult(m); if (base) setKcal(String(Math.round(base.kcal * m))) }
 
   const asked = useRef('')
-  async function searchAi(auto = false) {
+  async function searchAi(auto = false, retry = true) {
     const q = name.trim()
     const k = q.toLowerCase()
     asked.current = k
@@ -120,6 +120,8 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
       setAi({ busy: false, err: '', results: j.results ?? [], items: null, confidence: '' })
     } catch (e) {
       if (asked.current !== k) return
+      // one quiet retry first (the online service is sometimes briefly busy), unless the free quota is used up
+      if (retry && !/used up|offline|sign in/i.test(e.message || '')) { await new Promise((ok) => setTimeout(ok, 1500)); if (asked.current === k) return searchAi(auto, false); return }
       // an automatic search that fails stays quiet; the button is still there to try again
       setAi({ busy: false, err: auto ? '' : e.message, results: null, items: null, confidence: '' })
     }
@@ -216,7 +218,17 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
 
         {(suggestions.length > 0 || (name.trim().length >= 2 && !picked)) && (() => {
           const own = suggestions.filter((f) => f.portion === 'my food' || f.portion === 'your usual')
-          const rest = suggestions.filter((f) => !own.includes(f))
+          // nothing in the built-in list matches every word: the online answer is likely the right one,
+          // so it goes first and only a few loose matches follow
+          const loose = !picked && name.trim().length >= 3 && !matchFoods(name).some((m) => m.strong)
+          const rest = suggestions.filter((f) => !own.includes(f)).slice(0, loose ? 4 : 8)
+          const online = (ai.busy || ai.results?.length > 0) && (
+            <>
+              <p className="sg-h">Online · AI estimate</p>
+              {ai.busy && <div className="sg-skel" aria-label="Checking online"><i /><i /></div>}
+              {ai.results?.map((f) => row(f, 'ai' + f.name))}
+            </>
+          )
           const row = (f, key, note) => (
             <button key={key} className="suggest-row" onClick={() => choose(f)}>
               <span><b><Hl text={f.name} q={name} /></b><small>{note ? `${f.portion} · ${note}` : f.portion}</small></span>
@@ -225,13 +237,12 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
           )
           return (
             <div className="card suggest">
+              {loose && online}
               {own.length > 0 && <p className="sg-h">Yours</p>}
               {own.map((f) => row(f, 'm' + f.name))}
-              {rest.length > 0 && own.length > 0 && <p className="sg-h">More</p>}
+              {rest.length > 0 && (own.length > 0 || loose) && <p className="sg-h">{loose ? 'Close matches' : 'More'}</p>}
               {rest.map((f) => row(f, f.name))}
-              {(ai.busy || ai.results?.length > 0) && <p className="sg-h">Online · AI estimate</p>}
-              {ai.busy && <div className="sg-skel" aria-label="Checking online"><i /><i /></div>}
-              {ai.results?.map((f) => row(f, 'ai' + f.name))}
+              {!loose && online}
               {!ai.results && !ai.busy && (
                 <button className="suggest-ai" onClick={() => searchAi(false)}>
                   {suggestions.length ? `Not it? Search online for “${name.trim()}”` : `Search online for “${name.trim()}”`}

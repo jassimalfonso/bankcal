@@ -119,7 +119,7 @@ function close(a, b) {
   return edits + (a.length - i) + (b.length - j) <= 1
 }
 
-const STOP = new Set(['with', 'and', 'the', 'of', 'in', 'a', 'an', 'on', 'for', 'milk', 'coffee', 'size'])
+const STOP = new Set(['with', 'and', 'the', 'of', 'in', 'a', 'an', 'on', 'for', 'milk', 'coffee', 'size', 'uae', 'dubai', 'abu', 'dhabi', 'sharjah', 'ksa', 'gcc', 'my', 'our', 'from', 'at', 'version', 'menu', 'restaurant'])
 // common ways of saying the same thing, applied to what was typed
 const REWRITE = [
   [/\b(low ?fat|semi ?skim(med)?|2 ?%)\b/g, 'semiskim'], [/\b(non ?fat|fat ?free|skim(med)?|skinny milk|0 ?%)\b/g, 'skimmed'], [/\bdouble ?shots?\b/g, 'doubleshot'], [/\bfrapp?(e|é)?s?\b/g, 'frappuccino'],
@@ -151,6 +151,11 @@ export function matchFoods(q, limit = 8) {
       const strong = hits === use.length
       const partial = hits >= 2 || (hits === 1 && use.some((w) => w.length > 3 && hit(w)))
       let score = plain.startsWith(phrase) ? 1000 : plain.includes(phrase) ? 900 : strong ? 500 + seen * 10 + hits : partial ? seen * 10 + hits : 0
+      // a loose match on the last word typed (usually the food: "mcdonalds salad") beats one on the brand
+      if (score && !strong && use.length > 1 && hit(use[use.length - 1])) {
+        const w = use[use.length - 1]
+        score += (` ${plain}`).includes(` ${w}`) ? 5 : 2 // whole word beats inside a word
+      }
       if (score) {
         // whole words beat parts of words ("adobo" → Chicken adobo before Adobong kangkong),
         // and an exact name wins outright ("banana" → Banana before Banana cue)
