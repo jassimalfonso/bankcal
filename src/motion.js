@@ -79,6 +79,8 @@ if (typeof window !== 'undefined') {
   addEventListener('pointerdown', arm, { capture: true, passive: true })
   addEventListener('popstate', () => {
     armed = false
+    // (on Android with CloseWatcher, Back closes sheets before this runs; this covers
+    // a computer's Back button and older phones)
     const top = backStack[backStack.length - 1]
     if (top) { top.current?.(); arm(); return }
     if (backRoot?.()) { arm(); return }
@@ -95,9 +97,29 @@ export function useEscape(onClose) {
   ref.current = onClose
   useEffect(() => {
     backStack.push(ref)
-    const h = (e) => { if (e.key === 'Escape' && backStack[backStack.length - 1] === ref) ref.current?.() }
+    // Newer Chrome (Android) can close a sheet with Back without a history step, so there's
+    // no page-turn animation (that was the jitter). Older browsers use the history guard above.
+    let watcher = null
+    let alive = true
+    const watch = () => {
+      if (typeof window === 'undefined' || !('CloseWatcher' in window)) return false
+      try {
+        watcher = new window.CloseWatcher()
+        watcher.onclose = () => {
+          watcher = null
+          ref.current?.()
+          // still open (e.g. a sheet that went back one step): keep listening
+          setTimeout(() => { if (alive && !watcher) watch() }, 0)
+        }
+        return true
+      } catch { return false }
+    }
+    const usingWatcher = watch()
+    const h = (e) => { if (!usingWatcher && e.key === 'Escape' && backStack[backStack.length - 1] === ref) ref.current?.() }
     addEventListener('keydown', h)
     return () => {
+      alive = false
+      watcher?.destroy()
       removeEventListener('keydown', h)
       const i = backStack.indexOf(ref)
       if (i >= 0) backStack.splice(i, 1)

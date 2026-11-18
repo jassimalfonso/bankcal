@@ -119,7 +119,7 @@ function Bank({ user }) {
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [])
-  const closeMorning = () => { try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } leave(() => { setHello(false); setMorning(false); setReplay(false); setShareNew(false) }) }
+  const closeMorning = () => { try { localStorage.setItem(seenKey, '1') } catch { /* ignore */ } leave(() => { setHello(false); setMorning(false); setReplay(false); setShareNew(false); setTab('today'); scrollTo(0, 0) }) }
   // Remember each day's base budget, so later weight or plan changes don't rewrite past days
   useEffect(() => {
     if (!profile?.onboarded) return
@@ -152,6 +152,21 @@ function Bank({ user }) {
   // swipe or tap a pop-up away: the next one (if any) comes straight after
   const dismissCheer = () => { clearTimeout(cheerTimer.current); cheerQueue.current.shift(); showNext.current?.() }
   const dismissToast = () => { clearTimeout(toastTimer.current); setToast(null) }
+  // A clear confirmation every time something is logged: a banner from the top with
+  // what happened and the new balance; the new line in the list flashes too.
+  const [receiptMsg, setReceiptMsg] = useState(null)
+  const [fresh, setFresh] = useState(null) // id of the line that was just added or changed
+  const receiptTimer = useRef(null)
+  const receipt = ({ kind, what, kcal, id, undo }) => {
+    clearTimeout(receiptTimer.current)
+    const left0 = budgetRef.current
+    const left = left0 == null ? null : kind === 'spend' ? left0 - kcal : left0 + kcal
+    setReceiptMsg({ kind, what, kcal, left, undo, key: Date.now() })
+    receiptTimer.current = setTimeout(() => setReceiptMsg(null), 4500)
+    if (id) { setFresh(id); setTimeout(() => setFresh((f) => (f === id ? null : f)), 2200) }
+    try { navigator.vibrate?.(kind === 'spend' ? 12 : [10, 40, 10]) } catch { /* not allowed yet */ }
+  }
+  const budgetRef = useRef(null)
   const notify = (text, undo) => {
     clearTimeout(toastTimer.current)
     setToast({ text, undo, key: Date.now() })
@@ -182,6 +197,7 @@ function Bank({ user }) {
   const budget = base != null ? base + earn.total : null // activity is a deposit into today's budget
   const budgetFor = (key) => { const b = key === today ? base : (pf.days?.[key]?.base ?? base); return b != null ? b + earned(pf.days?.[key], pf.weight).total : null }
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
+  budgetRef.current = budget != null ? budget - spent : null
   const closed = !!dayLog.closed
   const streakDays = streak(entries, budgetFor, today, closed)
   const yKey = (() => { const [y, m, d] = today.split('-').map(Number); return dayKey(new Date(y, m - 1, d - 1)) })()
@@ -208,7 +224,7 @@ function Bank({ user }) {
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const ctx = { ...store, partner, notify, celebrate, focus, goTab: setTab, editEntry: (e) => setAdding(e), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setReplay(true), goSetup: (section) => {
+  const ctx = { ...store, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setReplay(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }
@@ -239,14 +255,17 @@ function Bank({ user }) {
             const goal = +profile.stepsGoal || 8000
             store.setDay(today, { steps: v })
             if (v >= goal && !((+dayLog.steps || 0) >= goal)) celebrate(`${fmt(goal)} steps reached! 👟`)
-            else notify(`Steps saved: ${fmt(v)}`)
+            else receipt({ kind: 'steps', what: `${fmt(v)} steps today`, kcal: 0 })
             setWorking(false)
           }}
           onKeep={(item) => store.updateProfile({ routine: [...(profile.routine ?? []), item] })}
           onSave={(w) => {
-            store.setDay(today, { workouts: [...(dayLog.workouts ?? []), { id: Date.now().toString(36), ...w }] })
-            celebrate(`Nice work! +${fmt(workoutKcal(w, profile.weight))} kcal 💪`)
+            const id = Date.now().toString(36)
+            const before = dayLog.workouts ?? []
+            store.setDay(today, { workouts: [...before, { id, ...w }] })
+            receipt({ kind: 'deposit', what: w.label || 'Workout', kcal: Math.round(workoutKcal(w, profile.weight)), id, undo: () => store.setDay(today, { workouts: before }) })
             setWorking(false)
+            setTab('today')
           }} />
       )}
 
@@ -268,6 +287,16 @@ function Bank({ user }) {
         </div>
       )}
       {msShare && <ShareSheet kind="milestone" title="Share this milestone" file="milestone.png" buddies={[profile.character]} notify={notify} data={{ emoji: msShare.emoji, label: msShare.label }} onClose={() => setMsShare(null)} />}
+      {receiptMsg && (
+        <Swipeable className={`receipt ${receiptMsg.kind}`} role="status" key={receiptMsg.key} onGone={() => setReceiptMsg(null)}>
+          <span className="rc-icon" aria-hidden="true">{{ spend: '🍽️', deposit: '💪', steps: '👣', edit: '✏️' }[receiptMsg.kind]}</span>
+          <span className="rc-text">
+            <b>{receiptMsg.kind === 'spend' ? `Spent ${fmt(receiptMsg.kcal)} kcal` : receiptMsg.kind === 'deposit' ? `Deposited +${fmt(receiptMsg.kcal)} kcal` : receiptMsg.kind === 'steps' ? 'Steps saved' : 'Changes saved'}</b>
+            <small>{receiptMsg.what}{receiptMsg.left != null && receiptMsg.kind !== 'edit' && receiptMsg.kind !== 'steps' ? ` · ${fmt(receiptMsg.left)} kcal left` : ''}</small>
+          </span>
+          {receiptMsg.undo && <button onClick={() => { receiptMsg.undo(); setReceiptMsg(null) }}>Undo</button>}
+        </Swipeable>
+      )}
       {toast && !cheer && (
         <Swipeable className="toast" role="status" key={toast.key} onGone={dismissToast}>
           <span>{toast.text}</span>
@@ -292,7 +321,7 @@ function Bank({ user }) {
             if (adding !== true) {
               const old = adding
               store.updateEntry(old.id, e)
-              notify(`Updated ${e.name}`, () => store.updateEntry(old.id, { name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo ?? null }))
+              receipt({ kind: 'edit', what: e.name, kcal: 0, id: old.id, undo: () => store.updateEntry(old.id, { name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo ?? null }) })
               setAdding(false)
               return
             }
@@ -303,15 +332,13 @@ function Bank({ user }) {
             if (same) {
               const n = q(same.name) + 1
               store.updateEntry(same.id, { name: `${base(same.name)} ×${n}`, kcal: same.kcal + e.kcal })
-              navigator.vibrate?.(12)
-              notify(`${base(same.name)} ×${n}: +${e.kcal.toLocaleString('en-US')} kcal`, () => store.updateEntry(same.id, { name: same.name, kcal: same.kcal }))
+              receipt({ kind: 'spend', what: `${base(same.name)} ×${n}`, kcal: e.kcal, id: same.id, undo: () => store.updateEntry(same.id, { name: same.name, kcal: same.kcal }) })
               setAdding(false)
               setTab('today')
               return
             }
             const id = store.addEntry({ ...e, day: today })
-            navigator.vibrate?.(12)
-            notify(`Spent ${e.kcal.toLocaleString('en-US')} kcal on ${e.name}`, () => store.removeEntry(id))
+            receipt({ kind: 'spend', what: e.name, kcal: e.kcal, id, undo: () => store.removeEntry(id) })
             setAdding(false)
             setTab('today')
           }}

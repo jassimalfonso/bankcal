@@ -102,7 +102,7 @@ export default function Today(props) {
           </div>
         ) : (
           <>
-            <div className="hero-num">
+            <div className="hero-num" key={left} data-bump="1">
               <b>{fmt(shownLeft ?? 0)}</b>
               <span>{over ? 'kcal over' : 'kcal left'}</span>
             </div>
@@ -155,7 +155,7 @@ export default function Today(props) {
               </div>
             ) : (
               <ul className="card list">
-                {todays.map((e) => <Row key={e.id} e={e} onEdit={() => props.editEntry?.(e)} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo })) }} />)}
+                {todays.map((e) => <Row key={e.id} e={e} fresh={props.fresh === e.id} onEdit={() => props.editEntry?.(e)} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo })) }} />)}
               </ul>
             )}
           </section>
@@ -168,13 +168,13 @@ export default function Today(props) {
   )
 }
 
-export function Row({ e, onDelete, onEdit }) {
+export function Row({ e, onDelete, onEdit, fresh }) {
   const [open, setOpen] = useState(false)
   const { dx, setDx, handlers } = useSwipe(() => onDelete?.())
   const time = new Date(e.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   const shift = onDelete ? (dx || (open ? -84 : 0)) : 0
   return (
-    <li className="row-wrap">
+    <li className={`row-wrap ${fresh ? 'fresh' : ''}`}>
       {onDelete && <button className="row-del-bg" onClick={() => onDelete()} aria-label={`Remove ${e.name}`}>Remove</button>}
       <div
         className="row"

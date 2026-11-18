@@ -20,6 +20,8 @@ export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  // a field left empty (undefined) must never make a whole save fail
+  ignoreUndefinedProperties: true,
 })
 
 // Phones (and the installed home-screen app) use a full-page redirect;

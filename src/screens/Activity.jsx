@@ -6,7 +6,7 @@ import { workoutKcal as kcalOf } from '../calc'
 
 // Today's "deposits": steps and treadmill time earn calories back into the budget.
 // Values are typed in (a web app can't read the phone's step counter) and saved on blur.
-export default function Activity({ profile, dayLog, earn, today, setDay, updateProfile, celebrate }) {
+export default function Activity({ profile, dayLog, earn, today, setDay, updateProfile, celebrate, receipt, fresh }) {
   const stepsGoal = +profile.stepsGoal || 8000
   const treadGoal = +profile.treadGoalMin || 0
   const steps = +dayLog.steps || 0
@@ -16,11 +16,14 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
   const [adding, setAdding] = useState(false)
   // Collapsed by default so mornings feel light; remembers your choice
   const [open, setOpen] = useState(() => { try { return localStorage.getItem('bankcal:deposits') === 'open' } catch { return false } })
+  // a workout was just logged: open the card so its line can be seen
+  useEffect(() => { if (fresh && (dayLog.workouts ?? []).some((w) => w.id === fresh)) setOpen(true) }, [fresh]) // eslint-disable-line react-hooks/exhaustive-deps
   const toggle = () => setOpen((o) => { try { localStorage.setItem('bankcal:deposits', o ? 'closed' : 'open') } catch { /* ignore */ } return !o })
   const saveWorkout = (w) => {
     const id = Date.now().toString(36)
     setDay(today, { workouts: [...workouts, { id, ...w }] })
-    celebrate?.(`Nice work! +${fmt(workoutKcal(w, profile.weight))} kcal 💪`)
+    if (receipt) receipt({ kind: 'deposit', what: w.label || 'Workout', kcal: Math.round(workoutKcal(w, profile.weight)), id, undo: () => setDay(today, { workouts }) })
+    else celebrate?.(`Nice work! +${fmt(workoutKcal(w, profile.weight))} kcal 💪`)
     setAdding(false)
   }
   const mine = myWorkouts(profile, workouts)
@@ -64,7 +67,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
         {workouts.map((w) => {
           const def = WORKOUTS.find((x) => x.id === w.type)
           return (
-            <div className="act-row" key={w.id}>
+            <div className={`act-row ${fresh === w.id ? 'fresh' : ''}`} key={w.id}>
               <span className="w-emoji small">{def?.emoji}</span>
               <div className="act-head"><b>{w.label ?? def?.label}</b><small>{describeWorkout(w)}</small></div>
               <button className="w-del" onClick={() => removeWorkout(w.id)} aria-label={`Remove ${def?.label}`}>×</button>

@@ -79,7 +79,9 @@ export function useStore(user) {
   // Per-day log (steps, treadmill, weight) kept in the profile doc as days.{YYYY-MM-DD}.
   const setDay = useCallback((key, patch) => {
     setProfile((p) => ({ ...p, days: { ...(p.days ?? {}), [key]: { ...(p.days?.[key] ?? {}), ...patch } } }))
-    setDoc(doc(db, 'users', uid), { days: { [key]: patch } }, { merge: true })
+    // drop empty (undefined) fields first: the database refuses them
+    const clean = JSON.parse(JSON.stringify(patch))
+    setDoc(doc(db, 'users', uid), { days: { [key]: clean } }, { merge: true }).catch((e) => console.error('Couldn’t save the day', e))
   }, [uid])
 
   const addEntry = useCallback((e) => {
