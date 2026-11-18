@@ -60,7 +60,7 @@ async function ask(key, model, parts, extra, signal) {
   let out = null
   try { out = JSON.parse(text.replace(/^```(?:json)?|```$/g, '').trim()) } catch { /* not JSON */ }
   // an empty or unreadable answer counts as a miss, so the next model gets a go
-  const useful = out && ((Array.isArray(out.results) && out.results.some((x) => x?.name && +x.kcal >= 0)) || 'kcal' in out)
+  const useful = out && ((Array.isArray(out.results) && out.results.some((x) => x?.name && Number.isFinite(Number(x.kcal)))) || Number.isFinite(Number(out.kcal)))
   return useful ? { out } : { overloaded: true }
 }
 
@@ -138,7 +138,11 @@ export default async function handler(req, res) {
     if (body.mode === 'search') {
       const q = String(body.q || '').slice(0, 80).trim()
       if (q.length < 2) return res.status(400).json({ error: 'Type a little more.' })
-      const out = await callGemini(key, [{ text: PROMPTS.search(q) }], 'search')
+      const raw = await callGemini(key, [{ text: PROMPTS.search(q) }], 'search')
+      const txt = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v) : '').trim()
+      const out = { results: (Array.isArray(raw?.results) ? raw.results : [])
+        .map((x) => ({ name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: Math.round(Number(x?.kcal)) }))
+        .filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000).slice(0, 6) }
       res.setHeader('Cache-Control', 'private, max-age=3600')
       return res.status(200).json(out)
     }

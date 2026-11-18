@@ -18,3 +18,14 @@ export async function askFood(body) {
   if (!r.ok) throw new Error(j.error || 'AI is unavailable right now.')
   return j
 }
+
+// AI answers can come back in odd shapes (numbers as text, objects instead of text, missing
+// calories). Keep only clean { name, portion, kcal } items so the screen can always show them.
+const txt = (v) => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : v && typeof v === 'object' ? Object.values(v).filter((x) => typeof x === 'string' || typeof x === 'number').join(' ') : '').trim()
+export function cleanFoods(list) {
+  if (!Array.isArray(list)) return []
+  return list
+    .map((x) => ({ name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: x?.kcal == null || x.kcal === '' ? NaN : Math.round(Number(String(x.kcal).replace(/[^\d.]/g, '') || NaN)) }))
+    .filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000)
+    .slice(0, 6)
+}

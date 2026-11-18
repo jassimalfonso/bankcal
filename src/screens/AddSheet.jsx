@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { compressPhoto } from '../store'
 import { fmt, mealFor } from '../calc'
 import { searchFoods } from '../foods'
-import { askFood } from '../ai'
+import { askFood, cleanFoods } from '../ai'
 import { matchFoods } from '../foods'
 import { IconCamera, IconClose } from '../icons'
 import { useEscape } from '../motion'
@@ -115,9 +115,10 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
     setAi({ busy: true, err: '', results: null, items: null, confidence: '' })
     try {
       const j = await askFood({ mode: 'search', q })
-      onlineCache.set(k, j.results ?? [])
+      const found = cleanFoods(j.results)
+      onlineCache.set(k, found)
       if (asked.current !== k) return // they kept typing; a newer search is on its way
-      setAi({ busy: false, err: '', results: j.results ?? [], items: null, confidence: '' })
+      setAi({ busy: false, err: '', results: found, items: null, confidence: '' })
     } catch (e) {
       if (asked.current !== k) return
       // one quiet retry first (the online service is sometimes briefly busy), unless the free quota is used up
@@ -169,11 +170,14 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
     try {
       setAi({ busy: true, err: '', results: null, items: null, confidence: '' })
       const j = await askFood({ mode: 'photo', image: big })
-      if (!j.kcal) throw new Error('Couldn’t spot food or a calorie label in that photo. Type it in instead.')
+      const total = Math.round(Number(String(j.kcal ?? '').replace(/[^\d.]/g, '')))
+      if (!Number.isFinite(total) || total <= 0) throw new Error('Couldn’t spot food or a calorie label in that photo. Type it in instead.')
+      j.kcal = total
+      j.name = typeof j.name === 'string' ? j.name.slice(0, 120) : ''
       setName(j.name || 'Meal')
       setKcal(String(Math.round(j.kcal)))
       setPicked(true)
-      setAi({ busy: false, err: '', results: null, items: j.items ?? [], confidence: j.confidence ?? '' })
+      setAi({ busy: false, err: '', results: null, items: cleanFoods(j.items), confidence: typeof j.confidence === 'string' ? j.confidence : '' })
     } catch (e) {
       const msg = /too long|taking/i.test(e.message || '') ? 'Reading the photo took too long. Try again, or type the food.' : e.message || 'Couldn’t read that photo.'
       setAi({ busy: false, err: msg, results: null, items: null, confidence: '', photoErr: true })

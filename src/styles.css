@@ -1522,3 +1522,12 @@ button.ms:active { transform: scale(0.96); }
 .act-row.fresh { animation: act-fresh 2s ease-out both; border-radius: 14px; }
 @keyframes act-fresh { 0%, 30% { background: color-mix(in srgb, var(--accent) 20%, transparent); } 100% { background: transparent; } }
 .receipt .rc-text small { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* Friendly crash screen */
+.crash { min-height: 100dvh; display: grid; place-items: center; padding: 24px; background: #f2f2f7; font-family: 'Nunito Variable', system-ui, sans-serif; }
+.crash-card { max-width: 360px; text-align: center; background: #fff; border-radius: 28px; padding: 32px 24px; box-shadow: 0 20px 50px -20px rgba(0,0,0,0.25); }
+.crash-emoji { font-size: 56px; }
+.crash h1 { font-size: 24px; font-weight: 900; margin: 10px 0 6px; color: #1d1d1f; }
+.crash p { color: #6a6a72; margin: 0 0 18px; line-height: 1.45; }
+.crash .btn-primary { background: #45b866; color: #fff; }
+.crash small { display: block; margin-top: 14px; color: #aaa; font-size: 11.5px; word-break: break-word; }
