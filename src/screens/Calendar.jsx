@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
-import { dayKey, fmt, fmtSleep, sleepHours } from '../calc'
+import { dayKey, earned, fmt, fmtSleep, sleepHours } from '../calc'
+import Activity from './Activity'
 import { MOODS, habitById } from '../habits'
 
 const WD = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
 // Month view: each day is coloured by whether you stayed within budget.
-export default function Calendar({ mine, budgetFor, profile, today }) {
+export default function Calendar(props) {
+  const { mine, budgetFor, profile, today } = props
   const [y0, m0] = today.split('-').map(Number)
   const [ym, setYm] = useState({ y: y0, m: m0 - 1 })
   const [pick, setPick] = useState(today)
@@ -74,7 +76,7 @@ export default function Calendar({ mine, budgetFor, profile, today }) {
           <>
             <p className={sel.net >= 0 ? 'pos' : 'neg'}>{sel.net >= 0 ? `Saved ${fmt(sel.net)} kcal` : `${fmt(-sel.net)} kcal over`}</p>
             <ul>
-              {sel.items.map((e) => <li key={e.id}><span>{e.name}</span><span>{fmt(e.kcal)}</span></li>)}
+              {sel.items.map((e) => <li key={e.id}><button className="cal-item" onClick={() => props.editEntry?.(e)} aria-label={`Edit ${e.name}`}><span>{e.name}</span><span>{fmt(e.kcal)}</span></button></li>)}
               <li className="sum"><span>Eaten of {fmt(sel.budget ?? 0)} budget</span><span>{fmt(sel.spent)}</span></li>
             </ul>
           </>
@@ -93,7 +95,12 @@ export default function Calendar({ mine, budgetFor, profile, today }) {
             {sel.log.journal.text && <p>{sel.log.journal.text}</p>}
           </div>
         )}
+        {pick < today && <button className="add-workout past-add" onClick={() => props.addFoodOn?.(pick)}>+ Add food to this day <small>forgot to log something? It goes on this day</small></button>}
       </section>
+      {pick < today && (
+        <Activity {...props} key={pick} today={pick} dayLog={profile.days?.[pick] ?? {}} earn={earned(profile.days?.[pick], profile.weight)}
+          receipt={null} celebrate={(t) => props.notify?.(t)} fresh={null} pastDay />
+      )}
     </>
   )
 }

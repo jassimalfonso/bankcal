@@ -1,11 +1,12 @@
 import Calendar from './Calendar'
 import { MILESTONES } from '../milestones'
 import { useState } from 'react'
-import { dayKey, deficitDays, weightCheck, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
+import { dayKey, deficitDays, earned, weightCheck, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
 import { Row } from './Today'
 import BodyCard from './BodyCard'
 import Progress from './Progress'
 import ShareSheet from './ShareSheet'
+import Activity from './Activity'
 
 export default function Statement(props) {
   const { mine, base: budget, budgetFor } = props
@@ -90,6 +91,14 @@ export default function Statement(props) {
         <ul className="card list">{sel.items.map((e) => <Row key={e.id} e={e} onEdit={() => props.editEntry?.(e)} />)}</ul>
       ) : (
         <div className="card empty"><p className="muted">Nothing logged on this day.</p></div>
+      )}
+      {sel.key < props.today && (
+        <>
+          <button className="add-workout past-add" onClick={() => props.addFoodOn?.(sel.key)}>+ Add food to this day <small>forgot to log something? It goes on this day</small></button>
+          {/* steps, workouts and sleep for that day, same as on Today */}
+          <Activity {...props} key={sel.key} today={sel.key} dayLog={props.profile.days?.[sel.key] ?? {}} earn={earned(props.profile.days?.[sel.key], props.profile.weight)}
+            receipt={null} celebrate={(t) => props.notify?.(t)} fresh={null} pastDay />
+        </>
       )}
     </>
   )

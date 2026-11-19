@@ -20,7 +20,7 @@ function keepOnline(k, found) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify([...onlineCache].filter(([, v]) => v.length).sort((a, b) => b[1].at - a[1].at).slice(0, 80).map(([key, v]) => [key, [...v], v.at]))) } catch { /* full: fine */ }
 }
 
-export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemove, editing, today, profile, updateProfile }) {
+export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemove, editing, forDay, today, profile, updateProfile }) {
   const myFoods = profile?.myFoods ?? []
   const [keep, setKeep] = useState(false)
   const [editMine, setEditMine] = useState(false)
@@ -44,7 +44,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
   const fileRef = useRef(null)
   const drag = useSheetDrag(onClose)
   useEscape(onClose)
-  const [meal, setMeal] = useState(editing?.meal ?? mealFor())
+  const [meal, setMeal] = useState(editing?.meal ?? (forDay && forDay !== today ? 'Lunch' : mealFor()))
   const inputRef = useRef(null)
   useEffect(() => { warmFood() }, []) // wake the online search while the person is still typing
 
@@ -96,7 +96,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
 
   // when changing something already logged today, don't count the old number twice
   const spent = todays.reduce((a, e) => a + (e.id === editing?.id ? 0 : e.kcal), 0)
-  const otherDay = editing && editing.day && editing.day !== today
+  const otherDay = (editing && editing.day && editing.day !== today) || (forDay && forDay !== today)
   const n = Math.max(0, parseInt(kcal, 10) || 0)
   const after = budget != null && !otherDay ? budget - spent - n : null
   const valid = name.trim() && n > 0
@@ -218,8 +218,8 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
         <div className="sheet-head">
           <div>
-            <p className="muted">{editing ? `${meal}, ${new Date(editing.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : meal}</p>
-            <h2>{editing ? 'Edit this food' : 'What are you about to eat?'}</h2>
+            <p className="muted">{editing ? `${meal}, ${new Date(editing.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : forDay && forDay !== today ? new Date(forDay + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : meal}</p>
+            <h2>{editing ? 'Edit this food' : forDay && forDay !== today ? 'What did you eat?' : 'What are you about to eat?'}</h2>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
         </div>
@@ -340,7 +340,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
             <button onClick={() => setQty(qty + 1)} disabled={qty >= 20} aria-label="One more">+</button>
           </div>
         )}
-        {editing && (
+        {(editing || otherDay) && (
           <div className="meal-pick" role="radiogroup" aria-label="Meal">
             {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((m) => (
               <button key={m} role="radio" aria-checked={meal === m} className={`chip ${meal === m ? 'on' : ''}`} onClick={() => setMeal(m)}>{m}</button>
@@ -371,7 +371,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
         )}
 
         <button className="btn-primary" disabled={!valid} onClick={save}>
-          {editing ? 'Save changes' : valid ? `Spend ${fmt(n)} kcal` : 'Spend'}
+          {editing ? 'Save changes' : otherDay ? (valid ? `Add ${fmt(n)} kcal to this day` : 'Add to this day') : valid ? `Spend ${fmt(n)} kcal` : 'Spend'}
         </button>
         {editing && <button className="remove-entry" onClick={() => onRemove?.(editing)}>Remove this food</button>}
       </div>

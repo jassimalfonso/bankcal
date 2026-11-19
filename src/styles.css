@@ -1591,3 +1591,7 @@ button.ms:active { transform: scale(0.96); }
 .wc-fix { margin-top: 4px; padding: 12px; border-radius: 16px; background: var(--soft); }
 .wc-fix p { margin: 0 0 10px; font-size: 14px; line-height: 1.45; }
 .wc-fix .btn-primary { margin: 0; }
+.past-add { margin-top: 10px; margin-bottom: 18px; }
+.cal-item { display: flex; justify-content: space-between; gap: 12px; width: 100%; padding: 0; text-align: left; font: inherit; color: inherit; }
+.cal-item span:first-child { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+.cal-detail .past-add { margin-bottom: 0; }

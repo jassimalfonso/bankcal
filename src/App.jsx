@@ -228,7 +228,7 @@ function Bank({ user }) {
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const ctx = { ...store, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setReplay(true), goSetup: (section) => {
+  const ctx = { ...store, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setReplay(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }
@@ -298,10 +298,10 @@ function Bank({ user }) {
       )}
       {receiptMsg && (
         <Swipeable className={`receipt ${receiptMsg.kind}`} role="status" key={receiptMsg.key} onGone={() => setReceiptMsg(null)}>
-          <span className="rc-icon" aria-hidden="true">{{ spend: '🍽️', deposit: '💪', steps: '👣', edit: '✏️' }[receiptMsg.kind]}</span>
+          <span className="rc-icon" aria-hidden="true">{{ spend: '🍽️', deposit: '💪', steps: '👣', edit: '✏️', add: '🗓️' }[receiptMsg.kind]}</span>
           <span className="rc-text">
-            <b>{receiptMsg.kind === 'spend' ? `Spent ${fmt(receiptMsg.kcal)} kcal` : receiptMsg.kind === 'deposit' ? `Deposited +${fmt(receiptMsg.kcal)} kcal` : receiptMsg.kind === 'steps' ? 'Steps saved' : 'Changes saved'}</b>
-            <small>{receiptMsg.what}{receiptMsg.left != null && receiptMsg.kind !== 'edit' && receiptMsg.kind !== 'steps' ? ` · ${fmt(receiptMsg.left)} kcal left` : ''}</small>
+            <b>{receiptMsg.kind === 'spend' ? `Spent ${fmt(receiptMsg.kcal)} kcal` : receiptMsg.kind === 'deposit' ? `Deposited +${fmt(receiptMsg.kcal)} kcal` : receiptMsg.kind === 'steps' ? 'Steps saved' : receiptMsg.kind === 'add' ? 'Added' : 'Changes saved'}</b>
+            <small>{receiptMsg.what}{receiptMsg.left != null && receiptMsg.kind !== 'edit' && receiptMsg.kind !== 'steps' && receiptMsg.kind !== 'add' ? ` · ${fmt(receiptMsg.left)} kcal left` : ''}</small>
           </span>
           {receiptMsg.undo && <button onClick={() => { receiptMsg.undo(); setReceiptMsg(null) }}>Undo</button>}
         </Swipeable>
@@ -320,7 +320,8 @@ function Bank({ user }) {
         <ErrorBoundary onError={() => { setAdding(false); notify('That screen hit a problem and was closed. Please try again.') }}>
         <AddSheet
           {...ctx}
-          editing={adding === true ? null : adding}
+          editing={adding === true || adding?.newOn ? null : adding}
+          forDay={adding?.newOn ?? null}
           onClose={() => setAdding(false)}
           onRemove={(old) => {
             store.removeEntry(old.id)
@@ -328,6 +329,14 @@ function Bank({ user }) {
             setAdding(false)
           }}
           onSave={(e) => {
+            if (adding?.newOn) {
+              // food added to a past day: stays on that day, and you stay on Progress
+              const day = adding.newOn
+              const id = store.addEntry({ ...e, day })
+              receipt({ kind: 'add', what: `${e.name} added to ${new Date(day + 'T12:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} · ${fmt(e.kcal)} kcal`, kcal: 0, undo: () => store.removeEntry(id) })
+              setAdding(false)
+              return
+            }
             if (adding !== true) {
               const old = adding
               store.updateEntry(old.id, e)
