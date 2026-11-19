@@ -264,3 +264,11 @@ test('deficit counts maintenance plus deposits, minus food', async () => {
   assert.equal(r[0].deficit, null) // nothing logged: unknown, not zero
   assert.equal(r[1].deficit, tdee - 1800)
 })
+
+test('older logged exercises can be read back from their note', async () => {
+  const s = (await import('node:fs')).readFileSync(new URL('../src/screens/EditWorkout.jsx', import.meta.url), 'utf8')
+  const re = new RegExp(s.match(/w\.note\.match\(\/(.+)\/\)/)[1])
+  assert.deepEqual('2 × 15 @ 5 kg'.match(re).slice(1, 6), ['2', '15', undefined, undefined, '5'])
+  assert.deepEqual('3 × 30 s'.match(re).slice(1, 4), ['3', '30', ' s'])
+  assert.equal('4 × 3 @ 5 kg'.match(re)[2], '3')
+})

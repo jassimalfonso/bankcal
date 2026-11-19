@@ -13,6 +13,15 @@ export function useDemoStore() {
     } : {}),
   })
   const seed = new URLSearchParams(location.search).has('seed')
+  // ?legacy: today has workouts saved the old way (minutes + a note, no sets/reps), to test editing them
+  if (new URLSearchParams(location.search).has('legacy') && !profile.days?.[dayKey()]?.workouts) {
+    queueMicrotask(() => setProfile((p) => ({ ...p,
+      routine: [{ id: 'rt1', name: 'Core twist', emoji: '🏋️', kind: 'reps', sets: 2, reps: 15, kg: 5, met: 3.8, rest: 60 }],
+      days: { ...p.days, [dayKey()]: { ...(p.days?.[dayKey()] ?? {}), workouts: [
+        { id: 'w1', type: 'custom', rid: 'rt1', min: 3.5, met: 3.8, label: 'Core twist', note: '2 × 15 @ 5 kg' },
+        { id: 'w2', type: 'custom', min: 4.6, met: 3.1, label: 'Arm curl', note: '4 × 3 @ 5 kg' },
+      ] } } })))
+  }
   const [entries, setEntries] = useState(() => {
     if (!seed) return []
     const out = []
