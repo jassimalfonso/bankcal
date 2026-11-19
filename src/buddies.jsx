@@ -62,9 +62,18 @@ export const BUDDIES = {
     <Face mood={m} y={52} gap={13} my={68} cheeks="#ff9f9f" />
   </>) },
   onigiri: { label: 'Onigiri', draw: (m) => (<>
-    <path d="M60 10 C68 10 108 74 108 92 C108 108 92 110 60 110 C28 110 12 108 12 92 C12 74 52 10 60 10 Z" fill="#fbfbfb" stroke="#ece9e4" strokeWidth="2" />
-    <rect x="38" y="84" width="44" height="26" rx="4" fill="#2f3d33" />
-    <Face mood={m} y={58} gap={14} my={74} />
+    {g('b-oni', '#ffffff', '#efebe4')}
+    {/* soft, rounded rice-ball shape: a broad dome on top, full rounded corners */}
+    <path d="M60 14 C76 14 86 28 95 44 C104 60 113 76 110 94 C107 108 92 111 60 111 C28 111 13 108 10 94 C7 76 16 60 25 44 C34 28 44 14 60 14 Z" fill="url(#b-oni)" stroke="#e6e1d9" strokeWidth="2" />
+    {/* a few rice grains */}
+    <g fill="#e9e4dc">
+      <ellipse cx="44" cy="40" rx="3" ry="1.6" transform="rotate(-30 44 40)" /><ellipse cx="76" cy="36" rx="3" ry="1.6" transform="rotate(25 76 36)" />
+      <ellipse cx="28" cy="72" rx="3" ry="1.6" transform="rotate(60 28 72)" /><ellipse cx="94" cy="70" rx="3" ry="1.6" transform="rotate(-50 94 70)" />
+    </g>
+    {/* nori wrapped around the base, following the curve */}
+    <path d="M40 86 C46 85 74 85 80 86 L82 110.5 C74 111 46 111 38 110.5 Z" fill="#2f3d33" />
+    <path d="M42 89 L78 89" stroke="#40564a" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
+    <Face mood={m} y={62} gap={14} my={76} />
   </>) },
   donut: { label: 'Donut', draw: (m) => (<>
     <circle cx="60" cy="62" r="48" fill="#e2a35f" />
