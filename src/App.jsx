@@ -13,7 +13,7 @@ import { applyUpdate, onUpdateReady } from './update'
 import { myWorkouts } from './training'
 
 const DEMO = import.meta.env.MODE === 'demo'
-import { partnerProgress, dailyBudget, dayKey, earned, fmt, isBedtime, isBirthday, isWindDown, logicalDayKey, streak, workoutKcal } from './calc'
+import { partnerProgress, dailyBudget, dayKey, earned, fmt, isBedtime, isBirthday, isWindDown, logicalDayKey, streak, workoutKcal, WORKOUTS } from './calc'
 import { useDailyWords } from './quotes'
 import { MorningCard, DayResult, WelcomeBack } from './screens/DailyCards'
 import Today from './screens/Today'
@@ -268,7 +268,7 @@ function Bank({ user }) {
             const id = Date.now().toString(36)
             const before = dayLog.workouts ?? []
             store.setDay(today, { workouts: [...before, { id, ...w }] })
-            receipt({ kind: 'deposit', what: w.label || 'Workout', kcal: Math.round(workoutKcal(w, profile.weight)), id, undo: () => store.setDay(today, { workouts: before }) })
+            receipt({ kind: 'deposit', what: w.label || WORKOUTS.find((x) => x.id === w.type)?.label || 'Workout', kcal: Math.round(workoutKcal(w, profile.weight)), id, undo: () => store.setDay(today, { workouts: before }) })
             setWorking(false)
             setTab('today')
           }} />

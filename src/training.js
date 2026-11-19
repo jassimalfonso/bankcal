@@ -333,7 +333,9 @@ export function routineWorkout(item) {
   const total = work + rest
   const met = item.met <= 3.8 ? item.met : total > 0 ? (item.met * work + REST_MET * rest) / total : item.met
   const dose = item.kind === 'time' ? `${sets} × ${item.sec} s` : `${sets} × ${item.reps}${item.each ? ' each side' : ''}`
-  return { type: 'custom', rid: item.id, min: Math.round((total / 60) * 10) / 10, met: Math.round(met * 100) / 100, label: item.name, note: `${dose}${item.kg ? ` @ ${item.kg} kg` : ''}` }
+  // `item` keeps the sets/reps/kg so the logged workout can be edited later
+  const keep = Object.fromEntries(Object.entries({ name: item.name, emoji: item.emoji, kind: item.kind, sets, reps: item.reps, sec: item.sec, kg: item.kg, each: item.each, rest: item.rest, met: item.met }).filter(([, v]) => v !== undefined && v !== null))
+  return { type: 'custom', rid: item.id, min: Math.round((total / 60) * 10) / 10, met: Math.round(met * 100) / 100, label: item.name, note: `${dose}${item.kg ? ` @ ${item.kg} kg` : ''}`, item: keep }
 }
 
 // ---------- Your workouts + exercise search (used by "Log a workout") ----------

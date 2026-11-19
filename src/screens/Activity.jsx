@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BASE_STEPS, DEFAULT_BED, DEFAULT_WAKE, describeWorkout, fmt, fmtSleep, sleepHours, SLEEP_TARGET, WORKOUTS, workoutKcal } from '../calc'
 import WorkoutSheet from './WorkoutSheet'
+import EditWorkout from './EditWorkout'
 import { myWorkouts, routineWorkout } from '../training'
 import { workoutKcal as kcalOf } from '../calc'
 
@@ -22,12 +23,19 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
   const saveWorkout = (w) => {
     const id = Date.now().toString(36)
     setDay(today, { workouts: [...workouts, { id, ...w }] })
-    if (receipt) receipt({ kind: 'deposit', what: w.label || 'Workout', kcal: Math.round(workoutKcal(w, profile.weight)), id, undo: () => setDay(today, { workouts }) })
+    if (receipt) receipt({ kind: 'deposit', what: w.label || WORKOUTS.find((x) => x.id === w.type)?.label || 'Workout', kcal: Math.round(workoutKcal(w, profile.weight)), id, undo: () => setDay(today, { workouts }) })
     else celebrate?.(`Nice work! +${fmt(workoutKcal(w, profile.weight))} kcal 💪`)
     setAdding(false)
   }
   const mine = myWorkouts(profile, workouts)
   const removeWorkout = (id) => setDay(today, { workouts: workouts.filter((w) => w.id !== id) })
+  const [editing, setEditing] = useState(null)
+  const updateWorkout = (old, next) => {
+    setDay(today, { workouts: workouts.map((w) => (w.id === old.id ? { ...next, id: old.id } : w)) })
+    const diff = Math.round(workoutKcal(next, profile.weight) - workoutKcal(old, profile.weight))
+    if (receipt) receipt({ kind: 'edit', what: `${next.label ?? old.label ?? 'Workout'}: now +${fmt(workoutKcal(next, profile.weight))} kcal (${diff >= 0 ? '+' : '−'}${fmt(Math.abs(diff))})`, kcal: 0, id: old.id, undo: () => setDay(today, { workouts }) })
+    setEditing(null)
+  }
 
   return (
     <>
@@ -68,8 +76,8 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
           const def = WORKOUTS.find((x) => x.id === w.type)
           return (
             <div className={`act-row ${fresh === w.id ? 'fresh' : ''}`} key={w.id}>
-              <span className="w-emoji small">{def?.emoji}</span>
-              <div className="act-head"><b>{w.label ?? def?.label}</b><small>{describeWorkout(w)}</small></div>
+              <span className="w-emoji small">{w.item?.emoji ?? def?.emoji}</span>
+              <button className="act-head act-edit" onClick={() => setEditing(w)} aria-label={`Edit ${w.label ?? def?.label}`}><b>{w.label ?? def?.label}</b><small>{describeWorkout(w)} · <span className="act-tap">Edit</span></small></button>
               <button className="w-del" onClick={() => removeWorkout(w.id)} aria-label={`Remove ${def?.label}`}>×</button>
               <span className="act-kcal">+{fmt(workoutKcal(w, profile.weight))}</span>
             </div>
@@ -99,6 +107,8 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
       </div>
       <p className="fine">First {fmt(BASE_STEPS)} steps are everyday movement and already in your budget.</p>
       </>}
+      {editing && <EditWorkout w={editing} profile={profile} onClose={() => setEditing(null)} onSave={(next) => updateWorkout(editing, next)}
+        onRemove={() => { const before = workouts; removeWorkout(editing.id); setEditing(null); receipt?.({ kind: 'edit', what: `${editing.label ?? 'Workout'} removed`, kcal: 0, undo: () => setDay(today, { workouts: before }) }) }} />}
       {adding && <WorkoutSheet profile={profile} mine={mine} start={adding === true ? null : adding} onClose={() => setAdding(false)} onSave={saveWorkout} onKeep={(item) => updateProfile({ routine: [...(profile.routine ?? []), item] })} />}
     </>
   )
