@@ -1565,3 +1565,7 @@ button.ms:active { transform: scale(0.96); }
 .df-days.no-down .df-down { overflow: hidden; }
 .act-edit { text-align: left; padding: 0; background: none; font: inherit; color: inherit; display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .act-tap { color: var(--accent); font-weight: 800; }
+.act-bar { position: relative; overflow: visible; }
+.act-bar > span { border-radius: 99px; }
+.act-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--ink); opacity: 0.35; }
+.act-kcal.act-wait { color: var(--muted); }

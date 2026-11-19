@@ -52,12 +52,14 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
         <div className="act-row">
           <div className="act-head">
             <b>Steps</b>
-            <small>{steps >= stepsGoal ? 'Goal reached 🎉' : `${fmt(Math.max(0, stepsGoal - steps))} to your ${fmt(stepsGoal)} goal`}</small>
+            <small>{steps > 0 && steps < BASE_STEPS
+              ? `Earning starts after ${fmt(BASE_STEPS)} · ${fmt(BASE_STEPS - steps)} to go`
+              : steps >= stepsGoal ? 'Goal reached 🎉' : `${fmt(Math.max(0, stepsGoal - steps))} to your ${fmt(stepsGoal)} goal`}</small>
           </div>
           <NumField value={dayLog.steps} placeholder="0" onCommit={(v) => { setDay(today, { steps: v }); if (v >= stepsGoal && !(steps >= stepsGoal)) celebrate?.(`${fmt(stepsGoal)} steps reached! 👟`) }} />
-          <span className="act-kcal">+{fmt(earn.steps)}</span>
+          <span className={`act-kcal ${steps > 0 && steps < BASE_STEPS ? 'act-wait' : ''}`}>+{fmt(earn.steps)}</span>
         </div>
-        <Bar value={steps / stepsGoal} />
+        <Bar value={steps / stepsGoal} mark={BASE_STEPS / stepsGoal} />
 
         <div className="act-row">
           <div className="act-head">
@@ -105,7 +107,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
           </div>
         </div>
       </div>
-      <p className="fine">First {fmt(BASE_STEPS)} steps are everyday movement and already in your budget.</p>
+      <p className="fine">Your first {fmt(BASE_STEPS)} steps are everyday movement, already counted in your budget. Steps after that (the tick on the bar) earn calories.</p>
       </>}
       {editing && <EditWorkout w={editing} profile={profile} onClose={() => setEditing(null)} onSave={(next) => updateWorkout(editing, next)}
         onRemove={() => { const before = workouts; removeWorkout(editing.id); setEditing(null); receipt?.({ kind: 'edit', what: `${editing.label ?? 'Workout'} removed`, kcal: 0, undo: () => setDay(today, { workouts: before }) }) }} />}
@@ -114,8 +116,14 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
   )
 }
 
-function Bar({ value }) {
-  return <div className="act-bar"><span style={{ width: `${Math.min(100, Math.max(0, value * 100))}%` }} /></div>
+// `mark`: a tick where earning starts (after the everyday 3,000 steps)
+function Bar({ value, mark }) {
+  return (
+    <div className="act-bar">
+      <span style={{ width: `${Math.min(100, Math.max(0, value * 100))}%` }} />
+      {mark > 0 && mark < 1 && <i className="act-mark" style={{ left: `${mark * 100}%` }} title="Earning starts here" />}
+    </div>
+  )
 }
 
 function NumField({ value, onCommit, placeholder, unit, decimal }) {
