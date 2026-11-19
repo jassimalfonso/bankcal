@@ -272,3 +272,28 @@ test('older logged exercises can be read back from their note', async () => {
   assert.deepEqual('3 × 30 s'.match(re).slice(1, 4), ['3', '30', ' s'])
   assert.equal('4 × 3 @ 5 kg'.match(re)[2], '3')
 })
+
+test('expected vs actual weight, and a suggested correction', async () => {
+  const { weightCheck, breakdown, dayKey } = await import('../src/calc.js')
+  const today = '2026-11-29'
+  const day = (n) => dayKey(new Date(new Date(today + 'T12:00').getTime() - n * 864e5))
+  const base = { sex: 'm', weight: 83, height: 173, birthDate: '1994-03-08', goal: 'lose05' }
+  const tdee = breakdown(base).tdee
+  const days = {}
+  const entries = []
+  for (let n = 28; n >= 0; n--) {
+    days[day(n)] = {}
+    if (n > 0) entries.push({ day: day(n), kcal: tdee - 500 }) // 500 a day deficit → 28 × 500 / 7700 ≈ 1.8 kg
+  }
+  // too few weigh-ins
+  assert.equal(weightCheck({ profile: { ...base, days }, entries, todayKey: today }).ready, false)
+  // scale agrees: 1.8 kg down
+  const w = (map) => { const d = structuredClone(days); for (const [n, v] of Object.entries(map)) d[day(+n)].weight = v; return d }
+  let r = weightCheck({ profile: { ...base, days: w({ 28: 85, 0: 83.2 }) }, entries, todayKey: today })
+  assert.equal(r.status, 'on-track'); assert.equal(r.suggest, 0)
+  // scale shows only 0.6 kg: real maintenance is lower, so a negative correction is suggested
+  r = weightCheck({ profile: { ...base, days: w({ 28: 85, 0: 84.4 }) }, entries, todayKey: today })
+  assert.equal(r.status, 'slower'); assert.ok(r.suggest < 0 && r.suggest >= -400)
+  // and the correction feeds into maintenance
+  assert.equal(breakdown({ ...base, tdeeAdjust: -200 }).tdee, tdee - 200)
+})

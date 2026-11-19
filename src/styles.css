@@ -1572,3 +1572,22 @@ button.ms:active { transform: scale(0.96); }
 .hero-deficit { margin: 8px auto 0; width: fit-content; max-width: 100%; padding: 7px 14px; border-radius: 99px; font-size: 14px; font-weight: 700; text-align: center; background: var(--soft); color: var(--ink); }
 .hero-deficit.good b { color: var(--accent); }
 .hero-deficit.over { background: color-mix(in srgb, var(--neg) 10%, var(--card)); }
+
+/* Expected vs actual weight (Progress) */
+.wcheck { margin-top: 12px; padding: 18px 18px 14px; }
+.wcheck h3 { margin: 2px 0 10px; font-size: 20px; font-weight: 900; }
+.wcheck.empty h3 { font-size: 17px; margin-bottom: 0; }
+.wcheck.empty p { margin: 6px 0 0; color: var(--muted); font-size: 14.5px; line-height: 1.45; }
+.wc-bars { display: grid; gap: 10px; }
+.wc-bar { display: grid; grid-template-columns: 112px 1fr auto; align-items: center; gap: 10px; }
+.wc-l { display: flex; flex-direction: column; line-height: 1.15; }
+.wc-l b { font-size: 14.5px; font-weight: 850; }
+.wc-l small { font-size: 11.5px; color: var(--muted); font-weight: 650; }
+.wc-track { height: 14px; border-radius: 7px; background: var(--soft); overflow: hidden; }
+.wc-track i { display: block; height: 100%; border-radius: 7px; background: var(--accent); }
+.wc-bar:first-child .wc-track i { background: color-mix(in srgb, var(--accent) 45%, var(--card)); }
+.wc-track i.up { background: color-mix(in srgb, var(--neg) 65%, var(--card)); }
+.wc-v { min-width: 62px; text-align: right; font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.wc-fix { margin-top: 4px; padding: 12px; border-radius: 16px; background: var(--soft); }
+.wc-fix p { margin: 0 0 10px; font-size: 14px; line-height: 1.45; }
+.wc-fix .btn-primary { margin: 0; }

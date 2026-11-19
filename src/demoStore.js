@@ -25,7 +25,7 @@ export function useDemoStore() {
   const [entries, setEntries] = useState(() => {
     if (!seed) return []
     const out = []
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 1; i <= (new URLSearchParams(location.search).has('wcheck') ? 14 : 4); i++) {
       const d = new Date(); d.setDate(d.getDate() - i)
       out.push({ id: 's' + i, ts: d.getTime(), day: dayKey(d), name: 'Chicken adobo + rice', kcal: 700, meal: 'Lunch' }, { id: 't' + i, ts: d.getTime(), day: dayKey(d), name: 'Turon', kcal: 220, meal: 'Snack' })
     }

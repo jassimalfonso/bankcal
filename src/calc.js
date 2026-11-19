@@ -57,7 +57,8 @@ export function breakdown(p) {
   const pl = plan(p, p.weight)
   // an active plan sets the deficit; reached = maintain; not started or past its date = simple goal
   const deficit = pl?.active ? pl.deficit : pl?.reached ? 0 : goal.perDay
-  const tdee = b * act.f
+  // tdeeAdjust: a personal correction learned from real weigh-ins (see weightCheck), ±500 at most
+  const tdee = b * act.f + Math.max(-500, Math.min(500, +p.tdeeAdjust || 0))
   const floor = FLOOR[p.sex] ?? 1200
   const auto = Math.max(floor, Math.round((tdee - deficit) / 10) * 10)
   return { bmr: Math.round(b), tdee: Math.round(tdee), deficit, floor, auto, plan: pl }
@@ -463,4 +464,47 @@ export function deficitDays({ entries, profile, keys, todayKey }) {
     const ate = items.reduce((a, e) => a + e.kcal, 0)
     return { key: k, deficit: Math.round(used - ate), used: Math.round(used), ate, today: k === todayKey }
   })
+}
+
+// ───────── Expected vs actual weight ─────────
+// Compares the fat the deficit says you should have lost with what the scale shows, using the
+// average of the first and last week of weigh-ins (single weigh-ins swing with water).
+// After 3+ weeks with good logging, a clear gap means your real maintenance differs from the
+// formula, so it suggests a correction (applied via profile.tdeeAdjust).
+export function weightCheck({ profile, entries, todayKey, windowDays = 42 }) {
+  const DAY = 86400000
+  const t = (k) => new Date(k + 'T12:00').getTime()
+  const start0 = t(todayKey) - windowDays * DAY
+  const pts = Object.entries(profile.days ?? {})
+    .filter(([k, d]) => +d?.weight > 0 && t(k) >= start0 && t(k) <= t(todayKey))
+    .map(([k, d]) => ({ k, t: t(k), w: +d.weight }))
+    .sort((a, b) => a.t - b.t)
+  const need = { weighIns: 2, days: 10 }
+  if (pts.length < 2) return { ready: false, weighIns: pts.length, need }
+  const span = Math.round((pts.at(-1).t - pts[0].t) / DAY)
+  if (span < need.days) return { ready: false, weighIns: pts.length, span, need }
+  const avg = (xs) => xs.reduce((a, p) => a + p.w, 0) / xs.length
+  const first = avg(pts.filter((p) => p.t < pts[0].t + 7 * DAY))
+  const last = avg(pts.filter((p) => p.t > pts.at(-1).t - 7 * DAY))
+  // the deficit over the same days (first weigh-in up to the day before the last)
+  const keys = Array.from({ length: span }, (_, i) => dayKey(new Date(pts[0].t + i * DAY)))
+  const rows = deficitDays({ entries, profile, keys, todayKey }) ?? []
+  const known = rows.filter((r) => r.deficit != null)
+  const coverage = keys.length ? known.length / keys.length : 0
+  if (coverage < 0.5) return { ready: false, weighIns: pts.length, span, coverage, need, reason: 'logging' }
+  const perDay = known.reduce((a, r) => a + r.deficit, 0) / known.length // days not logged are assumed average
+  const expected = (perDay * span) / KCAL_PER_KG
+  const actual = first - last
+  const gap = actual - expected // + = losing faster than expected
+  const close = Math.abs(gap) <= Math.max(0.3, Math.abs(expected) * 0.3)
+  // suggest a correction only with enough evidence, and not again within 2 weeks of the last one
+  const recent = profile.tdeeAdjustAt && t(todayKey) - t(profile.tdeeAdjustAt) < 14 * DAY
+  const shift = Math.round(((gap * KCAL_PER_KG) / span) / 10) * 10
+  const suggest = !close && !recent && span >= 21 && coverage >= 0.7 && Math.abs(shift) >= 80
+    ? Math.max(-400, Math.min(400, shift)) : 0
+  return {
+    ready: true, span, coverage, weighIns: pts.length, from: pts[0].k, to: pts.at(-1).k,
+    expected: Math.round(expected * 100) / 100, actual: Math.round(actual * 100) / 100, gap: Math.round(gap * 100) / 100,
+    status: close ? 'on-track' : gap > 0 ? 'faster' : 'slower', suggest,
+  }
 }

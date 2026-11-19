@@ -1,7 +1,7 @@
 import Calendar from './Calendar'
 import { MILESTONES } from '../milestones'
 import { useState } from 'react'
-import { dayKey, deficitDays, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
+import { dayKey, deficitDays, weightCheck, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
 import { Row } from './Today'
 import BodyCard from './BodyCard'
 import Progress from './Progress'
@@ -54,6 +54,7 @@ export default function Statement(props) {
       </section>
 
       <DeficitCard {...props} keys={days.map((d) => d.key)} />
+      <WeightCheckCard {...props} />
 
       <div className="tiles">
         <div className="card tile-stat">
@@ -201,6 +202,56 @@ function DeficitCard({ mine, profile, keys, today }) {
         })}
       </div>
       <p className="df-foot">Up = burned more than you ate. {now ? 'Today counts as you go.' : ''} Days with nothing logged are left out.</p>
+    </section>
+  )
+}
+
+// Expected vs actual weight: is the deficit showing up on the scale?
+function WeightCheckCard({ mine, profile, today, updateProfile, notify }) {
+  const r = weightCheck({ profile, entries: mine, todayKey: today })
+  if (!r.ready) {
+    const left = r.reason === 'logging'
+      ? 'Log your meals on more days in between weigh-ins so the comparison is fair.'
+      : r.weighIns < 2 ? `Weigh in ${r.weighIns === 0 ? 'twice' : 'once more'}, at least 10 days apart, and this compares what your deficit predicted with what the scale shows.`
+      : `Weigh in again after ${Math.max(1, (r.need.days - (r.span ?? 0)))} more day${r.need.days - (r.span ?? 0) === 1 ? '' : 's'} to compare what your deficit predicted with what the scale shows.`
+    return <section className="card wcheck empty"><h3>Expected vs actual weight</h3><p>{left}</p></section>
+  }
+  const kg = (v) => `${v > 0 ? '−' : v < 0 ? '+' : ''}${Math.abs(v).toFixed(1)} kg`
+  const top = Math.max(0.5, Math.abs(r.expected), Math.abs(r.actual))
+  const d = (k) => new Date(k + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  const title = { 'on-track': 'Right on track ✅', faster: 'Losing faster than expected 🚀', slower: 'A bit slower than expected' }[r.status]
+  const line = {
+    'on-track': 'The scale matches your logging. Your numbers are working, keep going.',
+    faster: 'Great news: your body burns a little more than the formula thinks.',
+    slower: 'Common causes: portions bigger than logged, untracked snacks or drinks, or water weight hiding fat loss.',
+  }[r.status]
+  const apply = () => {
+    const next = Math.max(-500, Math.min(500, (+profile.tdeeAdjust || 0) + r.suggest))
+    updateProfile({ tdeeAdjust: next, tdeeAdjustAt: today })
+    notify?.(`Maintenance updated by ${r.suggest > 0 ? '+' : '−'}${fmt(Math.abs(r.suggest))} kcal a day`)
+  }
+  return (
+    <section className={`card wcheck ${r.status}`}>
+      <p className="df-label">Expected vs actual · {d(r.from)} – {d(r.to)} ({r.span} days)</p>
+      <h3>{title}</h3>
+      <div className="wc-bars">
+        {[['Expected', r.expected, 'from your deficit'], ['Actual', r.actual, '7-day average on the scale']].map(([l, v, sub]) => (
+          <div className="wc-bar" key={l}>
+            <span className="wc-l"><b>{l}</b><small>{sub}</small></span>
+            <span className="wc-track"><i className={v < 0 ? 'up' : ''} style={{ width: `${Math.min(100, (Math.abs(v) / top) * 100)}%` }} /></span>
+            <b className="wc-v">{kg(v)}</b>
+          </div>
+        ))}
+      </div>
+      <p className="df-line">{line}</p>
+      {r.suggest !== 0 && (
+        <div className="wc-fix">
+          <p>Your real maintenance looks about <b>{fmt(Math.abs(r.suggest))} kcal a day {r.suggest > 0 ? 'higher' : 'lower'}</b> than the formula. Adjust your budget to match?</p>
+          <button className="btn-primary" onClick={apply}>Use my real number ({r.suggest > 0 ? '+' : '−'}{fmt(Math.abs(r.suggest))} kcal)</button>
+        </div>
+      )}
+      {r.suggest === 0 && +profile.tdeeAdjust ? <p className="df-foot">Your maintenance includes a personal correction of {+profile.tdeeAdjust > 0 ? '+' : '−'}{fmt(Math.abs(+profile.tdeeAdjust))} kcal. <button className="link-btn" onClick={() => { updateProfile({ tdeeAdjust: 0, tdeeAdjustAt: today }); notify?.('Back to the standard formula') }}>Undo</button></p> : null}
+      {r.coverage < 0.9 && <p className="df-foot">Meals logged on {Math.round(r.coverage * 100)}% of these days; the rest are assumed average.</p>}
     </section>
   )
 }
