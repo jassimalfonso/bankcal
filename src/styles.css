@@ -1569,3 +1569,6 @@ button.ms:active { transform: scale(0.96); }
 .act-bar > span { border-radius: 99px; }
 .act-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--ink); opacity: 0.35; }
 .act-kcal.act-wait { color: var(--muted); }
+.hero-deficit { margin: 8px auto 0; width: fit-content; max-width: 100%; padding: 7px 14px; border-radius: 99px; font-size: 14px; font-weight: 700; text-align: center; background: var(--soft); color: var(--ink); }
+.hero-deficit.good b { color: var(--accent); }
+.hero-deficit.over { background: color-mix(in srgb, var(--neg) 10%, var(--card)); }

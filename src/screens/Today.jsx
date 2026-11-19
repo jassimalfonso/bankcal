@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useCountUp, useSwipe } from '../motion'
-import { fmt } from '../calc'
+import { breakdown, fmt, KCAL_PER_KG } from '../calc'
 import Character, { moodFor } from '../Character'
 import { missingFor } from '../calc'
 import { SECTION_ICONS, SECTION_NAMES, fullLayout } from '../layout'
@@ -117,6 +117,19 @@ export default function Today(props) {
             <p className="hero-break">{earn.total > 0
               ? <>Today’s budget: <b>{fmt(base)}</b> base <span className="pos">+ <b>{fmt(earn.total)}</b> burned</span>{earn.work > 0 && earn.steps + earn.tread > 0 ? ` (workouts ${fmt(earn.work)}, steps and walking ${fmt(earn.steps + earn.tread)})` : earn.work > 0 ? ' from workouts' : ' from steps and walking'}</>
               : <>Today’s budget: <b>{fmt(base)}</b> base. Tick a workout or log steps to add burned calories.</>}</p>
+            {todays.length > 0 && (() => {
+              // today's real deficit: what your body used (maintenance + deposits) minus what you ate
+              const b = breakdown(profile)
+              if (!b) return null
+              const d = Math.round(b.tdee + earn.total - spent)
+              return (
+                <p className={`hero-deficit ${d > 0 ? 'good' : 'over'}`}>
+                  {d > 0
+                    ? <>🔥 Deficit so far: <b>{fmt(d)} kcal</b> · about <b>{(d / KCAL_PER_KG).toFixed(2)} kg</b> of fat</>
+                    : <>Above maintenance by <b>{fmt(-d)} kcal</b> so far</>}
+                </p>
+              )
+            })()}
           </>
         )}
       </section>
