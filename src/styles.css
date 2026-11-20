@@ -1754,3 +1754,19 @@ button:not(:disabled):active { filter: brightness(0.94); }
 @keyframes ci-sent { 40% { transform: scale(1.03); } }
 @keyframes ci-fly { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.2) rotate(-8deg); opacity: 1; } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .ci-deck > .ci-feature, .ci-deck > .ci-feature.on .ci-big > span, .ci-feature, .ci-small, .ci-big, .ci-feature.sent .ci-big { animation: none; } }
+
+/* sleep: times get their own line so "11:36 PM" never gets cut */
+.sleep-row { flex-wrap: wrap; }
+.sleep-row .act-head { flex: 1 1 100%; }
+.sleep-row .sleep-in { flex: 1 1 100%; gap: 10px; }
+.sleep-row .sleep-in input { flex: 1; width: auto; min-width: 0; min-height: 44px; padding: 8px 12px; }
+/* the "just added" flash follows the card's rounded corners */
+.row-wrap:first-child { border-top-left-radius: inherit; border-top-right-radius: inherit; }
+.row-wrap:last-child { border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
+.row-wrap.fresh .row { animation-fill-mode: backwards; }
+.act-row.fresh { animation-fill-mode: backwards; }
+.card.list { overflow: hidden; }
+/* in Deposits, ring just the number box, not the unit next to it */
+.activity .num-in:focus-within { box-shadow: none; }
+.activity .num-in input:focus { box-shadow: 0 0 0 2px var(--accent); }
+.tread-in .num-in { flex: none; }

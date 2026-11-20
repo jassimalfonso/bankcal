@@ -105,7 +105,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
         )}
         <button className="add-workout" onClick={() => setAdding(true)}>+ Add a workout <small>{mine.length ? 'yours, or walking, cycling, dumbbells…' : 'jumping jacks, squats, dumbbells…'}</small></button>
 
-        <div className="act-row">
+        <div className="act-row sleep-row">
           <div className="act-head">
             <b>Sleep last night</b>
             <small>{sleepH == null ? `Aim for ${SLEEP_TARGET} hours or more` : sleepH >= SLEEP_TARGET ? `${fmtSleep(sleepH)}. Well rested 😴` : `${fmtSleep(sleepH)}. A bit short`}</small>
@@ -161,7 +161,7 @@ function NumField({ value, onCommit, placeholder, unit, decimal }) {
           const box = e.currentTarget.closest('.activity')
           const all = box ? [...box.querySelectorAll('input:not([type=time])')] : []
           const next = all[all.indexOf(e.currentTarget) + 1]
-          if (next) { next.focus(); next.select?.() } else e.currentTarget.blur()
+          if (next) { next.focus({ preventScroll: true }); requestAnimationFrame(() => next.select?.()) } else e.currentTarget.blur()
         }}
         onFocus={(e) => e.currentTarget.select()}
       />
