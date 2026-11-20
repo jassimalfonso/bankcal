@@ -1645,3 +1645,22 @@ button.df-day.on, button.sw-col.on { background: color-mix(in srgb, var(--accent
 .card.progress .progress-top { flex-wrap: wrap; row-gap: 2px; }
 .card.progress .progress-top b { white-space: nowrap; }
 .card.progress .progress-top > span { flex-basis: 100%; }
+
+/* Partner sheet: suggested cheers first, tidy log */
+.cheer-ideas { display: grid; gap: 8px; margin: 4px 0 10px; }
+.ci-head { display: flex; justify-content: space-between; align-items: baseline; }
+.ci-head b { font-size: 16px; font-weight: 900; }
+.ci { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 10px 14px; border-radius: 16px; background: var(--card); box-shadow: var(--shadow); text-align: left; font: inherit; font-size: 15px; font-weight: 750; color: var(--ink); }
+.ci span { font-size: 24px; flex: none; }
+.ci:active { transform: scale(0.98); background: var(--soft); }
+.nb-sticker { flex: none; width: 48px; height: 48px; border-radius: 14px; background: var(--bg); font-size: 24px; }
+.note-box .nb-write textarea { min-height: 48px; }
+.note-box .nb-stickers { padding: 8px 2px 2px; }
+.cheer-sum { margin: 0 0 4px; font-size: 14px; color: var(--muted); }
+.cheer-sum b { color: var(--ink); }
+.cl-loved { font-style: normal; margin-left: 6px; font-size: 13px; }
+.cl-more { display: block; margin: 8px auto 0; }
+.cheer-log li { flex-wrap: nowrap; align-items: center; }
+.cheer-log li > span:first-child { flex: 1; min-width: 0; }
+.cheer-log .cl-acts { width: auto; margin: 0 -6px 0 4px; flex: none; }
+.cheer-log .cl-acts button { min-height: 34px; padding: 4px 10px; }

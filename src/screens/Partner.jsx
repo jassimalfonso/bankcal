@@ -5,11 +5,28 @@ import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
 
 // One tap sends these. [sticker, words]
+// Everyday cheers, rotated so the same ones don't keep coming up. [sticker, words]
 const QUICK = [
   ['👋', 'Just dropping by to say hi'], ['💪', 'You’ve got this'], ['❤️', 'Proud of you'], ['🙏', 'Praying for you'],
   ['🥚', 'You’re egg-cellent'], ['🥑', 'Holy guacamole, look at you go'], ['💧', 'Drink some water!'], ['🚶', 'Walk with me later?'],
-  ['😘', 'Thinking of you'], ['🍽️', 'What’s for dinner?'], ['🔥', 'Keep that streak going'], ['😴', 'Sleep early tonight'],
+  ['😘', 'Thinking of you'], ['🍽️', 'What’s for dinner?'], ['🌟', 'One good choice at a time'], ['🤗', 'Sending you a hug'],
+  ['🎯', 'Small steps still count'], ['😄', 'You make this fun'], ['🌱', 'Every day you show up matters'], ['🥗', 'Let’s eat well together today'],
 ]
+// Cheers that fit what your partner actually did today (best ones first)
+function suggestFor(s, info) {
+  const h = new Date().getHours()
+  const out = []
+  if (info.fresh && s.moved) out.push(['💪', 'Saw you moved today. Love it!'])
+  if (s.streak >= 3) out.push(['🔥', `${s.streak} days in a row! Unstoppable`])
+  if (info.fresh && s.habitsTotal > 0 && s.habitsDone >= s.habitsTotal) out.push(['✅', 'All your habits done. Wow!'])
+  if (s.weekLogged >= 4 && s.weekWithin >= s.weekLogged - 1) out.push(['🎯', `${s.weekWithin} of ${s.weekLogged} days on budget. What a week!`])
+  if (s.kgChange != null && s.kgChange <= -0.5) out.push(['📉', `${Math.abs(s.kgChange).toFixed(1)} kg down. So proud of you`])
+  if (s.weekWorkouts >= 3) out.push(['🏋️', `${s.weekWorkouts} workouts this week. Strong!`])
+  if (h < 11) out.push(['☀️', 'Good morning! Rooting for you today'])
+  else if (h >= 20) out.push(['🌙', 'Well done today. Rest well tonight'])
+  else if (!info.fresh) out.push(['👀', 'Thinking of you. How’s your day going?'])
+  return out
+}
 const STICKERS = ['💌', '👋', '😘', '🥳', '💪', '🔥', '🌟', '🤗', '🥚', '🥑']
 const SEEN = (me, id) => `bankcal:note:${me}:${id}`
 
@@ -133,15 +150,35 @@ function TeamGoal({ team, split }) {
 function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, onShare, onClose }) {
   const [note, setNote] = useState('')
   const [sticker, setSticker] = useState('💌')
+  const [pickSticker, setPickSticker] = useState(false)
+  const [more, setMore] = useState(0) // 🔀 rotates the everyday ideas
+  const [allLog, setAllLog] = useState(false)
   const noteRef = useRef(null)
   const focusNote = (el) => { noteRef.current = el; if (el && reply && !el.dataset.done) { el.dataset.done = 1; setTimeout(() => { el.scrollIntoView({ block: 'center' }); el.focus() }, 350) } }
   const drop = () => { if (!note.trim()) return; onCheer(note.trim(), sticker); setNote('') }
-  const log = [
+  const all = [
     ...(sent?.log ?? []).map((c) => ({ ...c, who: 'You' })),
     ...(got?.log ?? []).map((c) => ({ ...c, who: s.name })),
-  ].sort((a, b) => b.at - a.at)
+  ].sort((a, b) => a.at - b.at)
+  // "Loved your note" becomes a ❤️ on the note it was for, instead of its own line
+  const log = []
+  for (const c of all) {
+    if (c.msg === 'Loved your note') {
+      const target = [...log].reverse().find((x) => x.who !== c.who && x.msg && x.msg !== '👏')
+      if (target) { target.loved = true; continue }
+    }
+    log.push({ ...c })
+  }
+  log.reverse()
   const day0 = new Date().setHours(0, 0, 0, 0)
-  const todayN = log.filter((c) => c.at >= day0).length
+  const todayN = all.filter((c) => c.at >= day0).length
+  // suggestions: what fits their day first, then everyday ideas; nothing you sent in the last 3 days
+  const recent = new Set((sent?.log ?? []).filter((c) => c.at > Date.now() - 3 * 864e5).map((c) => c.msg))
+  const daySeed = Math.floor(Date.now() / 864e5)
+  const everyday = QUICK.filter(([, t]) => !recent.has(t))
+  const rot = everyday.length ? (daySeed * 3 + more * 3) % everyday.length : 0
+  const ideas = [...suggestFor(s, info).filter(([, t]) => !recent.has(t)), ...everyday.slice(rot), ...everyday.slice(0, rot)]
+  const shown = more === 0 ? ideas.slice(0, 3) : [...everyday.slice(rot), ...everyday.slice(0, rot)].slice(0, 3)
   const drag = useSheetDrag(onClose)
   useEscape(onClose)
   const rows = [
@@ -164,43 +201,43 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
           <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
         </div>
 
+        <div className="cheer-ideas">
+          <div className="ci-head"><b>Cheer {s.name} on</b><button className="link-btn" onClick={() => setMore((m) => m + 1)} aria-label="Other ideas">🔀 Other ideas</button></div>
+          {shown.map(([e, t]) => <button key={t} className="ci" onClick={() => onCheer(t, e)}><span>{e}</span>{t}</button>)}
+        </div>
+        <div className="note-box">
+          <div className="nb-write">
+            <button className="nb-sticker" onClick={() => setPickSticker((x) => !x)} aria-label="Change sticker" aria-expanded={pickSticker}>{sticker}</button>
+            <textarea ref={focusNote} value={note} onChange={(e) => setNote(e.target.value.slice(0, 120))} rows={1} placeholder="Or write your own…" aria-label="Your note" enterKeyHint="send"
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); drop() } }} />
+            <button className="btn-primary" disabled={!note.trim()} onClick={drop}>Send</button>
+          </div>
+          {pickSticker && (
+            <div className="nb-stickers" role="radiogroup" aria-label="Sticker">
+              {STICKERS.map((e) => <button key={e} role="radio" aria-checked={sticker === e} className={sticker === e ? 'on' : ''} onClick={() => { setSticker(e); setPickSticker(false) }}>{e}</button>)}
+            </div>
+          )}
+          {note.length > 90 && <small className="nb-count">{120 - note.length} left</small>}
+        </div>
+        <p className="fine center">It lands on {s.name}’s Today like a sticky note, and on their phone if notifications are on.</p>
+
+        <h3 className="ex-h">{s.name}’s progress</h3>
         <ul className="psh-rows">{rows.map(([k, v]) => <li key={k}><span>{k}</span><b>{v}</b></li>)}</ul>
         {s.kgChange == null && <p className="fine">{s.name} hasn’t switched on sharing weight progress.</p>}
 
         {team && <TeamGoal team={team} split={`${me ?? 'You'}: ${myTicks} · ${s.name}: ${s.weekTicks ?? 0}`} />}
         <button className="btn-soft share-us" onClick={onShare}>💞 Share us as a picture</button>
 
-        <h3 className="ex-h">Drop {s.name} a note</h3>
-        <div className="note-box">
-          <div className="nb-stickers" role="radiogroup" aria-label="Sticker">
-            {STICKERS.map((e) => <button key={e} role="radio" aria-checked={sticker === e} className={sticker === e ? 'on' : ''} onClick={() => setSticker(e)}>{e}</button>)}
-          </div>
-          <div className="nb-write">
-            <textarea ref={focusNote} value={note} onChange={(e) => setNote(e.target.value.slice(0, 120))} rows={2} placeholder={`Write something for ${s.name}…`} aria-label="Your note" enterKeyHint="send"
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); drop() } }} />
-            <button className="btn-primary" disabled={!note.trim()} onClick={drop}>Send</button>
-          </div>
-          {note.length > 90 && <small className="nb-count">{120 - note.length} left</small>}
-        </div>
-        <p className="fine">Or send one with a tap:</p>
-        <div className="quick-notes">
-          {QUICK.map(([e, t]) => <button key={t} className="chip" onClick={() => onCheer(t, e)}>{e} {t}</button>)}
-        </div>
-        <p className="fine center">It lands on {s.name}’s Today like a sticky note{' '}and, if they have notifications on, on their phone too.</p>
 
-        <h3 className="ex-h">Notes and cheers between you</h3>
-        <div className="cheer-stats">
-          <span><b>{countOf(sent)}</b>sent</span>
-          <span><b>{countOf(got)}</b>received</span>
-          <span><b>{todayN}</b>today</span>
-        </div>
+        <h3 className="ex-h">Between you</h3>
+        <p className="cheer-sum">You sent <b>{countOf(sent)}</b> · {s.name} sent <b>{countOf(got)}</b>{todayN ? <> · <b>{todayN}</b> today</> : ''}</p>
         {log.length > 0 ? (
           <ul className="cheer-log">
-            {log.slice(0, 15).map((c, i) => (
+            {log.slice(0, allLog ? 30 : 5).map((c, i) => (
               <li key={i} className={c.who === 'You' ? 'mine' : ''}>
-                <span><b>{c.who}</b> {cheerText(c)}</span>
+                <span><b>{c.who}</b> {cheerText(c)}{c.loved && <i className="cl-loved" title="Loved">❤️</i>}</span>
                 <small>{ago(c.at)}</small>
-                {c.who !== 'You' && c.msg && c.msg !== '👏' && c.msg !== 'Loved your note' && (
+                {c.who !== 'You' && c.msg && c.msg !== '👏' && !c.loved && (
                   <span className="cl-acts">
                     <button onClick={() => onCheer('Loved your note', '❤️')} aria-label={`Love ${s.name}’s note`}>❤️</button>
                     <button onClick={() => { noteRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }); noteRef.current?.focus() }}>Reply</button>
@@ -210,6 +247,7 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
             ))}
           </ul>
         ) : <p className="fine">Nothing yet. Send the first one!</p>}
+        {log.length > 5 && <button className="link-btn cl-more" onClick={() => setAllLog((x) => !x)}>{allLog ? 'Show less' : `Show all (${Math.min(30, log.length)})`}</button>}
       </div>
     </div>
   )
