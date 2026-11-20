@@ -1674,6 +1674,20 @@ button.df-day.on, button.sw-col.on { background: color-mix(in srgb, var(--accent
   box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--accent) 60%, transparent); animation: ci-in 0.45s var(--spring) both; transition: transform 0.2s var(--spring); }
 .ci-feature:active { transform: scale(0.97); }
 .ci-tag { position: absolute; top: 12px; left: 14px; padding: 4px 10px; border-radius: 99px; background: color-mix(in srgb, var(--card) 80%, transparent); font-size: 11.5px; font-weight: 850; color: var(--accent); }
+.ci-deck { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; min-width: 0; margin: 0 -16px; padding: 4px 16px 18px; scroll-padding: 0 16px; scrollbar-width: none; }
+.ci-deck::-webkit-scrollbar { display: none; }
+.ci-deck > .ci-feature { flex: 0 0 86%; scroll-snap-align: start; min-height: 220px; align-content: center; }
+.ci-feature.plain { background: var(--card); box-shadow: var(--shadow); }
+.ci-feature.plain .ci-why { background: var(--soft); color: var(--muted); }
+.ci-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: -6px; }
+.ci-arrow { display: grid; place-items: center; padding: 0 0 3px; width: 36px; height: 36px; border-radius: 50%; background: var(--card); box-shadow: var(--shadow); font-size: 22px; font-weight: 800; color: var(--accent); line-height: 1; }
+.ci-arrow:disabled { opacity: 0.3; }
+.ci-dots { display: flex; gap: 6px; }
+.ci-dots i { width: 7px; height: 7px; border-radius: 99px; background: var(--line); transition: width 0.25s var(--spring), background 0.2s; }
+.ci-dots i.real { background: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.ci-dots i.on { width: 20px; background: var(--accent); }
+.ci-quiet { margin: 0 0 4px; font-size: 14px; font-weight: 700; color: var(--muted); }
+@media (min-width: 700px) { .ci-arrow { width: 40px; height: 40px; } }
 .ci-why { max-width: 100%; padding: 4px 11px; border-radius: 99px; background: color-mix(in srgb, var(--card) 80%, transparent); font-size: 12px; font-weight: 800; color: var(--accent); }
 .ci-why-s { margin-top: auto; font-size: 11.5px; font-weight: 700; color: var(--muted); }
 .ci-own { display: block; margin: 2px auto 0; font-size: 13.5px; }

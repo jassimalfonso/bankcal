@@ -21,6 +21,13 @@ function noticed(s, info) {
 }
 // Half-sentences to finish in your own words
 const STARTERS = [['❤️', 'Proud of you for '], ['👀', 'I noticed you '], ['🤗', 'Can’t wait to ']]
+// Everyday notes for any day, "just because". Order changes daily, not on every open.
+const EVERYDAY = [
+  ['❤️', 'Proud of you'], ['💪', 'You’ve got this'], ['😘', 'Thinking of you'], ['🤗', 'Sending you a hug'],
+  ['🙏', 'Praying for you'], ['🚶', 'Walk with me later?'], ['💧', 'Drink some water!'], ['🍽️', 'What’s for dinner?'],
+  ['🥚', 'You’re egg-cellent'], ['🥑', 'Holy guacamole, look at you go'], ['🎯', 'Small steps still count'], ['😄', 'You make this fun'],
+  ['🌱', 'Every day you show up matters'], ['🥗', 'Let’s eat well together today'], ['👋', 'Just dropping by to say hi'], ['🌟', 'One good choice at a time'],
+]
 const STICKERS = ['💌', '👋', '😘', '🥳', '💪', '🔥', '🌟', '🤗', '🥚', '🥑']
 const SEEN = (me, id) => `bankcal:note:${me}:${id}`
 
@@ -148,6 +155,8 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
   const [allLog, setAllLog] = useState(false)
   const [writing, setWriting] = useState(!!reply)
   const [sentKey, setSentKey] = useState(null) // the card that was just sent, for a moment of "Sent ✓"
+  const [idx, setIdx] = useState(0) // which card of the deck is showing
+  const deckRef = useRef(null)
   const send = (t, e) => {
     if (sentKey) return
     setSentKey(t); onCheer(t, e)
@@ -180,7 +189,14 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
   const todayN = all.filter((c) => c.at >= day0).length
   // Only what they really did, and nothing you already sent in the last 3 days
   const recent = new Set((sent?.log ?? []).filter((c) => c.at > Date.now() - 3 * 864e5).map((c) => c.msg))
-  const shown = noticed(s, info).filter((x) => !recent.has(x.t)).slice(0, 3)
+  const seen = noticed(s, info).filter((x) => !recent.has(x.t))
+  const day = Math.floor(Date.now() / 864e5)
+  const pool = EVERYDAY.filter(([, t]) => !recent.has(t))
+  const rot = pool.length ? (day * 5) % pool.length : 0
+  const deck = [...seen, ...[...pool.slice(rot), ...pool.slice(0, rot)].slice(0, Math.max(3, 8 - seen.length)).map(([e, t]) => ({ e, t }))]
+  const cur = deck[Math.min(idx, deck.length - 1)]
+  const onDeck = (el) => { const i = Math.round(el.scrollLeft / (el.firstChild?.offsetWidth + 12 || 1)); if (i !== idx) setIdx(i) }
+  const go = (i) => { const el = deckRef.current; if (el?.firstChild) el.scrollTo({ left: i * (el.firstChild.offsetWidth + 12), behavior: 'smooth' }) }
   const drag = useSheetDrag(onClose)
   useEscape(onClose)
   const rows = [
@@ -205,37 +221,28 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
 
         <div className="cheer-ideas">
           <div className="ci-head"><b>Make {s.name}’s day</b></div>
-          {shown[0] ? (() => {
-            const { e, t, why } = shown[0]
-            const done = sentKey === t
-            return (
-              <>
-                <button className={`ci-feature ${done ? 'sent' : ''}`} onClick={() => send(t, e)} disabled={!!sentKey}>
-                  {!done && <small className="ci-why">👀 {why}</small>}
+          {!seen.length && (
+            <p className="ci-quiet">{info.fresh ? `Nothing big to celebrate yet today. Something kind still counts.` : `${s.name} hasn’t opened BankCal yet today. Your note will be waiting.`}</p>
+          )}
+          <div className="ci-deck" ref={deckRef} onScroll={(e) => onDeck(e.currentTarget)} aria-roledescription="carousel" aria-label="Cheer ideas">
+            {deck.map(({ e, t, why }, i) => {
+              const done = sentKey === t
+              return (
+                <button key={t} className={`ci-feature ${why ? '' : 'plain'} ${done ? 'sent' : ''}`} onClick={() => (i === idx ? send(t, e) : go(i))} disabled={!!sentKey} aria-label={`${t}${why ? `. ${why}` : ''}`}>
+                  {!done && <small className="ci-why">{why ? `👀 ${why}` : '💛 Just because'}</small>}
                   <span className="ci-big">{done ? '💌' : e}</span>
                   <span className="ci-text">{done ? `Sent to ${s.name}!` : t}</span>
                   <span className="ci-go">{done ? '✓' : 'Tap to send'}</span>
                 </button>
-                {!done && <button className="link-btn ci-own" onClick={() => startNote(t + ' ', e)}>✏️ Say it your way</button>}
-              </>
-            )
-          })() : (
-            <div className="ci-empty">
-              <span aria-hidden="true">{info.fresh ? '🌤️' : '🕊️'}</span>
-              <p>{info.fresh ? `Nothing big to celebrate yet today. A few words from you could be ${s.name}’s nudge.` : `${s.name} hasn’t opened BankCal yet today. A note will be waiting when they do.`}</p>
-            </div>
-          )}
-          {shown.length > 1 && (
-            <div className="ci-pair">
-              {shown.slice(1, 3).map(({ e, t, why }) => (
-                <button key={t} className={`ci-small ${sentKey === t ? 'sent' : ''}`} onClick={() => send(t, e)} disabled={!!sentKey}>
-                  <span className="ci-emo">{sentKey === t ? '✓' : e}</span>
-                  <span>{sentKey === t ? 'Sent!' : t}</span>
-                  {sentKey !== t && <small className="ci-why-s">{why}</small>}
-                </button>
-              ))}
-            </div>
-          )}
+              )
+            })}
+          </div>
+          <div className="ci-nav">
+            <button className="ci-arrow" onClick={() => go(idx - 1)} disabled={idx === 0} aria-label="Previous idea">‹</button>
+            <span className="ci-dots" aria-hidden="true">{deck.map((x, i) => <i key={x.t} className={`${i === idx ? 'on' : ''} ${x.why ? 'real' : ''}`} />)}</span>
+            <button className="ci-arrow" onClick={() => go(idx + 1)} disabled={idx >= deck.length - 1} aria-label="Next idea">›</button>
+          </div>
+          {cur && !sentKey && <button className="link-btn ci-own" onClick={() => startNote(cur.t + ' ', cur.e)}>✏️ Say it your way</button>}
         </div>
         <div className="ci-starters" aria-label="Start a note">
           <small>Or in your own words</small>
