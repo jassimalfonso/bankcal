@@ -54,6 +54,12 @@ function Bank({ user }) {
   const store = DEMO ? useDemoStore() : useStore(user) // eslint-disable-line react-hooks/rules-of-hooks
   const { profile, entries } = store
   const [tab, setTabRaw] = useState('today')
+  const [offline, setOffline] = useState(() => typeof navigator !== 'undefined' && navigator.onLine === false)
+  useEffect(() => {
+    const on = () => setOffline(false), off = () => setOffline(true)
+    addEventListener('online', on); addEventListener('offline', off)
+    return () => { removeEventListener('online', on); removeEventListener('offline', off) }
+  }, [])
   const [dir, setDir] = useState('none') // slide direction for page transitions
   const ORDER = ['today', 'week', 'train', 'me']
   const setTab = (next) => {
@@ -293,7 +299,8 @@ function Bank({ user }) {
         </div>
       )}
       {msShare && <ShareSheet kind="milestone" title="Share this milestone" file="milestone.png" buddies={[profile.character]} notify={notify} data={{ emoji: msShare.emoji, label: msShare.label }} onClose={() => setMsShare(null)} />}
-      {newVersion && !adding && !working && (
+      {offline && <div className="offline-pill" role="status">☁️ Offline · your logs will sync when you’re back</div>}
+      {newVersion && !adding && !working && !offline && (
         <button className="update-pill" onClick={applyUpdate}>✨ New version ready <b>Update</b></button>
       )}
       {receiptMsg && (

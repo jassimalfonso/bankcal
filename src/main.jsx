@@ -5,8 +5,10 @@ import './styles.css'
 import App from './App.jsx'
 import ErrorBoundary from './ErrorBoundary'
 import { startUpdates } from './update'
+import { startKeyboardHelp } from './keyboard'
 
 startUpdates()
+startKeyboardHelp()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

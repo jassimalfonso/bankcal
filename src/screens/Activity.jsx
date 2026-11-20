@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BASE_STEPS, DEFAULT_BED, DEFAULT_WAKE, describeWorkout, fmt, fmtSleep, sleepHours, SLEEP_TARGET, WORKOUTS, workoutKcal } from '../calc'
+import { BASE_STEPS, earned, DEFAULT_BED, DEFAULT_WAKE, describeWorkout, fmt, fmtSleep, sleepHours, SLEEP_TARGET, WORKOUTS, workoutKcal } from '../calc'
 import WorkoutSheet from './WorkoutSheet'
 import EditWorkout from './EditWorkout'
 import { myWorkouts, routineWorkout } from '../training'
@@ -20,6 +20,16 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
   const [open, setOpen] = useState(() => { if (pastDay) return true; try { return localStorage.getItem('bankcal:deposits') === 'open' } catch { return false } })
   // a workout was just logged: open the card so its line can be seen
   useEffect(() => { if (fresh && (dayLog.workouts ?? []).some((w) => w.id === fresh)) setOpen(true) }, [fresh]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Save a steps/treadmill change and confirm it, with Undo
+  const deposit = (patch, label) => {
+    const prev = Object.fromEntries(Object.keys(patch).map((k) => [k, dayLog[k] ?? null]))
+    const gain = earned({ ...dayLog, ...patch }, profile.weight).total - earned(dayLog, profile.weight).total
+    setDay(today, patch)
+    if (!receipt) return
+    const undo = () => setDay(today, prev)
+    if (gain > 0) receipt({ kind: 'deposit', what: label, kcal: gain, undo })
+    else receipt({ kind: 'steps', what: patch.steps != null && patch.steps > 0 && patch.steps < BASE_STEPS ? `${label} · earning starts after ${fmt(BASE_STEPS)}` : label, kcal: 0, undo })
+  }
   const toggle = () => setOpen((o) => { if (!pastDay) { try { localStorage.setItem('bankcal:deposits', o ? 'closed' : 'open') } catch { /* ignore */ } } return !o })
   const saveWorkout = (w) => {
     const id = Date.now().toString(36)
@@ -57,7 +67,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
               ? `Earning starts after ${fmt(BASE_STEPS)} · ${fmt(BASE_STEPS - steps)} to go`
               : steps >= stepsGoal ? 'Goal reached 🎉' : `${fmt(Math.max(0, stepsGoal - steps))} to your ${fmt(stepsGoal)} goal`}</small>
           </div>
-          <NumField value={dayLog.steps} placeholder="0" onCommit={(v) => { setDay(today, { steps: v }); if (v >= stepsGoal && !(steps >= stepsGoal)) celebrate?.(`${fmt(stepsGoal)} steps reached! 👟`) }} />
+          <NumField value={dayLog.steps} placeholder="0" onCommit={(v) => { deposit({ steps: v }, `${fmt(v)} steps`); if (v >= stepsGoal && !(steps >= stepsGoal)) celebrate?.(`${fmt(stepsGoal)} steps reached! 👟`) }} />
           <span className={`act-kcal ${steps > 0 && steps < BASE_STEPS ? 'act-wait' : ''}`}>+{fmt(earn.steps)}</span>
         </div>
         <Bar value={steps / stepsGoal} mark={BASE_STEPS / stepsGoal} />
@@ -68,8 +78,8 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
             <small>{treadGoal ? (tread >= treadGoal ? 'Goal reached 🎉' : `${treadGoal - tread} min to your ${treadGoal} min goal`) : 'Minutes at your speed'}</small>
           </div>
           <div className="tread-in">
-            <NumField value={dayLog.treadMin} placeholder="0" unit="min" onCommit={(v) => setDay(today, { treadMin: v, treadSpeed: +dayLog.treadSpeed || +profile.treadSpeed || 5 })} />
-            <NumField value={dayLog.treadSpeed ?? profile.treadSpeed ?? 5} placeholder="5" unit="km/h" decimal onCommit={(v) => setDay(today, { treadSpeed: v })} />
+            <NumField value={dayLog.treadMin} placeholder="0" unit="min" onCommit={(v) => deposit({ treadMin: v, treadSpeed: +dayLog.treadSpeed || +profile.treadSpeed || 5 }, `Treadmill ${v} min`)} />
+            <NumField value={dayLog.treadSpeed ?? profile.treadSpeed ?? 5} placeholder="5" unit="km/h" decimal onCommit={(v) => deposit({ treadSpeed: v }, `Treadmill at ${v} km/h`)} />
           </div>
           <span className="act-kcal">+{fmt(earn.tread)}</span>
         </div>
@@ -143,7 +153,17 @@ function NumField({ value, onCommit, placeholder, unit, decimal }) {
         placeholder={String(placeholder)}
         onChange={(e) => setV(e.target.value.replace(decimal ? /[^\d.]/g : /\D/g, ''))}
         onBlur={commit}
-        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+        enterKeyHint="next"
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter') return
+          e.preventDefault()
+          // Enter jumps to the next box; the last one closes the keyboard
+          const box = e.currentTarget.closest('.activity')
+          const all = box ? [...box.querySelectorAll('input:not([type=time])')] : []
+          const next = all[all.indexOf(e.currentTarget) + 1]
+          if (next) { next.focus(); next.select?.() } else e.currentTarget.blur()
+        }}
+        onFocus={(e) => e.currentTarget.select()}
       />
       {unit && <span>{unit}</span>}
     </label>

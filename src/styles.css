@@ -1694,9 +1694,19 @@ button.df-day.on, button.sw-col.on { background: color-mix(in srgb, var(--accent
 .ci-deck > .ci-feature.sent { animation: ci-post 1.2s var(--spring); }
 @keyframes ci-post { 0% { transform: scale(1); } 25% { transform: translateY(-14px) rotate(-4deg) scale(1.03); } 55% { transform: translateY(4px) rotate(1deg); } 100% { transform: rotate(0) scale(1); } }
 @keyframes ci-pop { 0% { transform: scale(0.4) rotate(-20deg); } 70% { transform: scale(1.15) rotate(6deg); } }
-.note-box { position: relative; margin-top: 18px; }
-.nb-x { position: absolute; top: -14px; right: -6px; z-index: 1; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: var(--bg); box-shadow: var(--shadow); }
-.nb-x svg { width: 16px; height: 16px; }
+.note-box { margin-top: 10px; }
+.nb-top { display: flex; justify-content: space-between; align-items: center; margin: -2px 0 8px 4px; }
+.nb-top small { font-size: 13px; font-weight: 800; color: var(--muted); }
+.nb-x { position: relative; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--soft); color: var(--ink); }
+.nb-x svg { width: 14px; height: 14px; }
+.ci-hint { margin: -8px 0 2px; text-align: center; font-size: 13px; font-weight: 800; color: var(--accent); animation: hint-nudge 1.2s ease-in-out 3; }
+@keyframes hint-nudge { 50% { transform: translateX(6px); } }
+.offline-pill { position: fixed; z-index: 60; top: calc(env(safe-area-inset-top) + 10px); left: 50%; transform: translateX(-50%); padding: 10px 16px; border-radius: 99px; background: var(--ink); color: var(--bg); font-size: 13.5px; font-weight: 750; white-space: nowrap; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22); animation: rc-in 0.45s var(--spring) both; }
+@media (pointer: coarse) { body.typing .tabbar { transform: translate(-50%, 140%); opacity: 0; pointer-events: none; } body.typing .fab { transform: scale(0.4); opacity: 0; pointer-events: none; } }
+.tabbar { transition: transform 0.25s var(--ease), opacity 0.2s; }
+/* every button answers a press, since iPhone web apps can't vibrate */
+button:not(:disabled) { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled):active { filter: brightness(0.94); }
 .nb-x::after { content: ''; position: absolute; inset: -6px; }
 .ci-tabs { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 0; scrollbar-width: none; }
 .ci-tabs::-webkit-scrollbar { display: none; }

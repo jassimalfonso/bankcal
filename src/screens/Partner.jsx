@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { firstTime } from '../keyboard'
 import ShareSheet from './ShareSheet'
 import Character from '../Character'
 import { IconClose } from '../icons'
@@ -173,6 +174,8 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
   const [sentKey, setSentKey] = useState(null) // the card that was just sent, for a moment of "Sent ✓"
   const [idx, setIdx] = useState(0) // which card of the deck is showing
   const deckRef = useRef(null)
+  const boxRef = useRef(null)
+  const [hint] = useState(() => firstTime('cheer-swipe'))
   const send = (t, e) => {
     if (sentKey) return
     setSentKey(t); onCheer(t, e)
@@ -221,6 +224,13 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
   const go = (i) => { const el = deckRef.current; if (!el?.firstChild) return; const w = el.firstChild.offsetWidth; el.scrollTo({ left: 16 + i * step(el) + w / 2 - el.clientWidth / 2, behavior: 'smooth' }) }
   const drag = useSheetDrag(onClose)
   const closeNote = () => { setWriting(false); setNote(''); setPickSticker(false) }
+  // Tapping anywhere outside the note box folds it away (your words are kept until you send or ✕)
+  useEffect(() => {
+    if (!writing) return
+    const h = (e) => { if (boxRef.current && !boxRef.current.contains(e.target) && !e.target.closest?.('.ci-starters, .ci-own')) { setWriting(false); setPickSticker(false) } }
+    const t = setTimeout(() => document.addEventListener('pointerdown', h), 0)
+    return () => { clearTimeout(t); document.removeEventListener('pointerdown', h) }
+  }, [writing])
   useEscape(() => (writing ? closeNote() : onClose())) // Back closes the note box first
   const rows = [
     ['Streak within budget', s.streak > 0 ? `🔥 ${s.streak} day${s.streak > 1 ? 's' : ''}` : 'Not started yet'],
@@ -266,6 +276,7 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
               )
             })}
           </div>
+          {hint && deck.length > 1 && <p className="ci-hint" aria-hidden="true">Swipe for more 👉</p>}
           <div className="ci-nav">
             <button className="ci-arrow" onClick={() => go(idx - 1)} disabled={idx === 0} aria-label="Previous idea">‹</button>
             <span className="ci-count" aria-live="polite">{Math.min(idx + 1, deck.length)} / {deck.length}</span>
@@ -275,14 +286,18 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
         </div>
         <div className="ci-starters" aria-label="Start a note">
           <small>Or in your own words</small>
-          <div>{STARTERS.map(([e, t]) => <button key={t} onClick={() => startNote(t, e)}>{e} {t.trim()}…</button>)}<button onClick={() => startNote('', '💌')}>✏️ Blank note</button></div>
+          <div>{STARTERS.map(([e, t]) => <button key={t} onClick={() => startNote(t, e)}>{e} {t.trim()}…</button>)}<button onClick={() => startNote(note, note ? sticker : '💌')}>{note ? '✏️ My draft' : '✏️ Blank note'}</button></div>
         </div>
         {writing && (
-        <div className="note-box">
-          <button className="nb-x" onClick={closeNote} aria-label="Close note without sending"><IconClose /></button>
+        <div className="note-box" ref={boxRef}>
+          <div className="nb-top">
+            <small>Note to {s.name}</small>
+            <button className="nb-x" onClick={closeNote} aria-label="Close note without sending"><IconClose /></button>
+          </div>
           <div className="nb-write">
             <button className="nb-sticker" onClick={() => setPickSticker((x) => !x)} aria-label="Change sticker" aria-expanded={pickSticker}>{sticker}</button>
             <textarea ref={focusNote} value={note} onChange={(e) => setNote(e.target.value.slice(0, 120))} rows={1} placeholder="Your note…" aria-label="Your note" enterKeyHint="send" autoFocus={!reply}
+              onFocus={(e) => { const l = e.target.value.length; e.target.setSelectionRange(l, l) }}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); drop() } }} />
             <button className="btn-primary" disabled={!note.trim()} onClick={drop}>Send</button>
           </div>
