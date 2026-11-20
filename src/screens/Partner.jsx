@@ -68,6 +68,7 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0, stre
   const [justSent, setJustSent] = useState(null)
   const [replyTo, setReplyTo] = useState(false)
   const [together, setTogether] = useState(null) // partner id, for the shared picture
+  const [shareNote, setShareNote] = useState(null) // { id, c }: a note you got, to share as a picture
   const [, bump] = useState(0)
   const list = partners.map((id) => [id, shares[id]]).filter(([, s]) => s)
   if (!list.length) return null
@@ -115,6 +116,7 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0, stre
             <div className="sn-acts">
               <button onClick={() => { send(id, s.name, 'Loved your note', '❤️'); markRead(id, c) }}>❤️ Love it</button>
               <button onClick={() => { markRead(id, c); setReplyTo(true); setOpen(id) }}>Reply</button>
+              <button onClick={() => setShareNote({ id, c })} aria-label="Share this note as a picture">📤 Share</button>
               <button onClick={() => markRead(id, c)} aria-label="Mark as read">✓</button>
             </div>
           </div>
@@ -149,7 +151,14 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0, stre
             ].filter(Boolean) }} />
         )
       })()}
-      {sel && <PartnerSheet s={sel} sent={sel.cheers?.[myId]} got={received[open]} info={today_(sel)} team={team} myTicks={myTicks} me={profile?.name} reply={replyTo} onShare={() => setTogether(open)} onCheer={(msg, st) => send(open, sel.name, msg, st)} onClose={() => { setOpen(null); setReplyTo(false) }} />}
+      {shareNote && shares[shareNote.id] && (() => {
+        const p = shares[shareNote.id]; const c = shareNote.c
+        return (
+          <ShareSheet kind="cheer" title="Share this note" file="note.png" buddies={[p.character, profile?.character]} notify={notify} onClose={() => setShareNote(null)}
+            data={{ msg: c.msg, s: c.s, from: p.name, when: new Date(c.at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }), title: 'Look what I got!', say: 'Better together!' }} />
+        )
+      })()}
+      {sel && <PartnerSheet onShareNote={(c) => setShareNote({ id: open, c })} s={sel} sent={sel.cheers?.[myId]} got={received[open]} info={today_(sel)} team={team} myTicks={myTicks} me={profile?.name} reply={replyTo} onShare={() => setTogether(open)} onCheer={(msg, st) => send(open, sel.name, msg, st)} onClose={() => { setOpen(null); setReplyTo(false) }} />}
     </section>
   )
 }
@@ -165,7 +174,7 @@ function TeamGoal({ team, split }) {
   )
 }
 
-function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, onShare, onClose }) {
+function PartnerSheet({ onShareNote, s, sent, got, info, team, myTicks, me, reply, onCheer, onShare, onClose }) {
   const [note, setNote] = useState('')
   const [sticker, setSticker] = useState('💌')
   const [pickSticker, setPickSticker] = useState(false)
@@ -327,10 +336,11 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
               <li key={i} className={c.who === 'You' ? 'mine' : ''}>
                 <span><b>{c.who}</b> {cheerText(c)}{c.loved && <i className="cl-loved" title="Loved">❤️</i>}</span>
                 <small>{ago(c.at)}</small>
-                {c.who !== 'You' && c.msg && c.msg !== '👏' && !c.loved && (
+                {c.who !== 'You' && c.msg && c.msg !== '👏' && c.msg !== 'Loved your note' && (
                   <span className="cl-acts">
-                    <button onClick={() => onCheer('Loved your note', '❤️')} aria-label={`Love ${s.name}’s note`}>❤️</button>
-                    <button onClick={() => { setWriting(true); setTimeout(() => { noteRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }); noteRef.current?.focus() }, 50) }}>Reply</button>
+                    <button onClick={() => onShareNote(c)} aria-label={`Share ${s.name}’s note as a picture`}>📤</button>
+                    {!c.loved && <button onClick={() => onCheer('Loved your note', '❤️')} aria-label={`Love ${s.name}’s note`}>❤️</button>}
+                    {!c.loved && <button onClick={() => { setWriting(true); setTimeout(() => { noteRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }); noteRef.current?.focus() }, 50) }}>Reply</button>}
                   </span>
                 )}
               </li>

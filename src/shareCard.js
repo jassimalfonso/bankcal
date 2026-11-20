@@ -160,6 +160,28 @@ const B = {
     } }
   },
 
+  // a taped sticky note: sticker, the words, who it's from
+  note: (ctx0, d) => {
+    const f = fit(ctx0, d.msg, 850, 60, 34, 700, 5)
+    const lh = f.size * 1.32
+    const nh = 140 + f.rows.length * lh + 110
+    return { h: nh + 60, draw(ctx, y) {
+      const nw = 820
+      ctx.save(); ctx.translate(W / 2, y + 30 + nh / 2); ctx.rotate(-0.035)
+      ctx.shadowColor = 'rgba(80,60,0,0.25)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 18
+      ctx.fillStyle = '#fff3a8'; rr(ctx, -nw / 2, -nh / 2, nw, nh, 14); ctx.fill()
+      ctx.shadowColor = 'transparent'
+      ctx.save(); ctx.rotate(0.05); ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.fillRect(-90, -nh / 2 - 24, 180, 50); ctx.restore()
+      ctx.textAlign = 'center'
+      ctx.font = `110px ${FONT}`; ctx.fillText(d.s || '💌', nw / 2 - 90, -nh / 2 + 70)
+      ctx.font = font(850, f.size); ctx.fillStyle = '#3a3320'
+      let ty = -nh / 2 + 130
+      for (const r of f.rows) { ty += lh; ctx.fillText(r, -20, ty) }
+      ctx.font = font(800, 34); ctx.fillStyle = '#7a6a3a'; ctx.fillText(`— ${d.from}`, 0, nh / 2 - 50)
+      ctx.restore()
+    } }
+  },
+
   badge: (text, t) => ({ h: 90, draw(ctx, y) {
     ctx.font = font(900, 42)
     const w = ctx.measureText(text).width + 80
@@ -284,6 +306,12 @@ function recipe(kind, d, t, ctx, imgs, post, seed) {
     B.title(ctx, d.names, t, { size: 84, maxLines: 3 }), B.gap(30),
     ...(d.team ? [B.bar('Shared habit goal', `${d.team.ticks} / ${d.team.target}`, d.team.ticks / d.team.target, t), B.gap(40)] : []),
     ...(d.stats?.length ? [B.stats(d.stats)] : []),
+  ]
+  if (kind === 'cheer') return [
+    B.pill(d.when || 'A little note', t), B.gap(post ? 30 : 60),
+    B.title(ctx, d.title || 'Look what I got!', t, { size: 84, maxLines: 2 }), B.gap(30),
+    B.note(ctx, d), B.gap(post ? 10 : 50),
+    ...(imgs.length ? [B.buddies(imgs, d.say || 'Better together!', post ? 200 : 260)] : []),
   ]
   return []
 }
