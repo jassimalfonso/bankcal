@@ -297,3 +297,29 @@ test('expected vs actual weight, and a suggested correction', async () => {
   // and the correction feeds into maintenance
   assert.equal(breakdown({ ...base, tdeeAdjust: -200 }).tdee, tdee - 200)
 })
+
+test('weekly weigh-in: due on the day, stays due if missed', async () => {
+  const { weighDue } = await import('../src/calc.js')
+  const p = { weighFreq: 'weekly', weighDay: 5, days: {} } // Friday
+  assert.equal(weighDue(p, '2026-11-20').due, true) // Friday
+  assert.equal(weighDue({ ...p, days: { '2026-11-20': { weight: 80 } } }, '2026-11-20').due, false)
+  assert.equal(weighDue(p, '2026-11-22').late, true) // missed Friday, Sunday still due
+  assert.equal(weighDue({ ...p, days: { '2026-11-20': { weight: 80 } } }, '2026-11-22').due, false)
+  assert.equal(weighDue({ ...p, days: { '2026-11-20': { weight: 80 } } }, '2026-11-22').next, '2026-11-27')
+  assert.equal(weighDue({ days: {} }, '2026-11-22').due, true) // daily
+})
+
+test('sleep insights: bedtime spread across midnight, debt, short-night eating', async () => {
+  const { sleepInsights } = await import('../src/calc.js')
+  const days = {
+    '2026-11-16': { sleep: { bed: '23:30', wake: '06:30' } }, // 7 h
+    '2026-11-17': { sleep: { bed: '00:30', wake: '05:30' } }, // 5 h
+    '2026-11-18': { sleep: { bed: '01:30', wake: '06:30' } }, // 5 h
+    '2026-11-19': { sleep: { bed: '23:00', wake: '07:00' } }, // 8 h
+  }
+  const entries = [['2026-11-16', 1600], ['2026-11-17', 2000], ['2026-11-18', 2100], ['2026-11-19', 1500]].map(([day, kcal]) => ({ day, kcal }))
+  const r = sleepInsights({ profile: { days }, entries, keys: Object.keys(days) })
+  assert.equal(r.spread, 150) // 23:00 to 01:30
+  assert.equal(r.debt, 4)
+  assert.equal(r.effect, 500) // 2,050 after short nights vs 1,550 after rested ones
+})

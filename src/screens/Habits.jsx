@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { HABITS, JOURNAL_PROMPTS, MOODS, habitById, habitDays, journalStarters, suggestHabits } from '../habits'
+import { HABITS, JOURNAL_PROMPTS, MOODS, WINS, habitById, habitDays, journalStarters, suggestHabits } from '../habits'
 import { sleepHours } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
@@ -149,6 +149,16 @@ export function JournalSheet({ j, prompt, setDay, today, day = today, dayLog, pr
               <span>{m.e}</span><small>{m.label}</small>
             </button>
           ))}
+        </div>
+
+        <div className="j-wins" role="group" aria-label="Any wins today?">
+          <span>Any wins today? <small>Progress the scale can’t see</small></span>
+          <div>
+            {WINS.map((w) => {
+              const on = (dayLog.wins ?? []).includes(w.id)
+              return <button key={w.id} aria-pressed={on} className={`chip ${on ? 'on' : ''}`} onClick={() => setDay(day, { wins: on ? (dayLog.wins ?? []).filter((x) => x !== w.id) : [...(dayLog.wins ?? []), w.id] })}>{w.e} {w.label}</button>
+            })}
+          </div>
         </div>
 
         <textarea ref={area} value={text} onChange={(e) => onType(e.target.value)} rows={6} maxLength={3000} placeholder="Write as much or as little as you like…" aria-label="Journal note" />

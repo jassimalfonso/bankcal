@@ -1595,3 +1595,53 @@ button.ms:active { transform: scale(0.96); }
 .cal-item { display: flex; justify-content: space-between; gap: 12px; width: 100%; padding: 0; text-align: left; font: inherit; color: inherit; }
 .cal-item span:first-child { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
 .cal-detail .past-add { margin-bottom: 0; }
+
+/* Weight: start → now → goal, tap-able chart */
+.journey { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.jr-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.jr-pt { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 4px; border-radius: 14px; background: var(--bg); font: inherit; color: inherit; }
+.jr-pt small { font-size: 12px; font-weight: 800; color: var(--muted); }
+.jr-pt b { font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.jr-pt i { font-style: normal; font-size: 11px; font-weight: 800; color: var(--accent); }
+.jr-pt.now { background: var(--soft); }
+.jr-bar { height: 10px; border-radius: 5px; background: var(--soft); margin-top: 10px; overflow: hidden; }
+.jr-bar span { display: block; height: 100%; border-radius: 5px; background: var(--accent); }
+.jr-line { margin: 8px 0 0; font-size: 14px; line-height: 1.4; }
+.jr-edit { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.jr-edit input { width: 84px; padding: 10px; border: 0; border-radius: 12px; background: var(--bg); font: inherit; font-weight: 800; }
+.jr-edit input[type=date] { width: auto; }
+.jr-edit .btn-primary { width: auto; margin: 0; padding: 0 16px; min-height: 42px; }
+.tap-chart { touch-action: pan-y; cursor: crosshair; }
+
+/* tap a bar → a detail line */
+.chart-detail { margin: 10px 0 0; padding: 9px 12px; border-radius: 12px; background: var(--bg); font-size: 13.5px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.chart-detail small { display: block; color: var(--muted); font-size: 11.5px; font-weight: 650; }
+.chart-detail .pos { color: var(--accent); font-weight: 800; }
+.chart-detail .neg { color: var(--neg); font-weight: 800; }
+button.df-day, button.sw-col { font: inherit; color: inherit; padding: 0; background: none; border-radius: 10px; }
+button.df-day.on, button.sw-col.on { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.sw-ins { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.sw-ins > div { padding: 10px 12px; border-radius: 14px; background: var(--bg); display: flex; flex-direction: column; }
+.sw-ins b { font-size: 16px; font-weight: 900; }
+.sw-ins small { font-size: 12px; color: var(--muted); font-weight: 650; }
+.sw-tip { grid-column: 1 / -1; margin: 0; font-size: 13.5px; line-height: 1.45; }
+.weigh-next { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; text-align: left; font: inherit; color: inherit; }
+.weigh-next .weigh-txt { display: flex; flex-direction: column; }
+.weigh-next small { color: var(--muted); font-size: 13px; }
+
+/* Wins beyond the scale */
+.j-wins { margin: 4px 0 12px; }
+.j-wins > span { display: block; font-size: 14px; font-weight: 800; margin-bottom: 8px; }
+.j-wins > span small { font-weight: 650; color: var(--muted); }
+.j-wins > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.j-wins .chip { min-height: 38px; font-size: 13.5px; }
+.ws-kind { margin: 12px 0; padding: 12px 14px; border-radius: 16px; background: color-mix(in srgb, #ffd166 22%, var(--card)); }
+.ws-kind b { font-size: 15px; }
+.ws-kind p { margin: 4px 0 0; font-size: 14px; line-height: 1.45; }
+.wins-row { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.wins-row b { font-size: 13.5px; font-weight: 850; color: var(--muted); }
+.wins-row > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.wins-row .chip { font-size: 13px; min-height: 34px; pointer-events: none; }
+.card.progress .progress-top { flex-wrap: wrap; row-gap: 2px; }
+.card.progress .progress-top b { white-space: nowrap; }
+.card.progress .progress-top > span { flex-basis: 100%; }

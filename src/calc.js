@@ -404,7 +404,9 @@ export function weighInReport(profile, todayKey) {
   let headline, tip, tone = 'good'
   if (pts.length === 1) {
     headline = 'This is your starting line.'
-    tip = 'Weigh in at the same time each morning, after the bathroom and before eating. After a week you’ll see your real trend.'
+    tip = profile.weighFreq === 'weekly'
+      ? 'Weigh in on the same day each week, first thing in the morning, after the bathroom and before eating. Your trend shows from the second week.'
+      : 'Weigh in at the same time each morning, after the bathroom and before eating. After a week you’ll see your real trend.'
   } else if (maintaining && ms) {
     if (ms.status === 'in') { headline = `Holding steady around ${ms.keep} kg.`; tip = 'Nothing to change. Small ups and downs inside your range are just water and meals.' }
     else if (ms.status === 'above') { headline = `A little above your range (+${ms.diff} kg).`; tip = 'Check it against the next few mornings first. If it stays, a couple of lighter dinners and a daily walk usually bring it back.'; tone = 'care' }
@@ -414,7 +416,7 @@ export function weighInReport(profile, todayKey) {
     tip = 'Switch your goal to Maintain in Settings so your budget rises to keep you here.'
   } else if (perWeek == null) {
     headline = sincePrev <= 0 ? 'Off to a good start.' : 'Early days. One number means very little.'
-    tip = 'Keep weighing in each morning. Your trend and pace appear after a week.'
+    tip = profile.weighFreq === 'weekly' ? 'See you at next week’s weigh-in. Your pace appears after a couple of weeks.' : 'Keep weighing in each morning. Your trend and pace appear after a week.'
   } else if (pctWeek > 1 && -perWeek > 1) {
     headline = 'You’re losing quickly.'
     tip = 'Faster isn’t better. Eat up to your budget, include protein at each meal, and keep your strength sessions so you lose fat, not muscle.'
@@ -507,4 +509,45 @@ export function weightCheck({ profile, entries, todayKey, windowDays = 42 }) {
     expected: Math.round(expected * 100) / 100, actual: Math.round(actual * 100) / 100, gap: Math.round(gap * 100) / 100,
     status: close ? 'on-track' : gap > 0 ? 'faster' : 'slower', suggest,
   }
+}
+
+// ───────── Starting weight ─────────
+// The weight you started from: the one you set, or else your first weigh-in.
+export function startOf(profile) {
+  if (+profile.startWeight > 0) return { w: +profile.startWeight, k: profile.startWeightDate ?? null }
+  const first = Object.entries(profile.days ?? {}).filter(([, d]) => +d?.weight > 0).sort(([a], [b]) => (a < b ? -1 : 1))[0]
+  return first ? { w: +first[1].weight, k: first[0] } : null
+}
+
+// ───────── Weigh-in schedule ─────────
+// profile.weighFreq: 'daily' (default) or 'weekly' with profile.weighDay (0 = Sunday … 6 = Saturday).
+// Weekly: the weigh-in is due on that day; if it's missed, it stays due until the next weigh-in.
+export function weighDue(profile, todayKey) {
+  if (profile.weighFreq !== 'weekly') return { due: true, weekly: false }
+  const day = +(profile.weighDay ?? 5)
+  const t = parseDay(todayKey)
+  const back = (t.getDay() - day + 7) % 7 // days since the last weigh day (0 = today)
+  const lastDue = dayKey(new Date(t.getFullYear(), t.getMonth(), t.getDate() - back))
+  const done = Object.entries(profile.days ?? {}).some(([k, d]) => +d?.weight > 0 && k >= lastDue && k <= todayKey)
+  const next = dayKey(new Date(t.getFullYear(), t.getMonth(), t.getDate() + (back === 0 && done ? 7 : 7 - back)))
+  return { weekly: true, due: !done, late: !done && back > 0, next, dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day] }
+}
+
+// ───────── Sleep insights ─────────
+// Consistency (how much bedtimes vary), sleep debt against 7 h, and how short nights relate
+// to the next day's eating. Only shown when there's enough data to say something fair.
+export function sleepInsights({ profile, entries, keys }) {
+  const nights = keys.map((k) => ({ k, s: profile.days?.[k]?.sleep, h: sleepHours(profile.days?.[k]?.sleep) })).filter((n) => n.h != null)
+  if (nights.length < 3) return null
+  // bedtimes as minutes from 18:00, so 23:30 and 00:30 are an hour apart, not 23 hours
+  const bed = nights.map((n) => { const [h, m] = n.s.bed.split(':').map(Number); return ((h * 60 + m) - 18 * 60 + 24 * 60) % (24 * 60) })
+  const spread = Math.max(...bed) - Math.min(...bed) // minutes between earliest and latest bedtime
+  const debt = Math.round(nights.reduce((a, n) => a + Math.max(0, SLEEP_TARGET - n.h), 0) * 10) / 10
+  // the night's sleep is logged on the morning it ended, so it goes with that same day's food
+  const ate = (k) => { const xs = entries.filter((e) => e.day === k); return xs.length ? xs.reduce((a, e) => a + e.kcal, 0) : null }
+  const short = nights.filter((n) => n.h < 6).map((n) => ate(n.k)).filter((v) => v != null)
+  const rested = nights.filter((n) => n.h >= SLEEP_TARGET).map((n) => ate(n.k)).filter((v) => v != null)
+  const avg = (xs) => xs.reduce((a, v) => a + v, 0) / xs.length
+  const effect = short.length >= 2 && rested.length >= 2 ? Math.round((avg(short) - avg(rested)) / 10) * 10 : null
+  return { nights: nights.length, spread, debt, effect }
 }

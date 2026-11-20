@@ -1,7 +1,7 @@
 import Calendar from './Calendar'
 import { MILESTONES } from '../milestones'
 import { useState } from 'react'
-import { dayKey, deficitDays, earned, weightCheck, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
+import { dayKey, deficitDays, earned, sleepInsights, weightCheck, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
 import { Row } from './Today'
 import BodyCard from './BodyCard'
 import Progress from './Progress'
@@ -52,6 +52,11 @@ export default function Statement(props) {
             </button>
           ))}
         </div>
+        <p className="chart-detail">
+          <b>{sel.d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</b>
+          {sel.items.length ? <> · ate {fmt(sel.spent)}{budgetFor(sel.key) != null ? ` of ${fmt(budgetFor(sel.key))}` : ''}{sel.net != null ? <> · <span className={sel.net < 0 ? 'neg' : 'pos'}>{sel.net >= 0 ? `${fmt(sel.net)} under` : `${fmt(-sel.net)} over`}</span></> : ''}</> : ' · nothing logged'}
+          <small> Tap a bar for another day</small>
+        </p>
       </section>
 
       <DeficitCard {...props} keys={days.map((d) => d.key)} />
@@ -72,7 +77,7 @@ export default function Statement(props) {
         </div>
       </div>
 
-      <SleepWeek days={days} log={props.profile?.days ?? {}} />
+      <SleepWeek days={days} log={props.profile?.days ?? {}} profile={props.profile} mine={mine} />
       </>}
 
       <h2 className="group-title">Progress</h2>
@@ -104,7 +109,9 @@ export default function Statement(props) {
   )
 }
 
-function SleepWeek({ days, log }) {
+function SleepWeek({ days, log, profile, mine }) {
+  const [pickS, setPickS] = useState(null)
+  const ins = sleepInsights({ profile, entries: mine, keys: days.map((d) => d.key) })
   const nights = days.map((d) => ({ ...d, h: sleepHours(log[d.key]?.sleep) }))
   const logged = nights.filter((n) => n.h != null)
   if (!logged.length) return null
@@ -121,12 +128,25 @@ function SleepWeek({ days, log }) {
         <div className="sw-bars" role="img" aria-label={`Sleep each night this week, average ${fmtSleep(avg)}`}>
           <span className="sw-line" style={{ bottom: `${(SLEEP_TARGET / 10) * 100}%` }} />
           {nights.map((n) => (
-            <div key={n.key} className="sw-col">
+            <button key={n.key} className={`sw-col ${pickS === n.key ? 'on' : ''}`} onClick={() => setPickS(pickS === n.key ? null : n.key)} aria-label={`${n.key}: ${n.h == null ? 'not logged' : fmtSleep(n.h)}`}>
               <i className={n.h == null ? 'none' : n.h >= SLEEP_TARGET ? 'ok' : 'short'} style={{ height: n.h == null ? '4%' : `${Math.min(100, (n.h / 10) * 100)}%` }} />
               <small>{n.d.toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)}</small>
-            </div>
+            </button>
           ))}
         </div>
+        {pickS && (() => {
+          const n = nights.find((x) => x.key === pickS)
+          const sl = log[pickS]?.sleep
+          return <p className="chart-detail"><b>{n.d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</b>{n.h == null ? ' · not logged' : ` · ${sl.bed} → ${sl.wake} · ${fmtSleep(n.h)}`}</p>
+        })()}
+        {ins && (
+          <div className="sw-ins">
+            <div><b>{ins.spread <= 60 ? 'Steady' : ins.spread <= 120 ? 'Fairly steady' : 'Up and down'}</b><small>bedtimes {ins.spread < 60 ? `within ${ins.spread} min` : `varied by ${fmtSleep(ins.spread / 60)}`}</small></div>
+            <div><b>{ins.debt <= 0 ? 'None' : fmtSleep(ins.debt)}</b><small>sleep owed this week</small></div>
+            {ins.effect != null && ins.effect >= 100 && <p className="sw-tip">After short nights (under 6 h) you ate about <b>{fmt(ins.effect)} kcal more</b> than after rested ones. Planning an early night is a diet tip too.</p>}
+            {ins.spread > 120 && <p className="sw-tip">A steady bedtime, even on weekends, usually helps more than extra hours now and then.</p>}
+          </div>
+        )}
         <p className="fine">Adults need at least {SLEEP_TARGET} hours a night. Short sleep tends to raise hunger the next day, so be kind to yourself on those days.</p>
       </div>
     </>
@@ -164,6 +184,7 @@ function Milestones({ badges, character, notify }) {
 // The real calorie deficit this week: what your body used minus what you ate.
 // This is what turns into fat loss (about 7,700 kcal per kg), so it's the motivating number.
 function DeficitCard({ mine, profile, keys, today }) {
+  const [pickD, setPickD] = useState(null)
   const rows = deficitDays({ entries: mine, profile, keys, todayKey: today })
   if (!rows) return null
   const done = rows.filter((r) => r.deficit != null && !r.today)
@@ -201,16 +222,21 @@ function DeficitCard({ mine, profile, keys, today }) {
           const d = new Date(r.key + 'T12:00')
           const h = r.deficit == null ? 0 : Math.max(6, (Math.abs(r.deficit) / top) * 44)
           return (
-            <div key={r.key} className={`df-day ${r.deficit == null ? 'none' : r.deficit > 0 ? 'plus' : 'minus'} ${r.today ? 'today' : ''}`}
-              title={r.deficit == null ? 'Nothing logged' : `${r.deficit > 0 ? '−' : '+'}${fmt(Math.abs(r.deficit))} kcal`}>
+            <button key={r.key} className={`df-day ${r.deficit == null ? 'none' : r.deficit > 0 ? 'plus' : 'minus'} ${r.today ? 'today' : ''} ${pickD === r.key ? 'on' : ''}`}
+              onClick={() => setPickD(pickD === r.key ? null : r.key)} aria-label={`${r.key}: ${r.deficit == null ? 'nothing logged' : `${r.deficit > 0 ? 'deficit' : 'over'} ${fmt(Math.abs(r.deficit))} kcal`}`}>
               <span className="df-up">{r.deficit > 0 && <i style={{ height: h }} />}</span>
               <span className="df-down">{r.deficit != null && r.deficit <= 0 && <i style={{ height: h }} />}</span>
               <small>{r.today ? 'Today' : d.toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)}</small>
-            </div>
+            </button>
           )
         })}
       </div>
-      <p className="df-foot">Up = burned more than you ate. {now ? 'Today counts as you go.' : ''} Days with nothing logged are left out.</p>
+      {pickD && (() => {
+        const r = rows.find((x) => x.key === pickD)
+        const when = new Date(pickD + 'T12:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+        return <p className="chart-detail"><b>{when}</b>{r.deficit == null ? ' · nothing logged' : <> · used {fmt(r.used)} · ate {fmt(r.ate)} · <span className={r.deficit > 0 ? 'pos' : 'neg'}>{r.deficit > 0 ? `${fmt(r.deficit)} deficit` : `${fmt(-r.deficit)} over`}</span></>}</p>
+      })()}
+      <p className="df-foot">Tap a day for details. Up = burned more than you ate. {now ? 'Today counts as you go.' : ''} Days with nothing logged are left out.</p>
     </section>
   )
 }

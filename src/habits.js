@@ -86,3 +86,18 @@ export function oneThing({ profile, todayKey, yesterday, plans }) {
   const least = [...habits].sort((a, b) => [0, 1, 2, 3, 4, 5, 6].filter((n) => ago(n)?.habits?.[a.id]).length - [0, 1, 2, 3, 4, 5, 6].filter((n) => ago(n)?.habits?.[b.id]).length)[0]
   return { emoji: least.emoji, text: least.label }
 }
+
+// Wins beyond the scale: small things that show progress the scale can't.
+export const WINS = [
+  { id: 'energy', e: '⚡', label: 'More energy' }, { id: 'clothes', e: '👖', label: 'Clothes fit better' },
+  { id: 'strong', e: '💪', label: 'Felt stronger' }, { id: 'sleep', e: '😴', label: 'Slept well' },
+  { id: 'mood', e: '🙂', label: 'Good mood' }, { id: 'craving', e: '🙅', label: 'Beat a craving' },
+  { id: 'moved', e: '🚶', label: 'Moved more' }, { id: 'kind', e: '💛', label: 'Was kind to myself' },
+]
+// All wins in the last `days` days, newest first: [{ k, id }]
+export function recentWins(profile, todayKey, days = 30) {
+  const from = new Date(todayKey + 'T12:00'); from.setDate(from.getDate() - days)
+  const f = from.toISOString().slice(0, 10)
+  return Object.entries(profile.days ?? {}).filter(([k]) => k > f && k <= todayKey)
+    .flatMap(([k, d]) => (d?.wins ?? []).map((id) => ({ k, id }))).sort((a, b) => (a.k < b.k ? 1 : -1))
+}

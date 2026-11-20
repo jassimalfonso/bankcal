@@ -173,6 +173,12 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
       <div className="card form-list">
         <Line label="Wake up"><input className="date-in" type="time" value={p.wakeTime ?? DEFAULT_WAKE} onChange={(e) => set({ wakeTime: e.target.value })} /></Line>
         <Line label="Bedtime"><input className="date-in" type="time" value={p.bedTime ?? DEFAULT_BED} onChange={(e) => set({ bedTime: e.target.value })} /></Line>
+        <Line label="Weigh-in">
+          <select className="date-in" value={p.weighFreq === 'weekly' ? String(p.weighDay ?? 5) : 'daily'} onChange={(e) => set(e.target.value === 'daily' ? { weighFreq: 'daily' } : { weighFreq: 'weekly', weighDay: +e.target.value })} aria-label="How often you weigh in">
+            <option value="daily">Every morning</option>
+            {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => <option key={d} value={i}>Weekly, {d}</option>)}
+          </select>
+        </Line>
         <label className="line toggle-line">
           <span className="line-label">Morning welcome<small>Verse and motivation on your first open each day</small></span>
           <input type="checkbox" className="switch" checked={p.morningCard !== false} onChange={(e) => set({ morningCard: e.target.checked })} />
