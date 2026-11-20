@@ -28,6 +28,9 @@ const EVERYDAY = [
   ['🥚', 'You’re egg-cellent'], ['🥑', 'Holy guacamole, look at you go'], ['🎯', 'Small steps still count'], ['😄', 'You make this fun'],
   ['🌱', 'Every day you show up matters'], ['🥗', 'Let’s eat well together today'], ['👋', 'Just dropping by to say hi'], ['🌟', 'One good choice at a time'],
 ]
+// Each card gets its own paper colour and a little tilt, like a pile of notes
+const PAPERS = ['sun', 'mint', 'lilac', 'peach', 'sky', 'rose']
+const TILTS = [-2.5, 2, -1.5, 2.5, -2, 1.5]
 const STICKERS = ['💌', '👋', '😘', '🥳', '💪', '🔥', '🌟', '🤗', '🥚', '🥑']
 const SEEN = (me, id) => `bankcal:note:${me}:${id}`
 
@@ -195,10 +198,13 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
   const rot = pool.length ? (day * 5) % pool.length : 0
   const deck = [...seen, ...[...pool.slice(rot), ...pool.slice(0, rot)].slice(0, Math.max(3, 8 - seen.length)).map(([e, t]) => ({ e, t }))]
   const cur = deck[Math.min(idx, deck.length - 1)]
-  const onDeck = (el) => { const i = Math.round(el.scrollLeft / (el.firstChild?.offsetWidth + 12 || 1)); if (i !== idx) setIdx(i) }
-  const go = (i) => { const el = deckRef.current; if (el?.firstChild) el.scrollTo({ left: i * (el.firstChild.offsetWidth + 12), behavior: 'smooth' }) }
+  // cards snap to the middle: work out which one is centred, and scroll to centre one
+  const step = (el) => (el.firstChild?.offsetWidth || 1) + 12
+  const onDeck = (el) => { const w = el.firstChild?.offsetWidth || 0; const i = Math.max(0, Math.round((el.scrollLeft + el.clientWidth / 2 - 16 - w / 2) / step(el))); if (i !== idx) { setIdx(i); try { navigator.vibrate?.(4) } catch { /* ignore */ } } }
+  const go = (i) => { const el = deckRef.current; if (!el?.firstChild) return; const w = el.firstChild.offsetWidth; el.scrollTo({ left: 16 + i * step(el) + w / 2 - el.clientWidth / 2, behavior: 'smooth' }) }
   const drag = useSheetDrag(onClose)
-  useEscape(onClose)
+  const closeNote = () => { setWriting(false); setNote(''); setPickSticker(false) }
+  useEscape(() => (writing ? closeNote() : onClose())) // Back closes the note box first
   const rows = [
     ['Streak within budget', s.streak > 0 ? `🔥 ${s.streak} day${s.streak > 1 ? 's' : ''}` : 'Not started yet'],
     ['Habits today', s.habitsTotal > 0 ? (info.fresh ? `${s.habitsDone} of ${s.habitsTotal} ticked` : 'Not yet today') : 'No habits chosen yet'],
@@ -228,11 +234,12 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
             {deck.map(({ e, t, why }, i) => {
               const done = sentKey === t
               return (
-                <button key={t} className={`ci-feature ${why ? '' : 'plain'} ${done ? 'sent' : ''}`} onClick={() => (i === idx ? send(t, e) : go(i))} disabled={!!sentKey} aria-label={`${t}${why ? `. ${why}` : ''}`}>
+                <button key={t} className={`ci-feature paper-${why ? 'real' : PAPERS[i % PAPERS.length]} ${i === idx ? 'on' : ''} ${done ? 'sent' : ''}`} style={{ '--tilt': `${TILTS[i % TILTS.length]}deg` }}
+                  onClick={() => (i === idx ? send(t, e) : go(i))} disabled={!!sentKey} aria-label={`${t}${why ? `. ${why}` : ''}`}>
                   {!done && <small className="ci-why">{why ? `👀 ${why}` : '💛 Just because'}</small>}
-                  <span className="ci-big">{done ? '💌' : e}</span>
+                  <span className="ci-big"><span>{done ? '💌' : e}</span></span>
                   <span className="ci-text">{done ? `Sent to ${s.name}!` : t}</span>
-                  <span className="ci-go">{done ? '✓' : 'Tap to send'}</span>
+                  <span className="ci-go">{done ? 'Posted ✓' : 'Tap to send'}</span>
                 </button>
               )
             })}
@@ -252,7 +259,7 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
         <div className="note-box">
           <div className="nb-write">
             <button className="nb-sticker" onClick={() => setPickSticker((x) => !x)} aria-label="Change sticker" aria-expanded={pickSticker}>{sticker}</button>
-            <textarea ref={focusNote} value={note} onChange={(e) => setNote(e.target.value.slice(0, 120))} rows={1} placeholder={`Write something for ${s.name}…`} aria-label="Your note" enterKeyHint="send" autoFocus={!reply}
+            <textarea ref={focusNote} value={note} onChange={(e) => setNote(e.target.value.slice(0, 120))} rows={1} placeholder="Your note…" aria-label="Your note" enterKeyHint="send" autoFocus={!reply}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); drop() } }} />
             <button className="btn-primary" disabled={!note.trim()} onClick={drop}>Send</button>
           </div>
@@ -261,7 +268,10 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
               {STICKERS.map((e) => <button key={e} role="radio" aria-checked={sticker === e} className={sticker === e ? 'on' : ''} onClick={() => { setSticker(e); setPickSticker(false) }}>{e}</button>)}
             </div>
           )}
-          {note.length > 90 && <small className="nb-count">{120 - note.length} left</small>}
+          <div className="nb-foot">
+            <button className="link-btn nb-cancel" onClick={closeNote}>Never mind</button>
+            {note.length > 90 && <small className="nb-count">{120 - note.length} left</small>}
+          </div>
         </div>
         )}
         <p className="fine center ci-foot">Lands on {s.name}’s Today like a sticky note 📌</p>

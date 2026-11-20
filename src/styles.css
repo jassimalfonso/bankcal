@@ -1676,7 +1676,26 @@ button.df-day.on, button.sw-col.on { background: color-mix(in srgb, var(--accent
 .ci-tag { position: absolute; top: 12px; left: 14px; padding: 4px 10px; border-radius: 99px; background: color-mix(in srgb, var(--card) 80%, transparent); font-size: 11.5px; font-weight: 850; color: var(--accent); }
 .ci-deck { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; min-width: 0; margin: 0 -16px; padding: 4px 16px 18px; scroll-padding: 0 16px; scrollbar-width: none; }
 .ci-deck::-webkit-scrollbar { display: none; }
-.ci-deck > .ci-feature { flex: 0 0 86%; scroll-snap-align: start; min-height: 220px; align-content: center; }
+.ci-deck { padding-top: 18px !important; }
+.ci-deck > .ci-feature { flex: 0 0 84%; scroll-snap-align: center; min-height: 230px; align-content: center; border-radius: 6px 6px 26px 6px; color: #2f2a26;
+  background: var(--paper); box-shadow: 0 14px 26px -16px rgba(60, 40, 20, 0.5), 0 2px 0 rgba(0, 0, 0, 0.04);
+  transform: rotate(var(--tilt)) scale(0.9); opacity: 0.75; transition: transform 0.45s var(--spring), opacity 0.3s; animation: none; }
+.ci-deck > .ci-feature.on { transform: rotate(calc(var(--tilt) * 0.3)) scale(1); opacity: 1; }
+.ci-deck > .ci-feature.on:active { transform: rotate(0) scale(0.97); }
+.ci-deck > .ci-feature::before { content: ''; position: absolute; top: -10px; left: 50%; width: 74px; height: 22px; translate: -50% 0; rotate: -3deg; background: rgba(255, 255, 255, 0.6); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
+.ci-deck > .ci-feature .ci-why { background: rgba(255, 255, 255, 0.65); color: #6b5a4a; }
+.ci-deck > .ci-feature.paper-real .ci-why { color: var(--accent); }
+.ci-deck > .ci-feature .ci-go { background: #2f2a26; color: #fff; }
+.ci-deck > .ci-feature .ci-big { display: grid; place-items: center; width: 92px; height: 92px; border-radius: 50%; background: rgba(255, 255, 255, 0.55); animation: none; }
+.ci-deck > .ci-feature.on .ci-big > span { display: inline-block; animation: ci-pop 0.5s var(--spring), ci-bob 3s ease-in-out 0.6s infinite; }
+.paper-real { --paper: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--accent-2) 75%, #fff), color-mix(in srgb, var(--accent) 22%, #fff) 75%); }
+.paper-sun { --paper: #fff1a6; } .paper-mint { --paper: #c9f0dc; } .paper-lilac { --paper: #e4dafc; }
+.paper-peach { --paper: #ffd9c2; } .paper-sky { --paper: #cfe8ff; } .paper-rose { --paper: #ffd6e4; }
+.ci-deck > .ci-feature.sent { animation: ci-post 1.2s var(--spring); }
+@keyframes ci-post { 0% { transform: scale(1); } 25% { transform: translateY(-14px) rotate(-4deg) scale(1.03); } 55% { transform: translateY(4px) rotate(1deg); } 100% { transform: rotate(0) scale(1); } }
+@keyframes ci-pop { 0% { transform: scale(0.4) rotate(-20deg); } 70% { transform: scale(1.15) rotate(6deg); } }
+.nb-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+.nb-cancel { font-size: 13.5px; color: var(--muted); }
 .ci-feature.plain { background: var(--card); box-shadow: var(--shadow); }
 .ci-feature.plain .ci-why { background: var(--soft); color: var(--muted); }
 .ci-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: -6px; }
@@ -1716,4 +1735,4 @@ button.df-day.on, button.sw-col.on { background: color-mix(in srgb, var(--accent
 @keyframes ci-bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-4px) rotate(-4deg); } }
 @keyframes ci-sent { 40% { transform: scale(1.03); } }
 @keyframes ci-fly { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.2) rotate(-8deg); opacity: 1; } 100% { transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .ci-feature, .ci-small, .ci-big, .ci-feature.sent .ci-big { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ci-deck > .ci-feature, .ci-deck > .ci-feature.on .ci-big > span, .ci-feature, .ci-small, .ci-big, .ci-feature.sent .ci-big { animation: none; } }
