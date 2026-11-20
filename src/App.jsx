@@ -28,6 +28,7 @@ import Character from './Character'
 import AddSheet from './screens/AddSheet'
 import SignIn from './screens/SignIn'
 import Onboarding from './screens/Onboarding'
+import { play } from './sound'
 import { IconMe, IconTrain, IconPlus, IconStatement, IconToday } from './icons'
 
 function useMode(mode) {
@@ -152,6 +153,7 @@ function Bank({ user }) {
       const next = cheerQueue.current[0]
       if (!next) { setCheer(null); return }
       try { navigator.vibrate?.([12, 40, 12]) } catch { /* not allowed yet */ }
+      play('win')
       setCheer({ ...next, key: Date.now() })
       cheerTimer.current = setTimeout(() => { cheerQueue.current.shift(); show() }, next.share ? 6000 : 3200)
     }

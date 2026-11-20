@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { firstTime } from '../keyboard'
+import { play } from '../sound'
 import ShareSheet from './ShareSheet'
 import Character from '../Character'
 import { IconClose } from '../icons'
@@ -71,6 +72,17 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0, stre
   const [shareNote, setShareNote] = useState(null) // { id, c }: a note you got, to share as a picture
   const [, bump] = useState(0)
   const list = partners.map((id) => [id, shares[id]]).filter(([, s]) => s)
+  // A soft chime the first time a new note shows up (once per note, not on every open)
+  const newest = Math.max(0, ...partners.map((id) => { const c = received[id]; return c?.msg && c.msg !== '👏' && c.msg !== 'Loved your note' && Date.now() - c.at < 3 * 864e5 ? c.at : 0 }))
+  useEffect(() => {
+    if (!newest) return
+    const k = `bankcal:note-chime:${myId}`
+    let last = 0
+    try { last = +localStorage.getItem(k) || 0 } catch { /* ignore */ }
+    let seen = 0
+    for (const id of partners) { try { seen = Math.max(seen, +localStorage.getItem(SEEN(myId, id)) || 0) } catch { /* ignore */ } }
+    if (newest > last && newest > seen) { play('note'); try { localStorage.setItem(k, String(newest)) } catch { /* ignore */ } }
+  }, [newest]) // eslint-disable-line react-hooks/exhaustive-deps
   if (!list.length) return null
   // Shared weekly goal: each habit on 5 of 7 days, added up across everyone linked
   const habitsAll = (profile?.habits ?? []).length + list.reduce((a, [, s]) => a + (s.habitsTotal ?? 0), 0)
@@ -187,7 +199,7 @@ function PartnerSheet({ onShareNote, s, sent, got, info, team, myTicks, me, repl
   const [hint] = useState(() => firstTime('cheer-swipe'))
   const send = (t, e) => {
     if (sentKey) return
-    setSentKey(t); onCheer(t, e)
+    setSentKey(t); onCheer(t, e); play('send')
     try { navigator.vibrate?.([8, 30, 8]) } catch { /* ignore */ }
     setTimeout(() => setSentKey(null), 1400)
   }
@@ -198,7 +210,7 @@ function PartnerSheet({ onShareNote, s, sent, got, info, team, myTicks, me, repl
     setNote(text); if (st) setSticker(st); setWriting(true)
     setTimeout(() => { const el = noteRef.current; if (!el) return; el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.focus(); el.setSelectionRange(text.length, text.length) }, 60)
   }
-  const drop = () => { if (!note.trim()) return; onCheer(note.trim(), sticker); setNote(''); setWriting(false) }
+  const drop = () => { if (!note.trim()) return; onCheer(note.trim(), sticker); play('send'); setNote(''); setWriting(false) }
   const all = [
     ...(sent?.log ?? []).map((c) => ({ ...c, who: 'You' })),
     ...(got?.log ?? []).map((c) => ({ ...c, who: s.name })),

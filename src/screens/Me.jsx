@@ -7,6 +7,7 @@ import { lastLookup } from '../ai'
 import { PartnerSettings } from './Partner'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
+import { soundOn, setSoundOn } from '../sound'
 
 // Each background comes with a matching colour; you can still pick another colour after.
 const BACKGROUNDS = [
@@ -184,6 +185,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
           <input type="checkbox" className="switch" checked={p.morningCard !== false} onChange={(e) => set({ morningCard: e.target.checked })} />
         </label>
         {openWords && <button className="line link-line" onClick={openWords}>Show it now</button>}
+        <SoundLine />
       </div>
       <p className="fine">A new day starts at midnight. If the morning welcome is on, it greets you the first time you open the app that day. An hour before bed, “Close my day” appears, and at bedtime BankCal offers to close it for you. Anything eaten after midnight counts toward the new day.</p>
 
@@ -298,5 +300,16 @@ function PaceTable({ plan, weight }) {
       <div className="pace-row"><span>Pace</span><b className={`pace-tag ${plan.pace}`}>{label}</b></div>
       <p className="fine">Each kg of body fat is about {KCAL_PER_KG.toLocaleString('en')} kcal. Most of the loss is fat at these rates, though the first week or two also drops some water. Safe guidance is up to about 1 kg (or 1% of body weight) a week{weight ? `, ${Math.min(1, Math.round(weight) / 100).toFixed(2)} kg for you` : ''}.</p>
     </div>
+  )
+}
+
+// Sounds are a choice for this phone only
+function SoundLine() {
+  const [on, setOn] = useState(soundOn)
+  return (
+    <label className="line toggle-line">
+      <span className="line-label">Sounds<small>A chime for milestones and notes from your partner</small></span>
+      <input type="checkbox" className="switch" checked={on} onChange={(e) => { setOn(e.target.checked); setSoundOn(e.target.checked) }} />
+    </label>
   )
 }

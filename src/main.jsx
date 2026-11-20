@@ -6,9 +6,11 @@ import App from './App.jsx'
 import ErrorBoundary from './ErrorBoundary'
 import { startUpdates } from './update'
 import { startKeyboardHelp } from './keyboard'
+import { startSound } from './sound'
 
 startUpdates()
 startKeyboardHelp()
+startSound()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
