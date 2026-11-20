@@ -1694,8 +1694,16 @@ button.df-day.on, button.sw-col.on { background: color-mix(in srgb, var(--accent
 .ci-deck > .ci-feature.sent { animation: ci-post 1.2s var(--spring); }
 @keyframes ci-post { 0% { transform: scale(1); } 25% { transform: translateY(-14px) rotate(-4deg) scale(1.03); } 55% { transform: translateY(4px) rotate(1deg); } 100% { transform: rotate(0) scale(1); } }
 @keyframes ci-pop { 0% { transform: scale(0.4) rotate(-20deg); } 70% { transform: scale(1.15) rotate(6deg); } }
-.nb-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
-.nb-cancel { font-size: 13.5px; color: var(--muted); }
+.note-box { position: relative; margin-top: 18px; }
+.nb-x { position: absolute; top: -14px; right: -6px; z-index: 1; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: var(--bg); box-shadow: var(--shadow); }
+.nb-x svg { width: 16px; height: 16px; }
+.nb-x::after { content: ''; position: absolute; inset: -6px; }
+.ci-tabs { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 0; scrollbar-width: none; }
+.ci-tabs::-webkit-scrollbar { display: none; }
+.ci-tabs button { flex: none; min-height: 36px; padding: 6px 11px; border-radius: 99px; background: var(--card); box-shadow: var(--shadow); font: inherit; font-size: 13.5px; font-weight: 800; color: var(--muted); transition: background 0.2s, color 0.2s, transform 0.2s var(--spring); }
+.ci-tabs button.on { background: var(--accent); color: var(--on-accent); }
+.ci-tabs button:active { transform: scale(0.95); }
+.ci-count { min-width: 64px; text-align: center; font-size: 14px; font-weight: 850; color: var(--muted); font-variant-numeric: tabular-nums; }
 .ci-feature.plain { background: var(--card); box-shadow: var(--shadow); }
 .ci-feature.plain .ci-why { background: var(--soft); color: var(--muted); }
 .ci-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: -6px; }

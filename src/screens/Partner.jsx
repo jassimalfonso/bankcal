@@ -6,7 +6,7 @@ import { useEscape, useSheetDrag } from '../motion'
 
 // Cheers come only from something your partner really did, so every one means something.
 // Each is { e: sticker, t: the words they get, why: what you noticed (shown to you only) }.
-function noticed(s, info) {
+function noticed(s, info, team) {
   const out = []
   const n = s.name
   if (info.fresh && s.habitsTotal > 0 && s.habitsDone >= s.habitsTotal) out.push({ e: '✅', t: `All ${s.habitsTotal} habits done today. Wow!`, why: `${n} ticked every habit today` })
@@ -16,19 +16,32 @@ function noticed(s, info) {
   if (s.weekLogged >= 3 && s.weekWithin >= s.weekLogged - 1) out.push({ e: '🎯', t: `${s.weekWithin} of ${s.weekLogged} days on budget this week. What a week!`, why: `${s.weekWithin} of ${s.weekLogged} logged days on budget` })
   if (s.weekWorkouts >= 3) out.push({ e: '🏋️', t: `${s.weekWorkouts} workouts this week. Strong!`, why: `${s.weekWorkouts} workouts in the last 7 days` })
   if (info.fresh && s.habitsTotal > 0 && s.habitsDone > 0 && s.habitsDone < s.habitsTotal) out.push({ e: '🌱', t: `${s.habitsDone} habit${s.habitsDone > 1 ? 's' : ''} ticked already. Nice start!`, why: `${s.habitsDone} of ${s.habitsTotal} habits ticked so far` })
+  if (s.goalPct >= 25) { const m = s.goalPct >= 75 ? 75 : s.goalPct >= 50 ? 50 : 25; out.push({ e: '🏁', t: `Past ${m}% of the way to your goal!`, why: `${n} is ${s.goalPct}% of the way to the goal` }) }
+  if (team?.done) out.push({ e: '🎉', t: 'We hit our week goal together!', why: 'Your shared habit goal is done this week' })
+  else if (team && team.target - team.ticks <= 4) out.push({ e: '🤝', t: `Only ${team.target - team.ticks} ticks left for our week goal!`, why: `${team.target - team.ticks} habit ticks to your shared goal` })
+  if ((s.weekTicks ?? 0) >= 10) out.push({ e: '🦸', t: `${s.weekTicks} habit ticks this week. You’re carrying the team!`, why: `${n} has ${s.weekTicks} habit ticks this week` })
   if (info.fresh && s.logged && !s.moved && out.length === 0) out.push({ e: '📝', t: 'Saw you logging today. Keep it up!', why: `${n} is logging today` })
   return out
 }
 // Half-sentences to finish in your own words
 const STARTERS = [['❤️', 'Proud of you for '], ['👀', 'I noticed you '], ['🤗', 'Can’t wait to ']]
-// Everyday notes for any day, "just because". Order changes daily, not on every open.
-const EVERYDAY = [
-  ['❤️', 'Proud of you'], ['💪', 'You’ve got this'], ['😘', 'Thinking of you'], ['🤗', 'Sending you a hug'],
-  ['🙏', 'Praying for you'], ['🚶', 'Walk with me later?'], ['💧', 'Drink some water!'], ['🍽️', 'What’s for dinner?'],
-  ['🥚', 'You’re egg-cellent'], ['🥑', 'Holy guacamole, look at you go'], ['🎯', 'Small steps still count'], ['😄', 'You make this fun'],
-  ['🌱', 'Every day you show up matters'], ['🥗', 'Let’s eat well together today'], ['👋', 'Just dropping by to say hi'], ['🌟', 'One good choice at a time'],
+// Everyday notes, in groups. Order inside each group changes daily, not on every open.
+const GROUPS = [
+  ['sweet', '💛', 'Sweet', [
+    ['❤️', 'Proud of you'], ['😘', 'Thinking of you'], ['🤗', 'Sending you a hug'], ['🙏', 'Praying for you'],
+    ['😄', 'You make this fun'], ['🌱', 'Every day you show up matters'], ['💞', 'I love doing this with you'], ['🍀', 'Lucky to have you on my team'],
+  ]],
+  ['funny', '😄', 'Funny', [
+    ['🥚', 'You’re egg-cellent'], ['🥑', 'Holy guacamole, look at you go'], ['🍉', 'You’re one in a melon'], ['🥬', 'Lettuce celebrate you'],
+    ['🔥', 'You’re on fire (the good kind)'], ['🚓', 'Snack police says: well done'], ['🍩', 'Donut give up. You’re doing great'], ['🧀', 'You’re the best, no cheese-ing'],
+  ]],
+  ['together', '🤝', 'Together', [
+    ['🚶', 'Walk with me later?'], ['💧', 'Drink some water!'], ['🍽️', 'What’s for dinner?'], ['🥗', 'Let’s eat well together today'],
+    ['👟', 'Let’s hit our steps together'], ['😴', 'Early night tonight?'], ['💪', 'You’ve got this'], ['🎯', 'Small steps still count'],
+  ]],
 ]
 // Each card gets its own paper colour and a little tilt, like a pile of notes
+const x_label = (g) => ({ sweet: '💛 Just because', funny: '😄 Made you smile', together: '🤝 For us both' })[g] || ''
 const PAPERS = ['sun', 'mint', 'lilac', 'peach', 'sky', 'rose']
 const TILTS = [-2.5, 2, -1.5, 2.5, -2, 1.5]
 const STICKERS = ['💌', '👋', '😘', '🥳', '💪', '🔥', '🌟', '🤗', '🥚', '🥑']
@@ -192,11 +205,15 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
   const todayN = all.filter((c) => c.at >= day0).length
   // Only what they really did, and nothing you already sent in the last 3 days
   const recent = new Set((sent?.log ?? []).filter((c) => c.at > Date.now() - 3 * 864e5).map((c) => c.msg))
-  const seen = noticed(s, info).filter((x) => !recent.has(x.t))
+  const seen = noticed(s, info, team).filter((x) => !recent.has(x.t)).map((x) => ({ ...x, g: 'day' }))
   const day = Math.floor(Date.now() / 864e5)
-  const pool = EVERYDAY.filter(([, t]) => !recent.has(t))
-  const rot = pool.length ? (day * 5) % pool.length : 0
-  const deck = [...seen, ...[...pool.slice(rot), ...pool.slice(0, rot)].slice(0, Math.max(3, 8 - seen.length)).map(([e, t]) => ({ e, t }))]
+  const deck = [...seen]
+  for (const [g, , , list] of GROUPS) {
+    const pool = list.filter(([, t]) => !recent.has(t))
+    const rot = pool.length ? (day * 3) % pool.length : 0
+    deck.push(...[...pool.slice(rot), ...pool.slice(0, rot)].map(([e, t]) => ({ e, t, g })))
+  }
+  const tabs = [...(seen.length ? [['day', '👀', 'Today']] : []), ...GROUPS.map(([g, e, label]) => [g, e, label])]
   const cur = deck[Math.min(idx, deck.length - 1)]
   // cards snap to the middle: work out which one is centred, and scroll to centre one
   const step = (el) => (el.firstChild?.offsetWidth || 1) + 12
@@ -230,13 +247,18 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
           {!seen.length && (
             <p className="ci-quiet">{info.fresh ? `Nothing big to celebrate yet today. Something kind still counts.` : `${s.name} hasn’t opened BankCal yet today. Your note will be waiting.`}</p>
           )}
+          <div className="ci-tabs" role="tablist" aria-label="Kinds of cheers">
+            {tabs.map(([g, e, label]) => (
+              <button key={g} role="tab" aria-selected={cur?.g === g} className={cur?.g === g ? 'on' : ''} onClick={() => go(deck.findIndex((x) => x.g === g))}>{e} {label}</button>
+            ))}
+          </div>
           <div className="ci-deck" ref={deckRef} onScroll={(e) => onDeck(e.currentTarget)} aria-roledescription="carousel" aria-label="Cheer ideas">
-            {deck.map(({ e, t, why }, i) => {
+            {deck.map(({ e, t, why, g }, i) => {
               const done = sentKey === t
               return (
                 <button key={t} className={`ci-feature paper-${why ? 'real' : PAPERS[i % PAPERS.length]} ${i === idx ? 'on' : ''} ${done ? 'sent' : ''}`} style={{ '--tilt': `${TILTS[i % TILTS.length]}deg` }}
                   onClick={() => (i === idx ? send(t, e) : go(i))} disabled={!!sentKey} aria-label={`${t}${why ? `. ${why}` : ''}`}>
-                  {!done && <small className="ci-why">{why ? `👀 ${why}` : '💛 Just because'}</small>}
+                  {!done && <small className="ci-why">{why ? `👀 ${why}` : x_label(g)}</small>}
                   <span className="ci-big"><span>{done ? '💌' : e}</span></span>
                   <span className="ci-text">{done ? `Sent to ${s.name}!` : t}</span>
                   <span className="ci-go">{done ? 'Posted ✓' : 'Tap to send'}</span>
@@ -246,7 +268,7 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
           </div>
           <div className="ci-nav">
             <button className="ci-arrow" onClick={() => go(idx - 1)} disabled={idx === 0} aria-label="Previous idea">‹</button>
-            <span className="ci-dots" aria-hidden="true">{deck.map((x, i) => <i key={x.t} className={`${i === idx ? 'on' : ''} ${x.why ? 'real' : ''}`} />)}</span>
+            <span className="ci-count" aria-live="polite">{Math.min(idx + 1, deck.length)} / {deck.length}</span>
             <button className="ci-arrow" onClick={() => go(idx + 1)} disabled={idx >= deck.length - 1} aria-label="Next idea">›</button>
           </div>
           {cur && !sentKey && <button className="link-btn ci-own" onClick={() => startNote(cur.t + ' ', cur.e)}>✏️ Say it your way</button>}
@@ -257,6 +279,7 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
         </div>
         {writing && (
         <div className="note-box">
+          <button className="nb-x" onClick={closeNote} aria-label="Close note without sending"><IconClose /></button>
           <div className="nb-write">
             <button className="nb-sticker" onClick={() => setPickSticker((x) => !x)} aria-label="Change sticker" aria-expanded={pickSticker}>{sticker}</button>
             <textarea ref={focusNote} value={note} onChange={(e) => setNote(e.target.value.slice(0, 120))} rows={1} placeholder="Your note…" aria-label="Your note" enterKeyHint="send" autoFocus={!reply}
@@ -268,10 +291,7 @@ function PartnerSheet({ s, sent, got, info, team, myTicks, me, reply, onCheer, o
               {STICKERS.map((e) => <button key={e} role="radio" aria-checked={sticker === e} className={sticker === e ? 'on' : ''} onClick={() => { setSticker(e); setPickSticker(false) }}>{e}</button>)}
             </div>
           )}
-          <div className="nb-foot">
-            <button className="link-btn nb-cancel" onClick={closeNote}>Never mind</button>
-            {note.length > 90 && <small className="nb-count">{120 - note.length} left</small>}
-          </div>
+          {note.length > 90 && <small className="nb-count">{120 - note.length} left</small>}
         </div>
         )}
         <p className="fine center ci-foot">Lands on {s.name}’s Today like a sticky note 📌</p>
