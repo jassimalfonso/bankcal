@@ -1664,3 +1664,33 @@ button.df-day.on, button.sw-col.on { background: color-mix(in srgb, var(--accent
 .cheer-log li > span:first-child { flex: 1; min-width: 0; }
 .cheer-log .cl-acts { width: auto; margin: 0 -6px 0 4px; flex: none; }
 .cheer-log .cl-acts button { min-height: 34px; padding: 4px 10px; }
+
+/* Cheer cards: one featured, two small, gentle "sent" moment */
+.cheer-ideas { gap: 10px; margin: 6px 0 12px; }
+.ci-head { display: flex; justify-content: space-between; align-items: center; }
+.ci-head b { font-size: 19px; font-weight: 900; letter-spacing: -0.01em; }
+.ci-shuffle { width: 44px; height: 44px; border-radius: 50%; background: var(--card); box-shadow: var(--shadow); font-size: 20px; transition: transform 0.35s var(--spring); }
+.ci-shuffle:active { transform: rotate(180deg) scale(0.92); }
+.ci-feature { position: relative; display: grid; justify-items: center; gap: 6px; width: 100%; padding: 22px 18px 16px; border-radius: 26px; text-align: center; font: inherit; color: var(--ink);
+  background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--accent-2) 70%, var(--card)), color-mix(in srgb, var(--accent) 14%, var(--card)) 70%);
+  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--accent) 60%, transparent); animation: ci-in 0.45s var(--spring) both; transition: transform 0.2s var(--spring); }
+.ci-feature:active { transform: scale(0.97); }
+.ci-tag { position: absolute; top: 12px; left: 14px; padding: 4px 10px; border-radius: 99px; background: color-mix(in srgb, var(--card) 80%, transparent); font-size: 11.5px; font-weight: 850; color: var(--accent); }
+.ci-big { font-size: 52px; line-height: 1.1; animation: ci-bob 3s ease-in-out 0.6s infinite; }
+.ci-text { font-size: 19px; font-weight: 850; line-height: 1.3; text-wrap: balance; max-width: 300px; }
+.ci-go { margin-top: 4px; padding: 6px 14px; border-radius: 99px; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 850; }
+.ci-feature.sent { animation: ci-sent 0.6s var(--spring); }
+.ci-feature.sent .ci-big { animation: ci-fly 0.9s var(--spring) both; }
+.ci-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ci-small { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-height: 92px; padding: 12px 14px; border-radius: 20px; background: var(--card); box-shadow: var(--shadow); text-align: left; font: inherit; font-size: 14px; font-weight: 750; line-height: 1.3; color: var(--ink); animation: ci-in 0.45s var(--spring) both; transition: transform 0.2s var(--spring), background 0.2s; }
+.ci-small:nth-child(2) { animation-delay: 0.06s; }
+.ci-small:active { transform: scale(0.96); background: var(--soft); }
+.ci-emo { font-size: 26px; }
+.ci-small.sent { background: var(--soft); color: var(--accent); }
+.ci-write { display: block; width: 100%; min-height: 48px; border-radius: 16px; border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, var(--line)); color: var(--accent); font-weight: 850; font-size: 15px; background: none; }
+.ci-foot { margin-top: 10px; }
+@keyframes ci-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+@keyframes ci-bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-4px) rotate(-4deg); } }
+@keyframes ci-sent { 40% { transform: scale(1.03); } }
+@keyframes ci-fly { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.2) rotate(-8deg); opacity: 1; } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .ci-feature, .ci-small, .ci-big, .ci-feature.sent .ci-big { animation: none; } }
