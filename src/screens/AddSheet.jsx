@@ -53,11 +53,28 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
     const next = CATS[(CATS.findIndex((c) => c.id === now) + 1) % CATS.length].id
     updateProfile({ foodCats: { ...cats, [catKey(f.name)]: next } })
   }
+  // Saved foods by type: one header per type, tap to open it
+  const [openGroup, setOpenGroup] = useState({})
+  const groups = (list, where, row) => {
+    const by = CATS.map((c) => [c, list.filter((f) => typeOf(f) === c.id)]).filter(([, l]) => l.length)
+    const first = by[0]?.[0].id
+    return by.map(([c, l]) => {
+      const k = `${where}:${c.id}`
+      const isOpen = openGroup[k] ?? (by.length === 1 || c.id === first)
+      return (
+        <div key={c.id} className={`mf-group ${isOpen ? 'open' : ''}`}>
+          <button className="mf-ghead" aria-expanded={isOpen} onClick={() => setOpenGroup((o) => ({ ...o, [k]: !isOpen }))}>
+            <span>{c.e} {c.label}</span><small>{l.length}</small><span className={`chev ${isOpen ? 'up' : ''}`}>⌄</span>
+          </button>
+          {isOpen && l.map(row)}
+        </div>
+      )
+    })
+  }
   // the type badge: a button while fixing types, otherwise just a little emoji
   const Badge = ({ f }) => fixCats
     ? <span role="button" tabIndex={0} className="cat-fix" onClick={(e) => { e.stopPropagation(); nextCat(f) }} onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); nextCat(f) } }} aria-label={`${f.name} is ${catById[typeOf(f)].label}. Tap to change`}>{catById[typeOf(f)].e} {catById[typeOf(f)].label}</span>
     : <span className="cat-e" aria-hidden="true">{catById[typeOf(f)].e}</span>
-  const [allMine, setAllMine] = useState(false)
   const removeMine = (id) => updateProfile({ myFoods: myFoods.filter((f) => f.id !== id) })
   // Your partner's saved foods (the ones you haven't saved yourself), ready to use
   const theirs = useMemo(() => {
@@ -74,7 +91,6 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
     }
     return out
   }, [partner?.shares, partner?.partners, myFoods])
-  const [allTheirs, setAllTheirs] = useState(false)
   const [photo, setPhoto] = useState(editing?.photo ?? null)
   const [name, setName] = useState(editing?.name ?? '')
   const [kcal, setKcal] = useState(editing ? String(editing.kcal) : '')
@@ -346,17 +362,16 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
           <div className="myfoods">
             <div className="mf-head"><b>⭐ My foods</b><button className="link-btn" onClick={() => setEditMine((x) => !x)}>{editMine ? 'Done' : 'Edit'}</button></div>
             <div className="mf-list">
-              {(allMine || editMine || filter ? myFoods.filter(fits) : myFoods.slice(0, 4)).map((f) => (
-                <button key={f.id} className={`mf-row ${editMine ? 'edit' : ''}`} onClick={() => (editMine ? removeMine(f.id) : choose(f))} aria-label={editMine ? `Remove ${f.name}` : `${f.name}, ${fmt(f.kcal)} kcal`}>
-                  <Badge f={f} /><span className="mf-name">{f.name}</span>
-                  {editMine ? <span className="mf-x">Remove</span> : <span className="mf-kcal">{fmt(f.kcal)}</span>}
-                </button>
-              ))}
-              {myFoods.length > 4 && !editMine && !filter && (
-                <button className="mf-more" onClick={() => setAllMine((x) => !x)} aria-expanded={allMine}>
-                  {allMine ? 'Show fewer' : `Show all ${myFoods.length}`} <span className={`chev ${allMine ? 'up' : ''}`}>⌄</span>
-                </button>
-              )}
+              {(() => {
+                const row = (f) => (
+                  <button key={f.id} className={`mf-row ${editMine ? 'edit' : ''}`} onClick={() => (editMine ? removeMine(f.id) : choose(f))} aria-label={editMine ? `Remove ${f.name}` : `${f.name}, ${fmt(f.kcal)} kcal`}>
+                    <Badge f={f} /><span className="mf-name">{f.name}</span>
+                    {editMine ? <span className="mf-x">Remove</span> : <span className="mf-kcal">{fmt(f.kcal)}</span>}
+                  </button>
+                )
+                // a filter or Edit shows a plain list; otherwise grouped by type
+                return filter || editMine || fixCats ? myFoods.filter(fits).map(row) : groups(myFoods, 'mine', row)
+              })()}
             </div>
           </div>
         )}
@@ -365,17 +380,15 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
           <div className="myfoods shared-foods">
             <div className="mf-head"><b>🤝 {theirs[0].from}’s foods</b><small>{theirs.length} foods {theirs[0].from} saved or logged, ready for you</small></div>
             <div className="mf-list">
-              {(allTheirs || filter ? theirs.filter(fits) : theirs.slice(0, 4)).map((f) => (
-                <button key={f.id} className="mf-row" onClick={() => choose(f)} aria-label={`${f.name}, ${fmt(f.kcal)} kcal, from ${f.from}`}>
-                  <Badge f={f} /><span className="mf-name">{f.name}</span>
-                  <span className="mf-kcal">{fmt(f.kcal)}</span>
-                </button>
-              ))}
-              {theirs.length > 4 && !filter && (
-                <button className="mf-more" onClick={() => setAllTheirs((x) => !x)} aria-expanded={allTheirs}>
-                  {allTheirs ? 'Show fewer' : `Show all ${theirs.length}`} <span className={`chev ${allTheirs ? 'up' : ''}`}>⌄</span>
-                </button>
-              )}
+              {(() => {
+                const row = (f) => (
+                  <button key={f.id} className="mf-row" onClick={() => choose(f)} aria-label={`${f.name}, ${fmt(f.kcal)} kcal, from ${f.from}`}>
+                    <Badge f={f} /><span className="mf-name">{f.name}</span>
+                    <span className="mf-kcal">{fmt(f.kcal)}</span>
+                  </button>
+                )
+                return filter || fixCats ? theirs.filter(fits).map(row) : groups(theirs, 'theirs', row)
+              })()}
             </div>
           </div>
         )}
