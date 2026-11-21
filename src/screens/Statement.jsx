@@ -93,7 +93,7 @@ export default function Statement(props) {
         {sel.net != null && <span className={sel.net < 0 ? 'neg' : 'pos'}>{sel.net >= 0 ? `${fmt(sel.net)} saved` : `${fmt(-sel.net)} over`}</span>}
       </h2>
       {sel.items.length ? (
-        <ul className="card list">{sel.items.map((e) => <Row key={e.id} e={e} onEdit={() => props.editEntry?.(e)} />)}</ul>
+        <ul className="card list">{sel.items.map((e) => <Row key={e.id} e={e} cats={props.profile?.foodCats} onEdit={() => props.editEntry?.(e)} />)}</ul>
       ) : (
         <div className="card empty"><p className="muted">Nothing logged on this day.</p></div>
       )}

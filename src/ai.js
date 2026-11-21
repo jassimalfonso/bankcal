@@ -59,7 +59,7 @@ const txt = (v) => (typeof v === 'string' ? v : typeof v === 'number' ? String(v
 export function cleanFoods(list) {
   if (!Array.isArray(list)) return []
   return list
-    .map((x) => ({ name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: x?.kcal == null || x.kcal === '' ? NaN : Math.round(Number(String(x.kcal).replace(/[^\d.]/g, '') || NaN)) }))
+    .map((x) => ({ ...(['meal', 'fruit', 'snack', 'drink', 'side'].includes(x?.cat) ? { cat: x.cat } : {}), name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: x?.kcal == null || x.kcal === '' ? NaN : Math.round(Number(String(x.kcal).replace(/[^\d.]/g, '') || NaN)) }))
     .filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000)
     .slice(0, 6)
 }

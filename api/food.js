@@ -40,7 +40,7 @@ const CONTEXT = 'You are a nutrition assistant for people living in the UAE / GC
 
 const PROMPTS = {
   photo: `${CONTEXT} Look at this photo. It may be a plate of food, a drink, or a packet / product. If a nutrition label or calorie number is printed on the packaging (in any language, e.g. Japanese, Arabic), read it and use the calories for the whole pack (or one serving if that is all that's shown), and name the product in English. Otherwise identify each food, estimate its portion and calories. Return JSON exactly like {"name": "short name for the whole plate", "kcal": 0, "items": [{"name": "", "portion": "", "kcal": 0}], "confidence": "low|medium|high"}. If there is no food, return {"name": "", "kcal": 0, "items": [], "confidence": "low"}.`,
-  search: (q) => `${CONTEXT} The user typed "${q}" to log something they ate or drank. It may be a brand or chain item (Starbucks, Costa, Tim Hortons, McDonald's, KFC, Jollibee, supermarket products): for those, use the brand's published calories for that exact item, size and options (cup size, milk type, syrups, cream). List the best match first, then up to 3 close alternatives (other sizes, milk options or similar items). Names must include the brand, size and options. Portion: the serving, with ml for drinks. If unclear, assume the most common UAE version. Reply with JSON only, no explanation: {"results": [{"name": "", "portion": "", "kcal": 0}]}.`,
+  search: (q) => `${CONTEXT} The user typed "${q}" to log something they ate or drank. It may be a brand or chain item (Starbucks, Costa, Tim Hortons, McDonald's, KFC, Jollibee, supermarket products): for those, use the brand's published calories for that exact item, size and options (cup size, milk type, syrups, cream). List the best match first, then up to 3 close alternatives (other sizes, milk options or similar items). Names must include the brand, size and options. Portion: the serving, with ml for drinks. If unclear, assume the most common UAE version. Also give each a type, cat: "meal" (a main dish or combo), "fruit" (fruit, vegetables, salads), "snack" (snacks, sweets, desserts, pastries), "drink" (any drink) or "side" (rice, bread, sauces, extras). Reply with JSON only, no explanation: {"results": [{"name": "", "portion": "", "kcal": 0, "cat": "meal"}]}.`,
 }
 
 async function ask(key, model, parts, extra, signal) {
@@ -163,7 +163,7 @@ export default async function handler(req, res) {
       const raw = await callGemini(key, [{ text: PROMPTS.search(q) }], 'search', body.hint)
       const txt = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v) : '').trim()
       const out = { results: (Array.isArray(raw?.results) ? raw.results : [])
-        .map((x) => ({ name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: Math.round(Number(x?.kcal)) }))
+        .map((x) => ({ name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: Math.round(Number(x?.kcal)), ...(['meal', 'fruit', 'snack', 'drink', 'side'].includes(x?.cat) ? { cat: x.cat } : {}) }))
         .filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000).slice(0, 6), via: via('search') }
       res.setHeader('Cache-Control', 'private, max-age=3600')
       return res.status(200).json(out)

@@ -38,3 +38,14 @@ test('weekend mode at the safe minimum still adds to the weekend', () => {
   assert.equal(dailyBudget(p, '2026-11-21'), 1900)
   assert.equal(dailyBudget(p, '2026-11-17'), 1500)
 })
+
+import { guessCat, catOf } from '../src/foodCats.js'
+test('food types are guessed from the name, and your fix wins', () => {
+  assert.equal(guessCat('Black coffee'), 'drink')
+  assert.equal(guessCat('Chicken shawarma wrap'), 'meal')
+  assert.equal(guessCat('Banana'), 'fruit')
+  assert.equal(guessCat('KitKat 4 finger'), 'snack')
+  assert.equal(guessCat('Plain rice'), 'side')
+  assert.equal(catOf({ name: 'Black coffee' }, { 'black coffee': 'snack' }), 'snack')
+  assert.equal(catOf({ name: 'Mystery', cat: 'drink' }), 'drink')
+})

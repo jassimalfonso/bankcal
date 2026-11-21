@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { foodEmoji } from '../foodCats'
 import { VacationBanner, JoinVacation } from './Breaks'
 import { useCountUp, useSwipe } from '../motion'
 import { breakdown, fmt, KCAL_PER_KG } from '../calc'
@@ -171,7 +172,7 @@ export default function Today(props) {
               </div>
             ) : (
               <ul className="card list">
-                {todays.map((e) => <Row key={e.id} e={e} fresh={props.fresh === e.id} onEdit={() => props.editEntry?.(e)} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo })) }} />)}
+                {todays.map((e) => <Row key={e.id} e={e} cats={profile?.foodCats} fresh={props.fresh === e.id} onEdit={() => props.editEntry?.(e)} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo })) }} />)}
               </ul>
             )}
           </section>
@@ -184,7 +185,7 @@ export default function Today(props) {
   )
 }
 
-export function Row({ e, onDelete, onEdit, fresh }) {
+export function Row({ e, onDelete, onEdit, fresh, cats }) {
   const [open, setOpen] = useState(false)
   const { dx, setDx, handlers } = useSwipe(() => onDelete?.())
   const time = new Date(e.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -199,7 +200,7 @@ export function Row({ e, onDelete, onEdit, fresh }) {
         role={onEdit ? 'button' : undefined} aria-label={onEdit ? `Edit ${e.name}` : undefined}
         {...(onDelete ? handlers : {})}
       >
-        {e.photo ? <img className="row-img" src={e.photo} alt="" /> : <span className="row-img ph">{e.name.slice(0, 1).toUpperCase()}</span>}
+        {e.photo ? <img className="row-img" src={e.photo} alt="" /> : <span className="row-img ph emo" aria-hidden="true">{foodEmoji(e, cats)}</span>}
         <div className="row-text">
           <b>{e.name}</b>
           <small>{e.meal} at {time}</small>

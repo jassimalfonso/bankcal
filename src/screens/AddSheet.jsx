@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { CATS, catById, catOf, keyOf as catKey } from '../foodCats'
 import { compressPhoto } from '../store'
 import { fmt, mealFor } from '../calc'
 import { searchFoods } from '../foods'
@@ -41,6 +42,21 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
   const myFoods = profile?.myFoods ?? []
   const [keep, setKeep] = useState(false)
   const [editMine, setEditMine] = useState(false)
+  // Food types: a filter for the lists, and your own fixes (saved by name, so they apply everywhere)
+  const cats = profile?.foodCats ?? {}
+  const [filter, setFilter] = useState(null)
+  const [fixCats, setFixCats] = useState(false)
+  const typeOf = (f) => catOf(f, cats)
+  const fits = (f) => !filter || fixCats || typeOf(f) === filter
+  const nextCat = (f) => {
+    const now = typeOf(f)
+    const next = CATS[(CATS.findIndex((c) => c.id === now) + 1) % CATS.length].id
+    updateProfile({ foodCats: { ...cats, [catKey(f.name)]: next } })
+  }
+  // the type badge: a button while fixing types, otherwise just a little emoji
+  const Badge = ({ f }) => fixCats
+    ? <span role="button" tabIndex={0} className="cat-fix" onClick={(e) => { e.stopPropagation(); nextCat(f) }} onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); nextCat(f) } }} aria-label={`${f.name} is ${catById[typeOf(f)].label}. Tap to change`}>{catById[typeOf(f)].e} {catById[typeOf(f)].label}</span>
+    : <span className="cat-e" aria-hidden="true">{catById[typeOf(f)].e}</span>
   const [allMine, setAllMine] = useState(false)
   const removeMine = (id) => updateProfile({ myFoods: myFoods.filter((f) => f.id !== id) })
   // Your partner's saved foods (the ones you haven't saved yourself), ready to use
@@ -53,7 +69,7 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
       for (const f of sh?.foods ?? []) {
         const k = key(f.name)
         if (!f.name || have.has(k) || !(f.kcal >= 0)) continue
-        have.add(k); out.push({ id: `p-${id}-${k}`, name: f.name, kcal: f.kcal, portion: `${sh.name}’s food`, from: sh.name })
+        have.add(k); out.push({ id: `p-${id}-${k}`, name: f.name, kcal: f.kcal, cat: f.cat, portion: `${sh.name}’s food`, from: sh.name })
       }
     }
     return out
@@ -144,7 +160,7 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
     setName(f.name)
     setKcal(String(f.kcal))
     setPicked(true)
-    setBase({ kcal: f.kcal, portion: f.portion })
+    setBase({ kcal: f.kcal, portion: f.portion, cat: f.cat })
     setMult(1)
     setAi((a) => ({ ...a, results: null }))
     inputRef.current?.blur() // put the keyboard away so the amount and Spend are in view
@@ -236,16 +252,17 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
   function save() {
     if (!valid) return
     const nm = name.trim()
+    const cat = catOf({ name: nm, cat: picked ? base?.cat : undefined }, cats)
     const one = baseName(nm) // My foods keeps a single serving, not "×3"
     const had = myFoods.find((f) => f.name.toLowerCase() === one.toLowerCase())
     if (keep && !had) {
-      updateProfile({ myFoods: [{ id: String(Date.now()), name: one, kcal: Math.round(n / qty), portion: 'my food' }, ...myFoods].slice(0, 60) })
+      updateProfile({ myFoods: [{ id: String(Date.now()), name: one, kcal: Math.round(n / qty), portion: 'my food', cat }, ...myFoods].slice(0, 60) })
     } else if (had && myFoods[0] !== had && !editing) {
       // the ones you use most float to the top
       updateProfile({ myFoods: [had, ...myFoods.filter((f) => f !== had)] })
     }
     const label = { 0.5: '½', 1.5: '1½', 2: '2', 3: '3' }[mult]
-    onSave({ name: picked && label ? `${nm} ×${label}` : nm, kcal: n, meal, photo })
+    onSave({ name: picked && label ? `${nm} ×${label}` : nm, kcal: n, meal, photo, cat })
   }
 
   return (
@@ -315,17 +332,27 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
             {ai.photoErr && lastPhoto.current && <button className="link-btn ai-retry" onClick={() => readPhoto(lastPhoto.current)}>Try again</button>}
           </p>
         )}
-        {myFoods.length > 0 && !name && (
+        {!name && (myFoods.length + theirs.length + recent.length) > 0 && (
+          <div className="cat-filter" role="group" aria-label="Filter by food type">
+            <button aria-pressed={!filter} className={!filter ? 'on' : ''} onClick={() => setFilter(null)}>All</button>
+            {CATS.filter((c) => [...myFoods, ...theirs, ...recent].some((f) => typeOf(f) === c.id)).map((c) => (
+              <button key={c.id} aria-pressed={filter === c.id} className={filter === c.id ? 'on' : ''} onClick={() => setFilter(filter === c.id ? null : c.id)}>{c.e} {c.label}</button>
+            ))}
+            <button className={`cat-fix-toggle ${fixCats ? 'on' : ''}`} aria-pressed={fixCats} onClick={() => setFixCats((x) => !x)}>{fixCats ? '✓ Done' : '✏️ Fix types'}</button>
+          </div>
+        )}
+        {fixCats && !name && <p className="cat-hint">Tap a food’s type to change it. BankCal remembers it for next time.</p>}
+        {myFoods.length > 0 && !name && myFoods.some(fits) && (
           <div className="myfoods">
             <div className="mf-head"><b>⭐ My foods</b><button className="link-btn" onClick={() => setEditMine((x) => !x)}>{editMine ? 'Done' : 'Edit'}</button></div>
             <div className="mf-list">
-              {(allMine || editMine ? myFoods : myFoods.slice(0, 4)).map((f) => (
+              {(allMine || editMine || filter ? myFoods.filter(fits) : myFoods.slice(0, 4)).map((f) => (
                 <button key={f.id} className={`mf-row ${editMine ? 'edit' : ''}`} onClick={() => (editMine ? removeMine(f.id) : choose(f))} aria-label={editMine ? `Remove ${f.name}` : `${f.name}, ${fmt(f.kcal)} kcal`}>
-                  <span className="mf-name">{f.name}</span>
+                  <Badge f={f} /><span className="mf-name">{f.name}</span>
                   {editMine ? <span className="mf-x">Remove</span> : <span className="mf-kcal">{fmt(f.kcal)}</span>}
                 </button>
               ))}
-              {myFoods.length > 4 && !editMine && (
+              {myFoods.length > 4 && !editMine && !filter && (
                 <button className="mf-more" onClick={() => setAllMine((x) => !x)} aria-expanded={allMine}>
                   {allMine ? 'Show fewer' : `Show all ${myFoods.length}`} <span className={`chev ${allMine ? 'up' : ''}`}>⌄</span>
                 </button>
@@ -334,17 +361,17 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
           </div>
         )}
 
-        {theirs.length > 0 && !name && (
+        {theirs.length > 0 && !name && theirs.some(fits) && (
           <div className="myfoods shared-foods">
             <div className="mf-head"><b>🤝 {theirs[0].from}’s foods</b><small>{theirs.length} foods {theirs[0].from} saved or logged, ready for you</small></div>
             <div className="mf-list">
-              {(allTheirs ? theirs : theirs.slice(0, 4)).map((f) => (
+              {(allTheirs || filter ? theirs.filter(fits) : theirs.slice(0, 4)).map((f) => (
                 <button key={f.id} className="mf-row" onClick={() => choose(f)} aria-label={`${f.name}, ${fmt(f.kcal)} kcal, from ${f.from}`}>
-                  <span className="mf-name">{f.name}</span>
+                  <Badge f={f} /><span className="mf-name">{f.name}</span>
                   <span className="mf-kcal">{fmt(f.kcal)}</span>
                 </button>
               ))}
-              {theirs.length > 4 && (
+              {theirs.length > 4 && !filter && (
                 <button className="mf-more" onClick={() => setAllTheirs((x) => !x)} aria-expanded={allTheirs}>
                   {allTheirs ? 'Show fewer' : `Show all ${theirs.length}`} <span className={`chev ${allTheirs ? 'up' : ''}`}>⌄</span>
                 </button>
@@ -353,11 +380,11 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
           </div>
         )}
 
-        {recent.length > 0 && !name && (
+        {recent.length > 0 && !name && recent.some(fits) && (
           <div className="recent">
-            {recent.map((r) => (
+            {recent.filter(fits).map((r) => (
               <button key={r.id} className="chip" onClick={() => choose(r)}>
-                {r.name} <span>{fmt(r.kcal)}</span>
+                <Badge f={r} />{r.name} <span>{fmt(r.kcal)}</span>
               </button>
             ))}
           </div>

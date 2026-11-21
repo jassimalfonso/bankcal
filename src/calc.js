@@ -597,7 +597,7 @@ export function usualFoods(entries, limit = 60) {
     if (!name || seen.has(k) || !(e.kcal >= 0)) continue
     seen.add(k)
     const q = m ? QTY[m[1]] ?? +m[1] : 1
-    out.push({ name: name.slice(0, 120), kcal: Math.round(e.kcal / (q || 1)) })
+    out.push({ name: name.slice(0, 120), kcal: Math.round(e.kcal / (q || 1)), ...(e.cat ? { cat: e.cat } : {}) })
     if (out.length >= limit) break
   }
   return out
