@@ -45,13 +45,14 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
   const removeMine = (id) => updateProfile({ myFoods: myFoods.filter((f) => f.id !== id) })
   // Your partner's saved foods (the ones you haven't saved yourself), ready to use
   const theirs = useMemo(() => {
-    const have = new Set(myFoods.map((f) => f.name.toLowerCase()))
+    const key = (n) => words(String(n)).join(' ') // "Max’s" and "Max's" count as the same food
+    const have = new Set(myFoods.map((f) => key(f.name)))
     const out = []
     for (const id of partner?.partners ?? []) {
       const sh = partner.shares?.[id]
       for (const f of sh?.foods ?? []) {
-        const k = String(f.name).toLowerCase()
-        if (!f.name || have.has(k) || !(f.kcal > 0)) continue
+        const k = key(f.name)
+        if (!f.name || have.has(k) || !(f.kcal >= 0)) continue
         have.add(k); out.push({ id: `p-${id}-${k}`, name: f.name, kcal: f.kcal, portion: `${sh.name}’s food`, from: sh.name })
       }
     }
@@ -121,8 +122,9 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
     if (picked || t.length < 2) return []
     const saved = myFoods.filter((f) => f.name.toLowerCase().includes(t)).map((f) => ({ name: f.name, kcal: f.kcal, portion: f.portion || 'my food' }))
     const past = recent.filter((r) => r.name.toLowerCase().includes(t) && !saved.some((s) => s.name.toLowerCase() === r.name.toLowerCase())).map((r) => ({ name: r.name, kcal: r.kcal, portion: 'your usual' }))
-    const own = [...saved, ...past]
-    for (const f of theirs) if (f.name.toLowerCase().includes(t) && !own.some((o) => o.name.toLowerCase() === f.name.toLowerCase())) own.push(f)
+    const qw = words(t)
+    const shared = theirs.filter((f) => { const fw = words(f.name); return qw.every((w) => fw.some((x) => x.startsWith(w))) && !saved.some((o) => o.name.toLowerCase() === f.name.toLowerCase()) })
+    const own = [...saved, ...shared.slice(0, 4), ...past.filter((r) => !shared.some((f) => f.name.toLowerCase() === r.name.toLowerCase()))]
     for (const f of seenOnline(name)) if (!own.some((o) => o.name.toLowerCase() === f.name.toLowerCase())) own.push(f)
     const built = searchFoods(name).filter((f) => !own.some((o) => o.name.toLowerCase() === f.name.toLowerCase()))
     return [...own, ...built].slice(0, 8)
@@ -334,7 +336,7 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
 
         {theirs.length > 0 && !name && (
           <div className="myfoods shared-foods">
-            <div className="mf-head"><b>🤝 {theirs[0].from}’s foods</b><small>Saved by {theirs[0].from}, ready for you</small></div>
+            <div className="mf-head"><b>🤝 {theirs[0].from}’s foods</b><small>{theirs.length} foods {theirs[0].from} saved or logged, ready for you</small></div>
             <div className="mf-list">
               {(allTheirs ? theirs : theirs.slice(0, 4)).map((f) => (
                 <button key={f.id} className="mf-row" onClick={() => choose(f)} aria-label={`${f.name}, ${fmt(f.kcal)} kcal, from ${f.from}`}>

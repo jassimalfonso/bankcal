@@ -551,3 +551,22 @@ export function sleepInsights({ profile, entries, keys }) {
   const effect = short.length >= 2 && rested.length >= 2 ? Math.round((avg(short) - avg(rested)) / 10) * 10 : null
   return { nights: nights.length, spread, debt, effect }
 }
+
+// Foods you've logged, one per name, newest first, as one serving ("Coffee ×2" → Coffee at half the kcal)
+const QTY = { '½': 0.5, '1½': 1.5 }
+export function usualFoods(entries, limit = 60) {
+  const seen = new Set()
+  const out = []
+  for (const e of entries ?? []) {
+    const m = /\s×(½|1½|\d+)$/.exec(String(e.name ?? ''))
+    const name = String(e.name ?? '').replace(/\s×(½|1½|\d+)$/, '').trim()
+    const k = name.toLowerCase()
+    if (!name || seen.has(k) || !(e.kcal >= 0)) continue
+    seen.add(k)
+    const q = m ? QTY[m[1]] ?? +m[1] : 1
+    out.push({ name: name.slice(0, 120), kcal: Math.round(e.kcal / (q || 1)) })
+    if (out.length >= limit) break
+  }
+  return out
+}
+

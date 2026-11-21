@@ -20,7 +20,7 @@ import Today from './screens/Today'
 import Statement from './screens/Statement'
 import Me from './screens/Me'
 import Train from './screens/Train'
-import { usePartners } from './partner'
+import { usePartners, usualFoods } from './partner'
 import { MILESTONES, reached } from './milestones'
 import { oneThing, weekTicks } from './habits'
 import { PLANS } from './training'
@@ -218,7 +218,7 @@ function Bank({ user }) {
   const yesterday = yEntries.length && budgetFor(yKey) != null ? { net: budgetFor(yKey) - yEntries.reduce((a, e) => a + e.kcal, 0) } : null
   const closeDay = () => { if (budget != null && spent - budget <= 0) store.setDay(today, { closed: true }); setResult(true) }
   const livePartner = usePartners({
-    enabled: !DEMO, uid: user.uid, profile, updateProfile: store.updateProfile, notify, celebrate,
+    enabled: !DEMO, uid: user.uid, profile, updateProfile: store.updateProfile, notify, celebrate, usual: usualFoods(entries),
     summary: { day: today, streak: streakDays, habitsDone: (pf.habits ?? []).filter((id) => dayLog.habits?.[id]).length, habitsTotal: (pf.habits ?? []).length, moved: earn.total > 0, logged: todays.length > 0, weekTicks: weekTicks(pf, today), kgChange: null, goalPct: null, ...partnerProgress({ entries, profile: pf, budgetFor, todayKey: today }) },
   })
   const partner = DEMO && location.search.includes('partner') ? demoPartner(today) : livePartner
