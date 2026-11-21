@@ -15,6 +15,9 @@ const BACKGROUNDS = [
   { id: 'plain', label: 'Plain', theme: null, dot: null }, { id: 'glow', label: 'Glow', theme: 'moss', dot: '#45b866' },
   { id: 'sunrise', label: 'Sunrise', theme: 'coral', dot: '#ef6b57' }, { id: 'ocean', label: 'Ocean', theme: 'teal', dot: '#1f9e9a' },
   { id: 'meadow', label: 'Meadow', theme: 'moss', dot: '#45b866' }, { id: 'lavender', label: 'Lavender', theme: 'violet', dot: '#8a63e6' },
+  { id: 'sakura', label: 'Sakura', theme: 'berry', dot: '#d2417b' }, { id: 'beach', label: 'Beach', theme: 'sky', dot: '#3b97e8' },
+  { id: 'peach', label: 'Peach', theme: 'sun', dot: '#f0952a' }, { id: 'dusk', label: 'Dusk', theme: 'navy', dot: '#3556c9' },
+  { id: 'paper', label: 'Paper', theme: 'mono', dot: '#2b2b30' },
 ]
 
 // Height is stored in cm (for the maths) but entered in feet + inches.
@@ -201,13 +204,14 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
 
       <h2 className="group-title">Look and feel</h2>
       <div className="card form-list">
-        <Line label="Colour">
+        <div className="line colour-line">
+          <span className="line-label">Colour</span>
           <div className="swatches small">
             {THEMES.map((t) => (
-              <button key={t} className={`swatch theme-${t} ${p.theme === t ? 'on' : ''}`} onClick={() => set({ theme: t })} aria-label={t} />
+              <button key={t} className={`swatch theme-${t} ${p.theme === t ? 'on' : ''}`} onClick={() => set({ theme: t })} aria-label={t} aria-pressed={p.theme === t} />
             ))}
           </div>
-        </Line>
+        </div>
         <div className="line bg-line">
           <span className="line-label">Background</span>
           <div className="bg-row">

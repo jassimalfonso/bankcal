@@ -77,8 +77,8 @@ function Bank({ user }) {
     // match the phone's status bar to the top of the background
     const dark = document.documentElement.dataset.mode === 'dark' || (document.documentElement.dataset.mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches)
     const top = dark
-      ? { sunrise: '#3a2020', ocean: '#10243a', meadow: '#1a2a14', lavender: '#221a3a' }[bg] ?? '#000000'
-      : { sunrise: '#ffe7d6', ocean: '#d8ecff', meadow: '#e6f6d8', lavender: '#ebe3ff' }[bg] ?? '#F2F3F7'
+      ? { sunrise: '#3a2020', ocean: '#10243a', meadow: '#1a2a14', lavender: '#221a3a', sakura: '#3a1a26', beach: '#0f2838', peach: '#3a2612', dusk: '#161a3a', paper: '#1a1a1a' }[bg] ?? '#000000'
+      : { sunrise: '#ffe7d6', ocean: '#d8ecff', meadow: '#e6f6d8', lavender: '#ebe3ff', sakura: '#ffe3ee', beach: '#cfefff', peach: '#ffe6c9', dusk: '#d9dcff', paper: '#ffffff' }[bg] ?? '#F2F3F7'
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', top)
   }, [profile?.bg, profile?.mode])
 

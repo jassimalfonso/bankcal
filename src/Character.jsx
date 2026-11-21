@@ -11,7 +11,7 @@ export function moodFor(budget, spent) {
 }
 
 // Fart Monster = fried egg, Sewer Butt = avocado; everyone else picks any.
-const ORDER = ['egg', 'avocado', 'mochi', 'onigiri', 'donut', 'toast', 'broccoli', 'dino', 'ghost', 'bean', 'cloud', 'blobcat']
+const ORDER = ['egg', 'avocado', 'mochi', 'onigiri', 'dumpling', 'sushi', 'boba', 'coffee', 'donut', 'cupcake', 'toast', 'strawberry', 'broccoli', 'dino', 'panda', 'penguin', 'ghost', 'bean', 'cloud', 'blobcat']
 export const CHARACTERS = ORDER.map((id) => ({ id, label: BUDDIES[id].label }))
 
 // ids used by earlier versions

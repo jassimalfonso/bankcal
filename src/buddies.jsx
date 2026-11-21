@@ -131,6 +131,66 @@ export const BUDDIES = {
     <path d="M55 74 h10 l-5 4 z" fill="#ff7d93" />
     <Face mood={m} y={62} gap={16} my={86} />
   </>) },
+  boba: { label: 'Boba', draw: (m) => (<>
+    {g('b-boba', '#f6dcc0', '#e3b98f')}
+    <rect x="72" y="2" width="9" height="34" rx="4.5" fill="#ff8fb1" transform="rotate(14 76 18)" />
+    <path d="M24 30 h72 l-8 74 c-1 6 -6 8 -12 8 h-32 c-6 0 -11 -2 -12 -8 z" fill="url(#b-boba)" />
+    <rect x="20" y="24" width="80" height="12" rx="6" fill="#fff" opacity="0.9" />
+    <g fill="#4a2f24">{[[40, 98], [52, 102], [64, 99], [76, 101], [46, 90], [70, 91], [58, 92]].map(([x, y]) => <circle key={x + '' + y} cx={x} cy={y} r="5" />)}</g>
+    <Face mood={m} y={58} gap={13} my={72} />
+  </>) },
+  dumpling: { label: 'Dumpling', draw: (m) => (<>
+    {g('b-dump', '#ffffff', '#f2eadf')}
+    <ellipse cx="60" cy="108" rx="42" ry="6" fill="#000" opacity="0.06" />
+    <path d="M10 84 C10 52 32 30 60 30 C88 30 110 52 110 84 C110 100 92 106 60 106 C28 106 10 100 10 84 Z" fill="url(#b-dump)" stroke="#e8dfd2" strokeWidth="2" />
+    <g stroke="#e1d6c6" strokeWidth="3" strokeLinecap="round" fill="none"><path d="M44 36 q4 8 2 14" /><path d="M56 32 q3 9 1 16" /><path d="M68 32 q-1 9 0 16" /><path d="M80 36 q-4 8 -2 14" /></g>
+    <Face mood={m} y={70} gap={15} />
+  </>) },
+  strawberry: { label: 'Strawberry', draw: (m) => (<>
+    {g('b-straw', '#ff6f7d', '#e23d55')}
+    <path d="M60 112 C34 106 14 80 16 56 C18 36 36 28 60 28 C84 28 102 36 104 56 C106 80 86 106 60 112 Z" fill="url(#b-straw)" />
+    <g fill="#57b847"><path d="M60 30 L44 14 L56 22 L60 8 L64 22 L76 14 Z" /><ellipse cx="60" cy="30" rx="22" ry="7" /></g>
+    <g fill="#ffe08a">{[[34, 52], [86, 52], [30, 76], [90, 76], [46, 96], [74, 96], [60, 102]].map(([x, y]) => <ellipse key={x + '' + y} cx={x} cy={y} rx="2" ry="3" />)}</g>
+    <Face mood={m} y={62} gap={14} cheeks="#ffb3bd" />
+  </>) },
+  sushi: { label: 'Sushi', draw: (m) => (<>
+    <ellipse cx="60" cy="106" rx="44" ry="6" fill="#000" opacity="0.06" />
+    <rect x="16" y="56" width="88" height="48" rx="22" fill="#fffdf8" stroke="#ece6da" strokeWidth="2" />
+    <path d="M12 60 C14 36 36 28 60 28 C84 28 106 36 108 60 C108 70 96 70 60 70 C24 70 12 70 12 60 Z" fill="#ff9a6b" />
+    <g stroke="#ffd2bb" strokeWidth="4" strokeLinecap="round" opacity="0.9"><path d="M30 40 l12 22" /><path d="M54 32 l10 34" /><path d="M78 36 l6 28" /></g>
+    <rect x="52" y="56" width="16" height="48" fill="#2f3d33" />
+    <Face mood={m} y={82} gap={22} my={92} />
+  </>) },
+  cupcake: { label: 'Cupcake', draw: (m) => (<>
+    <path d="M24 66 h72 l-9 42 c-1 4 -4 6 -8 6 h-38 c-4 0 -7 -2 -8 -6 z" fill="#8fd3ff" />
+    <g stroke="#6bbbe9" strokeWidth="3">{[36, 48, 60, 72, 84].map((x) => <path key={x} d={`M${x} 68 L${x + (x - 60) * 0.12} 112`} />)}</g>
+    <path d="M18 68 C10 52 26 40 34 40 C34 24 50 16 60 22 C70 16 86 24 86 40 C94 40 110 52 102 68 C96 76 24 76 18 68 Z" fill="#ffc1dc" />
+    <circle cx="60" cy="14" r="8" fill="#ff5d73" /><path d="M60 7 q4 -6 8 -4" stroke="#5aa04a" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+    <g fill="#fff">{[[36, 50], [80, 48], [56, 34], [70, 58], [44, 60]].map(([x, y]) => <rect key={x + '' + y} x={x} y={y} width="7" height="3" rx="1.5" transform={`rotate(${x} ${x} ${y})`} />)}</g>
+    <Face mood={m} y={86} gap={14} my={98} />
+  </>) },
+  coffee: { label: 'Coffee cup', draw: (m) => (<>
+    <path d="M96 52 c18 0 18 30 0 30" stroke="#ffffff" strokeWidth="9" fill="none" />
+    <path d="M96 52 c18 0 18 30 0 30" stroke="#e8e2da" strokeWidth="2" fill="none" />
+    <path d="M18 40 h82 v42 c0 18 -14 28 -30 28 h-22 c-16 0 -30 -10 -30 -28 z" fill="#ffffff" stroke="#e8e2da" strokeWidth="2" />
+    <ellipse cx="59" cy="40" rx="41" ry="9" fill="#8a5a3c" /><ellipse cx="52" cy="38" rx="10" ry="3" fill="#c79a73" />
+    <g stroke="#cfc6bb" strokeWidth="3" strokeLinecap="round" fill="none"><path d="M44 24 q-5 -7 0 -14" /><path d="M60 22 q-5 -7 0 -14" /><path d="M76 24 q-5 -7 0 -14" /></g>
+    <Face mood={m} y={66} gap={14} my={82} />
+  </>) },
+  panda: { label: 'Panda', draw: (m) => (<>
+    <circle cx="28" cy="30" r="14" fill="#2f2f36" /><circle cx="92" cy="30" r="14" fill="#2f2f36" />
+    <rect x="14" y="24" width="92" height="86" rx="43" fill="#ffffff" stroke="#e6e6ec" strokeWidth="2" />
+    <ellipse cx="42" cy="62" rx="13" ry="16" fill="#2f2f36" transform="rotate(20 42 62)" /><ellipse cx="78" cy="62" rx="13" ry="16" fill="#2f2f36" transform="rotate(-20 78 62)" />
+    <Face mood={m} y={62} gap={18} my={86} />
+  </>) },
+  penguin: { label: 'Penguin', draw: (m) => (<>
+    {g('b-peng', '#4a5468', '#2b3242')}
+    <rect x="16" y="16" width="88" height="96" rx="44" fill="url(#b-peng)" />
+    <path d="M60 32 C82 32 92 52 92 76 C92 98 78 108 60 108 C42 108 28 98 28 76 C28 52 38 32 60 32 Z" fill="#fff" />
+    <path d="M52 80 h16 l-8 7 z" fill="#ffb347" />
+    <g fill="#ffb347"><ellipse cx="44" cy="112" rx="10" ry="4" /><ellipse cx="76" cy="112" rx="10" ry="4" /></g>
+    <Face mood={m} y={62} gap={14} my={94} />
+  </>) },
 }
 
 export function Buddy({ id, mood = 'happy', size = 64 }) {

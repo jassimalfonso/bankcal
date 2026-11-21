@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Character, { CHARACTERS } from '../Character'
 
-export const THEMES = ['moss', 'plum', 'sky', 'sun', 'coral', 'teal', 'violet']
+export const THEMES = ['moss', 'mint', 'teal', 'sky', 'navy', 'violet', 'lilac', 'plum', 'berry', 'rose', 'coral', 'sun', 'gold', 'cocoa', 'mono']
 
 export default function Onboarding({ profile, updateProfile }) {
   const [name, setName] = useState(profile.name || '')
