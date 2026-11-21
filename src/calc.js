@@ -72,17 +72,25 @@ export function dailyBudget(p, key) {
   const b = p.customBudget > 0 ? +p.customBudget : bd?.auto ?? null
   if (b == null || !key) return b
   if (vacationOn(p, key) && bd) return Math.max(b, Math.round(bd.tdee / 10) * 10)
-  const w = p.weekend
-  if (w?.on && +w.size > 0) {
-    const days = w.days?.length ? w.days : [6, 0]
-    if (days.length >= 7) return b
-    const floor = bd?.floor ?? 1200
-    // what weekdays give up (never below the safe minimum), spread over the weekend days
-    const minus = Math.min(Math.round((+w.size * days.length) / (7 - days.length) / 10) * 10, Math.max(0, b - floor))
-    const plus = Math.round((minus * (7 - days.length)) / days.length / 10) * 10
-    return days.includes(parseDay(key).getDay()) ? b + plus : b - minus
-  }
+  const wp = weekendPlan(p, b, bd)
+  if (wp) return wp.days.includes(parseDay(key).getDay()) ? b + wp.plus : b - wp.minus
   return b
+}
+
+// Weekend mode: weekdays give up a little so the weekend gets more. If weekdays are already at
+// the safe minimum, the weekend still gets its extra, but the week's deficit shrinks by `cost`.
+export function weekendPlan(p, b = null, bd = breakdown(p)) {
+  const w = p?.weekend
+  b ??= p?.customBudget > 0 ? +p.customBudget : bd?.auto ?? null
+  if (!w?.on || !(+w.size > 0) || b == null) return null
+  const days = w.days?.length ? w.days : [6, 0]
+  if (days.length >= 7) return null
+  const n = days.length
+  const want = Math.round((+w.size * n) / (7 - n) / 10) * 10
+  const minus = Math.min(want, Math.max(0, b - (bd?.floor ?? 1200)))
+  const plus = +w.size
+  const cost = Math.max(0, plus * n - minus * (7 - n)) // kcal a week less deficit
+  return { days, minus, plus, cost }
 }
 
 // Vacation mode: on from `start`, until `end` if one was set, unless paused

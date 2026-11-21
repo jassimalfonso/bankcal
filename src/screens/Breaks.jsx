@@ -3,7 +3,7 @@
 //  • Vacation mode: whenever you're away, eat at maintenance. Play / pause, optional end date,
 //    and it can be taken together with your partner.
 import { useState } from 'react'
-import { breakdown, dailyBudget, dayKey, fmt, prettyDate, vacationDay, vacationLength, vacationOn, KCAL_PER_KG } from '../calc'
+import { breakdown, dailyBudget, dayKey, fmt, prettyDate, vacationDay, vacationLength, vacationOn, weekendPlan, KCAL_PER_KG } from '../calc'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const SIZES = [[150, 'Small'], [250, 'Medium'], [400, 'Big']]
@@ -38,7 +38,7 @@ export function BreaksSettings({ profile: p, updateProfile: set, today, partner,
       <h2 className="group-title" id="breaks">Breaks</h2>
       <div className="card form-list breaks">
         <label className="line toggle-line">
-          <span className="line-label">☀️ Weekend mode<small>A little less on weekdays, more on the weekend. Same week, same fat loss.</small></span>
+          <span className="line-label">☀️ Weekend mode<small>Eat more on the weekend, a little less on weekdays</small></span>
           <input type="checkbox" className="switch" checked={!!w.on} onChange={(e) => set({ weekend: { size: 250, days: [6, 0], ...w, on: e.target.checked } })} />
         </label>
         {w.on && (
@@ -51,6 +51,13 @@ export function BreaksSettings({ profile: p, updateProfile: set, today, partner,
               })}
             </div>
             {sp.weekday != null && <p className="br-split"><span>Weekdays <b>{fmt(sp.weekday)}</b></span><span>Weekend <b className="pos">{fmt(sp.weekend)}</b></span></p>}
+            {(() => {
+              const wp = weekendPlan(p)
+              if (!wp) return null
+              return wp.cost > 0
+                ? <p className="br-note">{wp.minus === 0 ? 'Your weekdays are already at the safe minimum, so they stay the same.' : 'Weekdays can only go down a little before the safe minimum.'} The weekend extra slows you a bit: about <b>{(wp.cost / KCAL_PER_KG).toFixed(2)} kg less a week</b>.</p>
+                : <p className="br-note">Same weekly total, so the same fat loss.</p>
+            })()}
           </div>
         )}
       </div>
@@ -60,7 +67,13 @@ export function BreaksSettings({ profile: p, updateProfile: set, today, partner,
           <div className="br-body">
             <p className="br-title">🏖️ Vacation mode</p>
             <p className="br-note">Going away? Switch it on and enjoy. You eat at maintenance{extra ? <>, that’s <b>+{fmt(extra)} kcal a day</b> ({fmt(base + extra)} in all)</> : ''}, and hold your weight while you’re off. Your streak waits for you.</p>
-            <label className="br-end">Back on <input type="date" value={end} min={today} onChange={(e) => setEnd(e.target.value)} /><small>{end ? '' : 'optional'}</small></label>
+            <label className="br-end"><span>Back on</span>
+              <span className="br-date">
+                <input type="date" value={end} min={today} onChange={(e) => setEnd(e.target.value)} aria-label="Back on (optional)" />
+                <i aria-hidden="true" className={end ? "set" : ""}>{end ? prettyDate(end) : 'Pick a date (optional)'}</i>
+              </span>
+              {end && <button type="button" className="link-btn" onClick={(e) => { e.preventDefault(); setEnd('') }}>Clear</button>}
+            </label>
             {partnerName && (
               <label className="keep-food"><input type="checkbox" checked={together} onChange={(e) => setTogether(e.target.checked)} />
                 <span>Together with <b>{partnerName}</b>. They’ll get an invite to join.</span></label>

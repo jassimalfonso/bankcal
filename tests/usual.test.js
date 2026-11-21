@@ -8,7 +8,7 @@ test('logged foods become one serving each, newest first, no repeats', () => {
 })
 
 import { dailyBudget, vacationOn, streak } from '../src/calc.js'
-const P = { sex: 'male', weight: 90, height: 175, birthDate: '1993-01-01', goal: 'lose05', onboarded: true }
+const P = { sex: 'm', weight: 90, height: 175, birthDate: '1993-01-01', goal: 'lose05', onboarded: true }
 
 test('weekend mode keeps the weekly total the same', () => {
   const base = dailyBudget(P)
@@ -31,4 +31,10 @@ test('vacation days pause the streak instead of breaking it', () => {
   const entries = [{ day: '2026-11-18', kcal: 1000 }, { day: '2026-11-21', kcal: 1000 }]
   const n = streak(entries, () => 2000, '2026-11-21', true, (k) => k === '2026-11-19' || k === '2026-11-20')
   assert.equal(n, 2)
+})
+
+test('weekend mode at the safe minimum still adds to the weekend', () => {
+  const p = { ...P, customBudget: 1500, weekend: { on: true, size: 400, days: [6, 0] } }
+  assert.equal(dailyBudget(p, '2026-11-21'), 1900)
+  assert.equal(dailyBudget(p, '2026-11-17'), 1500)
 })

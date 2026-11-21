@@ -1781,15 +1781,19 @@ button:not(:disabled):active { filter: brightness(0.94); }
 .br-note { margin: 0; font-size: 14px; line-height: 1.45; color: var(--muted); font-weight: 600; }
 .br-note b { color: var(--ink); }
 .br-days { display: flex; gap: 8px; }
-.br-days button { min-width: 56px; min-height: 38px; border-radius: 99px; background: var(--bg); font-weight: 800; color: var(--muted); }
+.breaks .seg { display: flex; width: 100%; }
+.breaks .seg button { flex: 1; padding: 8px 4px; text-align: center; font-size: 13.5px; }
+.br-days button { display: inline-flex; justify-content: center; align-items: center; min-width: 60px; min-height: 40px; padding: 0 16px; border-radius: 99px; background: var(--bg); font-weight: 800; color: var(--muted); }
 .br-days button.on { background: var(--accent); color: var(--on-accent); }
 .br-split { display: flex; gap: 10px; margin: 0; }
 .br-split span { flex: 1; padding: 10px 12px; border-radius: 14px; background: var(--bg); font-size: 13px; font-weight: 700; color: var(--muted); }
 .br-split b { display: block; font-size: 20px; color: var(--ink); }
 .br-split b.pos { color: var(--accent); }
 .br-end { display: flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 750; }
-.br-end input { flex: 1; min-height: 42px; padding: 6px 10px; border-radius: 12px; background: var(--bg); font: inherit; }
-.br-end small { color: var(--muted); font-weight: 600; }
+.br-date { position: relative; flex: 1; display: block; min-height: 44px; border-radius: 12px; background: var(--bg); }
+.br-date input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; }
+.br-date i { display: flex; align-items: center; height: 44px; padding: 0 14px; font-style: normal; font-weight: 750; color: var(--muted); pointer-events: none; }
+.br-date i.set { color: var(--ink); }
 .vac-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .vac-btns button { min-height: 40px; padding: 8px 14px; font-size: 14px; }
 .vac-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin: 0 0 14px; padding: 14px 16px; border-radius: 22px; color: #12364a;
