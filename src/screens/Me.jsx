@@ -46,7 +46,9 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
   // reached the target: stop the plan and keep this weight
   const keepIt = () => set({ goal: 'maintain', maintainWeight: +p.targetWeight || +p.weight, targetWeight: null, endDate: null, startDate: null, customBudget: null })
     // Maintain from the simple goal: keep today's weight and clear the plan and any custom budget so maintenance applies
-    const goMaintain = () => set({ goal: 'maintain', maintainWeight: +p.weight || null, targetWeight: null, endDate: null, startDate: null, customBudget: null })
+    // switching to Maintain keeps your lose-weight plan aside, so switching back brings it all back
+    const loseSaved = { goal: p.goal, targetWeight: p.targetWeight ?? null, endDate: p.endDate ?? null, startDate: p.startDate ?? null, customBudget: p.customBudget ?? null }
+    const goMaintain = () => set({ goal: 'maintain', maintainWeight: +p.weight || null, losePlan: loseSaved, targetWeight: null, endDate: null, startDate: null, customBudget: null })
     const tc = targetCheck(p.targetWeight, p.height)
   const budget = dailyBudget(p)
   const maintaining = p.goal === 'maintain'
@@ -80,8 +82,8 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
 
       <h2 className="group-title">Your goal</h2>
       <div className="seg goal-seg">
-        <button className={!maintaining ? 'on' : ''} onClick={() => maintaining && set({ goal: 'lose05', maintainWeight: null })}>Lose weight</button>
-        <button className={maintaining ? 'on' : ''} onClick={() => !maintaining && goMaintain()}>Maintain</button>
+        <button className={!maintaining ? 'on' : ''} onClick={() => maintaining && set({ goal: 'lose05', ...(p.losePlan ?? {}), maintainWeight: null })}>Lose weight</button>
+        <button className={maintaining ? 'on' : ''} onClick={() => { if (maintaining) return; goMaintain(); notify?.('Switched to Maintain. Your lose-weight plan is kept, tap Lose weight to bring it back.') }}>Maintain</button>
       </div>
 
       {!maintaining && (
