@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { play } from '../sound'
-import { HABITS, JOURNAL_PROMPTS, MOODS, WINS, habitById, habitDays, journalStarters, suggestHabits } from '../habits'
-import { sleepHours } from '../calc'
+import { HABITS, JOURNAL_PROMPTS, MOODS, WINS, dayMoments, habitById, habitDays, journalStarters, suggestHabits } from '../habits'
+import { describeWorkout, sleepHours, WORKOUTS } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
 import CollectionSheet from './Collection'
@@ -78,7 +78,7 @@ export function HabitPicker({ profile, updateProfile }) {
 }
 
 // Today: a compact journal card. Tapping it opens a calm writing sheet.
-export function JournalCard({ dayLog, setDay, today, profile, updateProfile, notify, todays = [], budget }) {
+export function JournalCard({ dayLog, setDay, today, profile, updateProfile, notify, todays = [], budget, partner, streakDays }) {
   const j = dayLog.journal ?? {}
   const [open, setOpen] = useState(false)
   const [shelf, setShelf] = useState(false)
@@ -106,13 +106,13 @@ export function JournalCard({ dayLog, setDay, today, profile, updateProfile, not
           </>
         )}
       </button>
-      {open && <JournalSheet {...{ j, prompt, setDay, today, dayLog, profile, todays, budget }} onClose={() => setOpen(false)} />}
+      {open && <JournalSheet {...{ j, prompt, setDay, today, dayLog, profile, todays, budget, partner, streakDays }} onClose={() => setOpen(false)} />}
       {shelf && <CollectionSheet tab="journal" {...{ profile, updateProfile, setDay, today, notify }} onClose={() => setShelf(false)} />}
     </section>
   )
 }
 
-export function JournalSheet({ j, prompt, setDay, today, day = today, dayLog, profile, todays, budget, onClose }) {
+export function JournalSheet({ j, prompt, setDay, today, day = today, dayLog, profile, todays, budget, partner, streakDays, onClose }) {
   const [text, setText] = useState(j.text ?? '')
   const [mood, setMood] = useState(j.mood ?? null)
   const [saved, setSaved] = useState(false)
@@ -127,6 +127,23 @@ export function JournalSheet({ j, prompt, setDay, today, day = today, dayLog, pr
     dayLog, mealsLogged: todays.length, left: budget != null ? budget - todays.reduce((a, e) => a + e.kcal, 0) : null,
     habitsDone: (profile?.habits ?? []).filter((id) => dayLog.habits?.[id]).length, sleepH: sleepHours(dayLog.sleep),
   })
+  // Tap-to-add lines from the day
+  const pid = partner?.partners?.[0]
+  const note = pid && partner.received?.[pid]
+  const moments = dayMoments({
+    dayLog, entries: todays, left: budget != null && todays.length ? budget - todays.reduce((a, e) => a + e.kcal, 0) : null,
+    habitsDone: (profile?.habits ?? []).filter((id) => dayLog.habits?.[id]).map((id) => habitById[id]?.label).filter(Boolean),
+    sleepH: sleepHours(dayLog.sleep), steps: +dayLog.steps || 0,
+    workouts: (dayLog.workouts ?? []).map((w) => { const n = w.label || WORKOUTS.find((x) => x.id === w.type)?.label; const d = describeWorkout(w); return n ? `${n.toLowerCase()}${d ? ` (${d})` : ''}` : '' }).filter(Boolean).slice(0, 3),
+    partnerName: pid ? partner.shares?.[pid]?.name : null,
+    partnerNote: note?.msg && note.msg !== '👏' && note.msg !== 'Loved your note' && new Date(note.at).toISOString().slice(0, 10) === day ? note.msg : null,
+    streak: day === today ? streakDays : 0, onVacation: !!dayLog.vac,
+  })
+  const toggleLine = (line) => {
+    const lines = text.split('\n')
+    const v = lines.includes(line) ? lines.filter((l) => l !== line).join('\n') : text.trim() ? `${text.trimEnd()}\n${line}` : line
+    onType(v)
+  }
   const start = (line) => {
     const v = text.trim() ? `${text.trimEnd()}\n${line}` : line
     onType(v)
@@ -162,12 +179,21 @@ export function JournalSheet({ j, prompt, setDay, today, day = today, dayLog, pr
           </div>
         </div>
 
+        {(moments.day.length > 0 || moments.felt.length > 0) && (
+          <div className="j-moments">
+            {moments.day.length > 0 && <span>From your day <small>Tap to add, tap again to remove</small></span>}
+            <div>{moments.day.map((m) => { const on = text.split('\n').includes(m.t); return <button key={m.t} aria-pressed={on} className={`chip ${on ? 'on' : ''}`} onClick={() => toggleLine(m.t)}>{on ? '✓' : m.e} {m.t}</button> })}</div>
+            <span>How it felt</span>
+            <div>{moments.felt.map((m) => { const on = text.split('\n').includes(m.t); return <button key={m.t} aria-pressed={on} className={`chip ${on ? 'on' : ''}`} onClick={() => toggleLine(m.t)}>{on ? '✓' : m.e} {m.t}</button> })}</div>
+          </div>
+        )}
+
         <textarea ref={area} value={text} onChange={(e) => onType(e.target.value)} rows={6} maxLength={3000} placeholder="Write as much or as little as you like…" aria-label="Journal note" />
         <p className="j-status" role="status">{saved ? 'Saved ✓' : text.trim() ? 'Saving…' : ' '}</p>
 
         {day === today && text.trim().length < 40 && (
           <div className="j-starters">
-            <span>Not sure where to begin? Tap one to start:</span>
+            <span>Or start a line in your own words:</span>
             {starters.map((s) => <button key={s} onClick={() => start(s)}>{s.trim().replace(/:$/, '')}…</button>)}
           </div>
         )}

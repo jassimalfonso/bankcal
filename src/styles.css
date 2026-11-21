@@ -1807,3 +1807,8 @@ button:not(:disabled):active { filter: brightness(0.94); }
 .vac-banner .vac-btns { flex: 1 1 100%; }
 .vac-banner .btn-soft { background: rgba(255, 255, 255, 0.7); color: inherit; }
 @media (prefers-reduced-motion: reduce) { .vac-sun { animation: none; } }
+.j-moments { display: grid; gap: 8px; margin: 4px 0 12px; }
+.j-moments > span { font-size: 13.5px; font-weight: 800; color: var(--muted); margin-top: 4px; }
+.j-moments > span small { font-weight: 600; margin-left: 4px; }
+.j-moments > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.j-moments .chip { text-align: left; white-space: normal; line-height: 1.3; padding: 8px 12px; font-size: 13.5px; }

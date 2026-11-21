@@ -55,6 +55,41 @@ export function journalStarters({ dayLog = {}, left, mealsLogged, habitsDone = 0
   return out.slice(0, 4)
 }
 
+// Ready-made journal lines to tap: what really happened that day, then how it felt.
+// Each is a full sentence, so a whole entry can be made with a few taps.
+const list = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`)
+const mealOf = (m) => (m ? String(m).toLowerCase().replace(/^snack$/, 'snacks') : null)
+export function dayMoments({ dayLog = {}, entries = [], left, habitsDone = [], sleepH, steps, workouts = [], partnerNote, partnerName, streak, onVacation }) {
+  const day = []
+  if (entries.length) {
+    const meals = ['breakfast', 'lunch', 'snacks', 'dinner'].filter((m) => entries.some((e) => mealOf(e.meal) === m))
+    const best = [...entries].sort((a, b) => b.kcal - a.kcal)[0]
+    day.push({ e: '📝', t: ['breakfast', 'lunch', 'dinner'].every((m) => meals.includes(m)) ? 'I logged all my meals today.' : `I logged my ${list(meals.length ? meals : ['food'])} today.` })
+    if (best) day.push({ e: '🍽️', t: `I had ${best.name.replace(/\s×.*$/, '')}${best.meal ? ` for ${mealOf(best.meal).replace(/s$/, '')}` : ''}.` })
+  }
+  if (left != null && entries.length) day.push(left >= 0 ? { e: '🎯', t: `I stayed within my budget, with ${left.toLocaleString('en')} kcal to spare.` } : { e: '🌅', t: `I went ${Math.abs(left).toLocaleString('en')} kcal over today. Tomorrow is a fresh start.` })
+  if (workouts.length) day.push({ e: '💪', t: `I worked out: ${list(workouts)}.` })
+  if (steps >= 3000) day.push({ e: '🚶', t: `I walked ${steps.toLocaleString('en')} steps.` })
+  if (habitsDone.length) day.push({ e: '✅', t: `I kept my habit${habitsDone.length > 1 ? 's' : ''}: ${list(habitsDone.map((h) => h.toLowerCase()))}.` })
+  if (sleepH != null) day.push({ e: '😴', t: sleepH >= 7 ? `I slept ${sleepH.toFixed(1).replace(/\.0$/, '')} hours and woke up rested.` : `I only slept ${sleepH.toFixed(1).replace(/\.0$/, '')} hours last night.` })
+  if (+dayLog.weight > 0) day.push({ e: '⚖️', t: `I weighed in at ${(+dayLog.weight).toFixed(1)} kg.` })
+  if (streak >= 2) day.push({ e: '🔥', t: `That’s ${streak} days in a row on budget.` })
+  if (partnerNote) day.push({ e: '💌', t: `${partnerName} sent me a note: “${partnerNote}”` })
+  if (onVacation) day.push({ e: '🏖️', t: 'I’m on vacation and enjoying it.' })
+  const felt = [
+    { e: '🙂', t: 'I feel proud of myself today.' },
+    { e: '🙏', t: 'Thank you, Lord, for today.' },
+    ...(partnerName ? [{ e: '💞', t: `I’m grateful for ${partnerName} and doing this together.` }] : []),
+    { e: '🌱', t: 'It wasn’t perfect, but I showed up.' },
+    { e: '😮‍💨', t: 'Today was hard, and that’s okay.' },
+    { e: '🥗', t: 'I ate slowly and enjoyed my food.' },
+    { e: '💧', t: 'I drank enough water.' },
+    { e: '🙅', t: 'I said no to a snack I didn’t need.' },
+    { e: '😴', t: 'I need an early night tonight.' },
+  ]
+  return { day, felt }
+}
+
 const keyOf = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 
 // Habit ticks so far this week (Monday to today), for the shared weekly goal.
