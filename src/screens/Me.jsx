@@ -321,7 +321,7 @@ function SoundLine() {
         <input type="checkbox" className="switch" checked={on} onChange={(e) => { setOn(e.target.checked); setSoundOn(e.target.checked) }} />
       </label>
       {on && <button className="line link-line" onClick={test}>🔊 Play a sound</button>}
-      {on && res && <p className="fine" role="status">{res}</p>}
+      {on && res && <p className="line-status" role="status">{res}</p>}
     </>
   )
 }
