@@ -404,11 +404,15 @@ export function PartnerSettings({ partner, profile, updateProfile }) {
           </label>
         )}
         <label className="keep-food ps-share">
+          <input type="checkbox" checked={profile.shareFoods !== false} onChange={(e) => updateProfile({ shareFoods: e.target.checked })} />
+          <span>Share my <b>saved foods</b> (⭐ My foods), so my partner can log them without saving them again</span>
+        </label>
+        <label className="keep-food ps-share">
           <input type="checkbox" checked={!!profile.shareWeight} onChange={(e) => updateProfile({ shareWeight: e.target.checked })} />
           <span>Also share my <b>weight progress</b> (kg lost so far and % to goal, not my actual weight)</span>
         </label>
       </div>
-      <p className="fine">Partners always see your streak, habits ticked, whether you moved today, and how many of the last 7 days were on budget. Never your calories, meals, actual weight or journal.</p>
+      <p className="fine">Partners always see your streak, habits ticked, whether you moved today, and how many of the last 7 days were on budget. Plus your ⭐ saved foods if that’s ticked. Never your daily calories, what you ate, actual weight or journal.</p>
     </>
   )
 }

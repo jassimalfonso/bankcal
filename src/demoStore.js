@@ -49,7 +49,7 @@ export function useDemoStore() {
 const NOTE_AT = Math.floor(Date.now() / 3600e3) * 3600e3 - 25 * 60e3 // stays put across re-renders and reloads within the hour
 export const demoPartner = (today) => ({
   partners: ['p1'],
-  shares: { p1: { name: 'Sewer Butt', character: 'avocado', theme: 'plum', day: today, streak: 3, habitsDone: 1, habitsTotal: 2, moved: true, logged: true, weekWithin: 4, weekLogged: 5, weekWorkouts: 2, weekTicks: 6, kgChange: -0.8, goalPct: 16, cheers: { me: { count: 2, log: [{ at: Date.now() - 2 * 3600e3, msg: '💪 You’ve got this' }] } } } },
+  shares: { p1: { name: 'Sewer Butt', character: 'avocado', theme: 'plum', day: today, streak: 3, habitsDone: 1, habitsTotal: 2, moved: true, logged: true, weekWithin: 4, weekLogged: 5, weekWorkouts: 2, weekTicks: 6, kgChange: -0.8, goalPct: 16, foods: [{ name: 'Sinigang na baboy, 1 bowl', kcal: 310 }, { name: 'Tim Hortons iced capp, medium', kcal: 360 }, { name: 'Banana bread slice', kcal: 230 }, { name: 'Max’s Restaurant Plain Rice', kcal: 200 }, { name: 'Chicken shawarma wrap', kcal: 520 }, { name: 'Laban up, 250 ml', kcal: 150 }], cheers: { me: { count: 2, log: [{ at: Date.now() - 2 * 3600e3, msg: '💪 You’ve got this' }] } } } },
   me: 'me', received: { p1: { name: 'Sewer Butt', at: NOTE_AT, msg: 'Proud of you for the walk today. Dinner at 7?', s: '🥑', count: 4, log: [{ at: Date.now() - 3600e3, msg: '❤️ Proud of you' }, { at: Date.now() - 26 * 3600e3, msg: '👏' }] } },
   push: { supported: true, on: false, turnOn: async () => {}, turnOff: async () => {} },
   cheer: async () => {}, createInvite: async () => 'ABC123', acceptInvite: async () => 'Sewer Butt', removePartner: () => {},

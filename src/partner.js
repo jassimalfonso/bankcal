@@ -16,12 +16,14 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
   // publish my summary (only when something changed)
   useEffect(() => {
     if (!enabled || !profile?.onboarded) return
-    const data = { uid, name: profile.name, character: profile.character, theme: profile.theme, partners, ...summary }
+    // saved foods are shared too (name and kcal only), so a partner doesn't have to save them again
+    const foods = profile.shareFoods === false ? [] : (profile.myFoods ?? []).slice(0, 60).map((f) => ({ name: String(f.name).slice(0, 120), kcal: Math.round(+f.kcal) || 0 }))
+    const data = { uid, name: profile.name, character: profile.character, theme: profile.theme, partners, foods, ...summary }
     const sig = JSON.stringify(data)
     if (sig === last.current) return
     last.current = sig
     setDoc(doc(db, 'shares', uid), { ...data, updatedAt: Date.now() }, { merge: true }).catch(() => {})
-  }, [enabled, uid, profile?.onboarded, profile?.name, profile?.character, profile?.theme, partners.join(','), JSON.stringify(summary)]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [enabled, uid, profile?.onboarded, profile?.name, profile?.character, profile?.theme, partners.join(','), JSON.stringify(summary), profile?.shareFoods, JSON.stringify(profile?.myFoods ?? [])]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // watch partners
   useEffect(() => {

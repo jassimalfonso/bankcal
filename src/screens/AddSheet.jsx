@@ -37,12 +37,27 @@ function seenOnline(q, limit = 4) {
   return [...out.values()]
 }
 
-export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemove, editing, forDay, today, profile, updateProfile }) {
+export default function AddSheet({ partner, mine, todays, budget, onClose, onSave, onRemove, editing, forDay, today, profile, updateProfile }) {
   const myFoods = profile?.myFoods ?? []
   const [keep, setKeep] = useState(false)
   const [editMine, setEditMine] = useState(false)
   const [allMine, setAllMine] = useState(false)
   const removeMine = (id) => updateProfile({ myFoods: myFoods.filter((f) => f.id !== id) })
+  // Your partner's saved foods (the ones you haven't saved yourself), ready to use
+  const theirs = useMemo(() => {
+    const have = new Set(myFoods.map((f) => f.name.toLowerCase()))
+    const out = []
+    for (const id of partner?.partners ?? []) {
+      const sh = partner.shares?.[id]
+      for (const f of sh?.foods ?? []) {
+        const k = String(f.name).toLowerCase()
+        if (!f.name || have.has(k) || !(f.kcal > 0)) continue
+        have.add(k); out.push({ id: `p-${id}-${k}`, name: f.name, kcal: f.kcal, portion: `${sh.name}’s food`, from: sh.name })
+      }
+    }
+    return out
+  }, [partner?.shares, partner?.partners, myFoods])
+  const [allTheirs, setAllTheirs] = useState(false)
   const [photo, setPhoto] = useState(editing?.photo ?? null)
   const [name, setName] = useState(editing?.name ?? '')
   const [kcal, setKcal] = useState(editing ? String(editing.kcal) : '')
@@ -107,10 +122,11 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
     const saved = myFoods.filter((f) => f.name.toLowerCase().includes(t)).map((f) => ({ name: f.name, kcal: f.kcal, portion: f.portion || 'my food' }))
     const past = recent.filter((r) => r.name.toLowerCase().includes(t) && !saved.some((s) => s.name.toLowerCase() === r.name.toLowerCase())).map((r) => ({ name: r.name, kcal: r.kcal, portion: 'your usual' }))
     const own = [...saved, ...past]
+    for (const f of theirs) if (f.name.toLowerCase().includes(t) && !own.some((o) => o.name.toLowerCase() === f.name.toLowerCase())) own.push(f)
     for (const f of seenOnline(name)) if (!own.some((o) => o.name.toLowerCase() === f.name.toLowerCase())) own.push(f)
     const built = searchFoods(name).filter((f) => !own.some((o) => o.name.toLowerCase() === f.name.toLowerCase()))
     return [...own, ...built].slice(0, 8)
-  }, [name, recent, picked, myFoods])
+  }, [name, recent, picked, myFoods, theirs])
 
   // when changing something already logged today, don't count the old number twice
   const spent = todays.reduce((a, e) => a + (e.id === editing?.id ? 0 : e.kcal), 0)
@@ -161,7 +177,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
   useEffect(() => {
     const q = name.trim()
     if (picked || photo || q.length < 3 || !navigator.onLine || asked.current === q.toLowerCase()) return
-    const strong = matchFoods(q).filter((m) => m.strong).length + suggestions.filter((sg) => sg.portion === 'my food' || sg.portion === 'your usual' || sg.seen).length
+    const strong = matchFoods(q).filter((m) => m.strong).length + suggestions.filter((sg) => sg.portion === 'my food' || sg.portion === 'your usual' || sg.seen || sg.from).length
     if (strong >= 3) return
     if (onlineCache.has(q.toLowerCase())) { searchAi(true); return } // already looked up: show it now
     const id = setTimeout(() => searchAi(true), 450) // long enough that slow typing doesn't fire a search per letter
@@ -256,11 +272,11 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
               <span className="suggest-kcal">{fmt(f.kcal)}<i>kcal</i></span>
             </button>
           )
-          const own = suggestions.filter((f) => f.portion === 'my food' || f.portion === 'your usual' || (f.seen && !ai.results?.some((r) => r.name === f.name)))
+          const own = suggestions.filter((f) => f.portion === 'my food' || f.portion === 'your usual' || f.from || (f.seen && !ai.results?.some((r) => r.name === f.name)))
           // nothing in the built-in list matches every word: the online answer is likely the right one,
           // so it goes first and only a few loose matches follow
           const loose = !picked && name.trim().length >= 3 && !matchFoods(name).some((m) => m.strong)
-          const rest = suggestions.filter((f) => !own.includes(f) && !f.seen).slice(0, loose ? 4 : 8)
+          const rest = suggestions.filter((f) => !own.includes(f) && !f.seen && !f.from).slice(0, loose ? 4 : 8)
           const online = (ai.busy || ai.results?.length > 0) && (
             <>
               <p className="sg-h">Online · AI estimate</p>
@@ -310,6 +326,25 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
               {myFoods.length > 4 && !editMine && (
                 <button className="mf-more" onClick={() => setAllMine((x) => !x)} aria-expanded={allMine}>
                   {allMine ? 'Show fewer' : `Show all ${myFoods.length}`} <span className={`chev ${allMine ? 'up' : ''}`}>⌄</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {theirs.length > 0 && !name && (
+          <div className="myfoods shared-foods">
+            <div className="mf-head"><b>🤝 {theirs[0].from}’s foods</b><small>Saved by {theirs[0].from}, ready for you</small></div>
+            <div className="mf-list">
+              {(allTheirs ? theirs : theirs.slice(0, 4)).map((f) => (
+                <button key={f.id} className="mf-row" onClick={() => choose(f)} aria-label={`${f.name}, ${fmt(f.kcal)} kcal, from ${f.from}`}>
+                  <span className="mf-name">{f.name}</span>
+                  <span className="mf-kcal">{fmt(f.kcal)}</span>
+                </button>
+              ))}
+              {theirs.length > 4 && (
+                <button className="mf-more" onClick={() => setAllTheirs((x) => !x)} aria-expanded={allTheirs}>
+                  {allTheirs ? 'Show fewer' : `Show all ${theirs.length}`} <span className={`chev ${allTheirs ? 'up' : ''}`}>⌄</span>
                 </button>
               )}
             </div>

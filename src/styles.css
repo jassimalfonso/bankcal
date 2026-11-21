@@ -1770,3 +1770,6 @@ button:not(:disabled):active { filter: brightness(0.94); }
 .activity .num-in:focus-within { box-shadow: none; }
 .activity .num-in input:focus { box-shadow: 0 0 0 2px var(--accent); }
 .tread-in .num-in { flex: none; }
+.shared-foods { margin-top: 12px; }
+.shared-foods .mf-head { flex-direction: column; align-items: flex-start; gap: 1px; }
+.shared-foods .mf-head small { font-size: 12.5px; font-weight: 700; color: var(--muted); }
