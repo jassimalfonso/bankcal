@@ -10,7 +10,7 @@ import WorkoutSheet from './screens/WorkoutSheet'
 import Swipeable from './Swipeable'
 import ErrorBoundary from './ErrorBoundary'
 import { applyUpdate, onUpdateReady } from './update'
-import { myWorkouts } from './training'
+import { myWorkouts, partnerWorkouts } from './training'
 
 const DEMO = import.meta.env.MODE === 'demo'
 import { partnerProgress, dailyBudget, dayKey, earned, fmt, isBedtime, isBirthday, isWindDown, logicalDayKey, streak, workoutKcal, WORKOUTS } from './calc'
@@ -264,7 +264,7 @@ function Bank({ user }) {
       </button>
       {working && (
         <ErrorBoundary onError={() => { setWorking(false); notify('That screen hit a problem and was closed. Please try again.') }}>
-        <WorkoutSheet profile={profile} mine={myWorkouts(profile, dayLog.workouts ?? [])} onClose={() => setWorking(false)}
+        <WorkoutSheet profile={profile} mine={myWorkouts(profile, dayLog.workouts ?? [])} theirs={partnerWorkouts(partner, myWorkouts(profile))} onClose={() => setWorking(false)}
           steps={dayLog.steps} onSteps={(v) => {
             const goal = +profile.stepsGoal || 8000
             store.setDay(today, { steps: v })

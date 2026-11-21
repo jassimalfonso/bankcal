@@ -363,7 +363,24 @@ const ACT_WORDS = {
 }
 
 // One searchable list: yours, the exercise library (sets × reps), and activities (minutes)
-export function exerciseIndex(profile, mine, WORKOUT_TYPES) {
+// A partner's saved workouts, minus the ones you already have
+export function partnerWorkouts(partner, mine) {
+  const have = new Set(mine.map((m) => m.item.name?.toLowerCase()))
+  const out = []
+  for (const id of partner?.partners ?? []) {
+    const sh = partner.shares?.[id]
+    for (const w of sh?.workouts ?? []) {
+      const k = String(w.name ?? '').toLowerCase()
+      if (!k || have.has(k) || !(+w.met > 0) || !(+w.sets > 0)) continue
+      have.add(k)
+      const item = { ...w, sets: +w.sets, emoji: w.emoji || '💪' }
+      out.push({ key: `p-${id}-${k}`, kind: 'lib', from: sh.name, item, dose: doseOf(item), words: `${w.name} ${EX_WORDS[w.ex] ?? ''}` })
+    }
+  }
+  return out
+}
+
+export function exerciseIndex(profile, mine, WORKOUT_TYPES, theirs = []) {
   const level = profile.level ?? 'beginner'
   const lifts = profile.lifts ?? {}
   const kgFor = (ex) => lifts[ex.id] ?? weightRange(ex, profile.sex, level)?.[0] ?? 0
@@ -374,7 +391,7 @@ export function exerciseIndex(profile, mine, WORKOUT_TYPES) {
   const libTypes = new Set(lib.map((l) => l.logType))
   const acts = WORKOUT_TYPES.filter((w) => !libTypes.has(w.id)).map((w) => ({ key: 'a' + w.id, kind: 'act', type: w.id, item: { name: w.label, emoji: w.emoji }, dose: w.kind === 'min' ? 'minutes' : w.kind === 'sec' ? 'seconds' : 'reps', words: `${w.label} ${ACT_WORDS[w.id] ?? ''}` }))
   const yours = mine.map((m) => ({ ...m, kind: 'mine', words: m.item.name }))
-  return [...yours, ...lib, ...acts]
+  return [...yours, ...theirs, ...lib.filter((l) => !theirs.some((t) => t.item.name === l.item.name)), ...acts]
 }
 
 const nrm = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()
@@ -387,7 +404,7 @@ export function searchExercises(q, index) {
       const name = nrm(e.item.name)
       const all = `${name} ${nrm(e.words)}`
       if (!words.every((w) => all.includes(w))) return null
-      const score = (name.startsWith(t) ? 100 : name.includes(t) ? 60 : words.every((w) => name.includes(w)) ? 40 : 10) + (e.kind === 'mine' ? 30 : 0)
+      const score = (name.startsWith(t) ? 100 : name.includes(t) ? 60 : words.every((w) => name.includes(w)) ? 40 : 10) + (e.kind === 'mine' ? 30 : e.from ? 20 : 0)
       return { ...e, score }
     })
     .filter(Boolean)

@@ -8,7 +8,7 @@ import { Stepper } from './Routine'
 
 // Pick an exercise, enter amounts, see the calories it earns, deposit.
 // `mine` = your routine and your own exercises, shown first since they're what you usually do.
-export default function WorkoutSheet({ profile, mine = [], start = null, onClose, onSave, onKeep, steps, onSteps }) {
+export default function WorkoutSheet({ profile, mine = [], theirs = [], start = null, onClose, onSave, onKeep, steps, onSteps }) {
   const [stepsIn, setStepsIn] = useState(steps ? String(steps) : '')
   const stepsN = Math.max(0, Math.round(+stepsIn || 0))
   const stepsKcal = Math.round(earned({ steps: stepsN }, profile.weight).steps)
@@ -19,7 +19,7 @@ export default function WorkoutSheet({ profile, mine = [], start = null, onClose
   // search: yours, the exercise library and activities, like the food search
   const [q, setQ] = useState('')
   const [keep, setKeep] = useState(false) // save a library exercise to My routine
-  const index = useMemo(() => exerciseIndex(profile, mine, WORKOUTS), [profile, mine])
+  const index = useMemo(() => exerciseIndex(profile, mine, WORKOUTS, theirs), [profile, mine, theirs])
   const found = q.trim() ? searchExercises(q, index) : []
   const pick = (r) => { if (r.kind === 'act') setType(r.type); else pickOwn(r) }
   const deposit = (w) => {
@@ -84,7 +84,7 @@ export default function WorkoutSheet({ profile, mine = [], start = null, onClose
                 {found.map((r) => (
                   <button key={r.key} className={`mine-row ${r.done ? 'done' : ''}`} onClick={() => pick(r)}>
                     <span className="w-emoji small">{r.item.emoji}</span>
-                    <span className="ex-main"><b>{r.item.name}</b><small>{r.kind === 'mine' ? (r.done ? 'Yours · done today ✓' : `Yours · ${r.dose}`) : r.kind === 'lib' ? `Sets × reps · ${r.dose}` : `Log ${r.dose}`}</small></span>
+                    <span className="ex-main"><b>{r.item.name}</b><small>{r.kind === 'mine' ? (r.done ? 'Yours · done today ✓' : `Yours · ${r.dose}`) : r.from ? `${r.from}’s · ${r.dose}` : r.kind === 'lib' ? `Sets × reps · ${r.dose}` : `Log ${r.dose}`}</small></span>
                     {r.kind !== 'act' ? <span className="pos">+{fmt(workoutKcal(routineWorkout(r.item), profile.weight))}</span> : <span className="ws-go">›</span>}
                   </button>
                 ))}
@@ -117,6 +117,20 @@ export default function WorkoutSheet({ profile, mine = [], start = null, onClose
                   <button key={m.key} className={`mine-row ${m.done ? 'done' : ''}`} onClick={() => pickOwn(m)}>
                     <span className="w-emoji small">{m.item.emoji}</span>
                     <span className="ex-main"><b>{m.item.name}</b><small>{m.done ? 'Done today ✓' : m.dose}</small></span>
+                    <span className="pos">+{fmt(workoutKcal(routineWorkout(m.item), profile.weight))}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {theirs.length > 0 && (
+            <>
+              <h3 className="ex-h">🤝 {theirs[0].from}’s workouts</h3>
+              <div className="card mine-list">
+                {theirs.map((m) => (
+                  <button key={m.key} className="mine-row" onClick={() => pickOwn(m)}>
+                    <span className="w-emoji small">{m.item.emoji}</span>
+                    <span className="ex-main"><b>{m.item.name}</b><small>{m.dose}</small></span>
                     <span className="pos">+{fmt(workoutKcal(routineWorkout(m.item), profile.weight))}</span>
                   </button>
                 ))}

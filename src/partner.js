@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { arrayUnion, deleteDoc, deleteField, doc, getDoc, increment, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
 import { auth, db } from './firebase'
+import { myWorkouts } from './training'
 
 const code6 = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
 
@@ -18,12 +19,15 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
     if (!enabled || !profile?.onboarded) return
     // saved foods are shared too (name and kcal only), so a partner doesn't have to save them again
     const foods = profile.shareFoods === false ? [] : (profile.myFoods ?? []).slice(0, 60).map((f) => ({ name: String(f.name).slice(0, 120), kcal: Math.round(+f.kcal) || 0 }))
-    const data = { uid, name: profile.name, character: profile.character, theme: profile.theme, partners, foods, ...summary }
+    // saved workouts too (the exercise and amounts), so a partner can deposit them in one tap
+    const pick = ['name', 'emoji', 'kind', 'sets', 'reps', 'sec', 'kg', 'each', 'rest', 'met', 'ex']
+    const workouts = profile.shareFoods === false ? [] : myWorkouts(profile).slice(0, 30).map(({ item }) => Object.fromEntries(pick.filter((k) => item[k] != null && item[k] !== '').map((k) => [k, item[k]])))
+    const data = { uid, name: profile.name, character: profile.character, theme: profile.theme, partners, foods, workouts, ...summary }
     const sig = JSON.stringify(data)
     if (sig === last.current) return
     last.current = sig
     setDoc(doc(db, 'shares', uid), { ...data, updatedAt: Date.now() }, { merge: true }).catch(() => {})
-  }, [enabled, uid, profile?.onboarded, profile?.name, profile?.character, profile?.theme, partners.join(','), JSON.stringify(summary), profile?.shareFoods, JSON.stringify(profile?.myFoods ?? [])]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [enabled, uid, profile?.onboarded, profile?.name, profile?.character, profile?.theme, partners.join(','), JSON.stringify(summary), profile?.shareFoods, JSON.stringify(profile?.myFoods ?? []), JSON.stringify(profile?.routine ?? []), JSON.stringify(profile?.customEx ?? [])]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // watch partners
   useEffect(() => {
