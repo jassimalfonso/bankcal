@@ -13,7 +13,7 @@ import { applyUpdate, onUpdateReady } from './update'
 import { myWorkouts, partnerWorkouts } from './training'
 
 const DEMO = import.meta.env.MODE === 'demo'
-import { partnerProgress, dailyBudget, dayKey, earned, fmt, isBedtime, isBirthday, isWindDown, logicalDayKey, streak, workoutKcal, WORKOUTS } from './calc'
+import { vacationOn, partnerProgress, dailyBudget, dayKey, earned, fmt, isBedtime, isBirthday, isWindDown, logicalDayKey, streak, workoutKcal, WORKOUTS } from './calc'
 import { useDailyWords } from './quotes'
 import { MorningCard, DayResult, WelcomeBack } from './screens/DailyCards'
 import Today from './screens/Today'
@@ -134,8 +134,13 @@ function Bank({ user }) {
   // Remember each day's base budget, so later weight or plan changes don't rewrite past days
   useEffect(() => {
     if (!profile?.onboarded) return
-    const b = dailyBudget(profile)
-    if (b != null && profile.days?.[today]?.base !== b) store.setDay(today, { base: b })
+    // a planned vacation that has ended switches itself off, with a welcome back
+    const v = profile.vacation
+    if (v?.end && today > v.end) { store.updateProfile({ vacation: null }); notify('Welcome back! 🏖️ Your normal budget is on again.'); return }
+    const b = dailyBudget(profile, today)
+    const vac = vacationOn(profile, today)
+    const dl = profile.days?.[today]
+    if (b != null && (dl?.base !== b || !!dl?.vac !== vac)) store.setDay(today, { base: b, vac })
   }, [profile, today]) // eslint-disable-line react-hooks/exhaustive-deps
   const [result, setResult] = useState(false)
   // One toast for the whole app, with optional Undo.
@@ -204,7 +209,7 @@ function Bank({ user }) {
 
   // (calculations tolerate a profile that hasn't loaded yet so the hooks below always run in the same order)
   const pf = profile ?? {}
-  const base = profile ? dailyBudget(profile) : null
+  const base = profile ? dailyBudget(profile, today) : null
   const dayLog = pf.days?.[today] ?? {}
   const earn = earned(dayLog, pf.weight)
   const budget = base != null ? base + earn.total : null // activity is a deposit into today's budget
@@ -212,14 +217,15 @@ function Bank({ user }) {
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   budgetRef.current = budget != null ? budget - spent : null
   const closed = !!dayLog.closed
-  const streakDays = streak(entries, budgetFor, today, closed)
+  const isBreak = (k) => !!pf.days?.[k]?.vac
+  const streakDays = streak(entries, budgetFor, today, closed, isBreak)
   const yKey = (() => { const [y, m, d] = today.split('-').map(Number); return dayKey(new Date(y, m - 1, d - 1)) })()
   const yEntries = entries.filter((e) => e.day === yKey)
   const yesterday = yEntries.length && budgetFor(yKey) != null ? { net: budgetFor(yKey) - yEntries.reduce((a, e) => a + e.kcal, 0) } : null
   const closeDay = () => { if (budget != null && spent - budget <= 0) store.setDay(today, { closed: true }); setResult(true) }
   const livePartner = usePartners({
     enabled: !DEMO, uid: user.uid, profile, updateProfile: store.updateProfile, notify, celebrate, usual: usualFoods(entries),
-    summary: { day: today, streak: streakDays, habitsDone: (pf.habits ?? []).filter((id) => dayLog.habits?.[id]).length, habitsTotal: (pf.habits ?? []).length, moved: earn.total > 0, logged: todays.length > 0, weekTicks: weekTicks(pf, today), kgChange: null, goalPct: null, ...partnerProgress({ entries, profile: pf, budgetFor, todayKey: today }) },
+    summary: { day: today, streak: streakDays, habitsDone: (pf.habits ?? []).filter((id) => dayLog.habits?.[id]).length, habitsTotal: (pf.habits ?? []).length, moved: earn.total > 0, logged: todays.length > 0, weekTicks: weekTicks(pf, today), vacation: vacationOn(pf, today) ? { start: pf.vacation.start, end: pf.vacation.end ?? null, together: !!pf.vacation.together } : null, kgChange: null, goalPct: null, ...partnerProgress({ entries, profile: pf, budgetFor, todayKey: today }) },
   })
   const partner = DEMO && location.search.includes('partner') ? demoPartner(today) : livePartner
 
@@ -324,7 +330,7 @@ function Bank({ user }) {
       )}
       {!showM && hello && profile.onboarded && <WelcomeBack leaving={leaving} profile={profile} left={budget != null ? budget - spent : null} onDone={doneHello} />}
       {showM && <MorningCard notify={notify} isNew={shareNew} focus={focus} leaving={leaving} profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
-      {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true)} today={today} onClose={() => setResult(false)} />}
+      {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true, isBreak)} today={today} onClose={() => setResult(false)} />}
 
       {adding && (
         <ErrorBoundary onError={() => { setAdding(false); notify('That screen hit a problem and was closed. Please try again.') }}>

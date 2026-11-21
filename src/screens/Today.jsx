@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { VacationBanner, JoinVacation } from './Breaks'
 import { useCountUp, useSwipe } from '../motion'
 import { breakdown, fmt, KCAL_PER_KG } from '../calc'
 import Character, { moodFor } from '../Character'
@@ -85,6 +86,8 @@ export default function Today(props) {
         </button>
       </header>
 
+      <VacationBanner {...props} spentOver={(() => { const b = breakdown(profile); return b ? Math.round(spent - b.tdee - earn.total) : 0 })()} />
+      <JoinVacation {...props} />
       <section className={`card hero ${over ? 'is-over' : ''}`}>
         <Ring value={budget ? (over ? 1 : left / budget) : 0}>
           <span className="munch" key={todays.length}><Character kind={profile.character} mood={mood} size={112} className="bob" /></span>

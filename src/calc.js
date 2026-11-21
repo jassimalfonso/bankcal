@@ -64,11 +64,35 @@ export function breakdown(p) {
   return { bmr: Math.round(b), tdee: Math.round(tdee), deficit, floor, auto, plan: pl }
 }
 
-// Base budget for the day (before activity deposits).
-export function dailyBudget(p) {
-  if (p.customBudget > 0) return +p.customBudget
-  return breakdown(p)?.auto ?? null
+// Base budget for the day (before activity deposits). With a day `key`, breaks apply:
+//  • vacation mode: eat at maintenance (no fat loss, no gain)
+//  • weekend mode: a little less on weekdays, more on the weekend; the week's total stays the same
+export function dailyBudget(p, key) {
+  const bd = breakdown(p)
+  const b = p.customBudget > 0 ? +p.customBudget : bd?.auto ?? null
+  if (b == null || !key) return b
+  if (vacationOn(p, key) && bd) return Math.max(b, Math.round(bd.tdee / 10) * 10)
+  const w = p.weekend
+  if (w?.on && +w.size > 0) {
+    const days = w.days?.length ? w.days : [6, 0]
+    if (days.length >= 7) return b
+    const floor = bd?.floor ?? 1200
+    // what weekdays give up (never below the safe minimum), spread over the weekend days
+    const minus = Math.min(Math.round((+w.size * days.length) / (7 - days.length) / 10) * 10, Math.max(0, b - floor))
+    const plus = Math.round((minus * (7 - days.length)) / days.length / 10) * 10
+    return days.includes(parseDay(key).getDay()) ? b + plus : b - minus
+  }
+  return b
 }
+
+// Vacation mode: on from `start`, until `end` if one was set, unless paused
+export function vacationOn(p, key) {
+  const v = p?.vacation
+  return !!(v && v.start && !v.paused && key >= v.start && (!v.end || key <= v.end))
+}
+// Which day of the vacation `key` is (1 = first day)
+export const vacationDay = (p, key) => (p?.vacation?.start ? Math.round((parseDay(key) - parseDay(p.vacation.start)) / 864e5) + 1 : 0)
+export const vacationLength = (p) => (p?.vacation?.start && p.vacation.end ? Math.round((parseDay(p.vacation.end) - parseDay(p.vacation.start)) / 864e5) + 1 : null)
 
 export const fmt = (n) => Math.round(n).toLocaleString('en-US')
 
@@ -240,7 +264,7 @@ export function recommendDates(currentKg, targetKg, from = new Date()) {
 }
 
 // ───────── Streak: days in a row within budget (before today, plus today once closed) ─────────
-export function streak(entries, budgetFor, todayKey, includeToday) {
+export function streak(entries, budgetFor, todayKey, includeToday, isBreak) {
   const byDay = {}
   for (const e of entries) byDay[e.day] = (byDay[e.day] || 0) + e.kcal
   let n = 0
@@ -248,6 +272,7 @@ export function streak(entries, budgetFor, todayKey, includeToday) {
   if (!includeToday) d.setDate(d.getDate() - 1)
   for (let i = 0; i < 365; i++) {
     const k = dayKey(d)
+    if (isBreak?.(k)) { d.setDate(d.getDate() - 1); continue } // vacation days pause the streak, they don't break it
     const b = budgetFor(k)
     if (!(k in byDay) || b == null || byDay[k] > b) break
     n++

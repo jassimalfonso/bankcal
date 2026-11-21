@@ -11,6 +11,7 @@ import { useEscape, useSheetDrag } from '../motion'
 function noticed(s, info, team) {
   const out = []
   const n = s.name
+  if (s.vacation) out.push({ e: '🏖️', t: 'Enjoy your vacation! You deserve every bite', why: `${n} is on vacation` })
   if (info.fresh && s.habitsTotal > 0 && s.habitsDone >= s.habitsTotal) out.push({ e: '✅', t: `All ${s.habitsTotal} habits done today. Wow!`, why: `${n} ticked every habit today` })
   if (info.fresh && s.moved) out.push({ e: '💪', t: 'Saw you moved today. Love it!', why: `${n} logged a workout or steps today` })
   if (s.kgChange != null && s.kgChange <= -0.5) out.push({ e: '📉', t: `${Math.abs(s.kgChange).toFixed(1)} kg down. So proud of you`, why: `${n} is ${Math.abs(s.kgChange).toFixed(1)} kg down so far` })

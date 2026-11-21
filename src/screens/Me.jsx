@@ -5,6 +5,7 @@ import { HabitPicker } from './Habits'
 import { BUILD, VERSION } from '../update'
 import { lastLookup } from '../ai'
 import { PartnerSettings } from './Partner'
+import { BreaksSettings } from './Breaks'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
 import { soundOn, setSoundOn, testSound } from '../sound'
@@ -27,7 +28,7 @@ export const toFtIn = (cm) => {
 }
 export const toCm = (ft, inch) => (+ft > 0 ? Math.round(((+ft || 0) * 12 + (+inch || 0)) * 2.54) : '')
 
-export default function Me({ user, profile: p, updateProfile, resetProgress, partner, openWords }) {
+export default function Me({ user, profile: p, updateProfile, resetProgress, partner, openWords, today, celebrate, notify }) {
   const [confirmReset, setConfirmReset] = useState(false)
   const set = updateProfile
   const num = (k) => (e) => set({ [k]: e.target.value.replace(/[^\d.]/g, '') })
@@ -146,6 +147,8 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
         </div>
       )}
 
+
+      <BreaksSettings profile={p} updateProfile={updateProfile} today={today} partner={partner} celebrate={celebrate} notify={notify} />
 
       <h2 className="group-title" id="about">About you</h2>
       <div className="card form-list">

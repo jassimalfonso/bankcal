@@ -1773,3 +1773,33 @@ button:not(:disabled):active { filter: brightness(0.94); }
 .shared-foods { margin-top: 12px; }
 .shared-foods .mf-head { flex-direction: column; align-items: flex-start; gap: 1px; }
 .shared-foods .mf-head small { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+
+/* ───── Breaks: weekend and vacation mode ───── */
+.breaks { margin-bottom: 10px; }
+.br-body { display: grid; gap: 12px; padding: 14px 16px 16px; }
+.br-title { margin: 0; font-size: 17px; font-weight: 850; }
+.br-note { margin: 0; font-size: 14px; line-height: 1.45; color: var(--muted); font-weight: 600; }
+.br-note b { color: var(--ink); }
+.br-days { display: flex; gap: 8px; }
+.br-days button { min-width: 56px; min-height: 38px; border-radius: 99px; background: var(--bg); font-weight: 800; color: var(--muted); }
+.br-days button.on { background: var(--accent); color: var(--on-accent); }
+.br-split { display: flex; gap: 10px; margin: 0; }
+.br-split span { flex: 1; padding: 10px 12px; border-radius: 14px; background: var(--bg); font-size: 13px; font-weight: 700; color: var(--muted); }
+.br-split b { display: block; font-size: 20px; color: var(--ink); }
+.br-split b.pos { color: var(--accent); }
+.br-end { display: flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 750; }
+.br-end input { flex: 1; min-height: 42px; padding: 6px 10px; border-radius: 12px; background: var(--bg); font: inherit; }
+.br-end small { color: var(--muted); font-weight: 600; }
+.vac-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.vac-btns button { min-height: 40px; padding: 8px 14px; font-size: 14px; }
+.vac-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin: 0 0 14px; padding: 14px 16px; border-radius: 22px; color: #12364a;
+  background: linear-gradient(160deg, #bfe9ff 0%, #d8f4ff 55%, #ffe8b8 100%); box-shadow: var(--shadow); animation: rc-in 0.5s var(--spring) both; }
+.vac-banner.paused { background: var(--card); color: var(--ink); }
+.vac-banner.invite { background: linear-gradient(160deg, #ffe8b8, #ffd6e4); color: #4a2a12; }
+.vac-sun { font-size: 34px; animation: ci-bob 3s ease-in-out infinite; }
+.vac-main { flex: 1; min-width: 160px; display: grid; gap: 2px; }
+.vac-main b { font-size: 16px; font-weight: 850; }
+.vac-main small { font-size: 13.5px; font-weight: 650; opacity: 0.8; line-height: 1.35; }
+.vac-banner .vac-btns { flex: 1 1 100%; }
+.vac-banner .btn-soft { background: rgba(255, 255, 255, 0.7); color: inherit; }
+@media (prefers-reduced-motion: reduce) { .vac-sun { animation: none; } }
