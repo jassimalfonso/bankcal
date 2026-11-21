@@ -8,16 +8,33 @@ import { IconCamera, IconClose } from '../icons'
 import { useEscape } from '../motion'
 import { useSheetDrag } from '../motion'
 
-// Online answers are kept on this phone for two weeks, so a food looked up once comes back instantly.
+// Online answers are kept on this phone for two months, so a food looked up once comes back instantly,
+// and every food found online also shows up in the instant suggestions from then on.
 const CACHE_KEY = 'bankcal:online-foods'
 const onlineCache = new Map()
 try {
-  for (const [k, v, at] of JSON.parse(localStorage.getItem(CACHE_KEY) || '[]')) if (Date.now() - at < 14 * 864e5) onlineCache.set(k, Object.assign(v, { at }))
+  for (const [k, v, at] of JSON.parse(localStorage.getItem(CACHE_KEY) || '[]')) if (Date.now() - at < 60 * 864e5) onlineCache.set(k, Object.assign(v, { at }))
 } catch { /* start empty */ }
 function keepOnline(k, found) {
   onlineCache.set(k, Object.assign(found, { at: Date.now() }))
   if (!found.length) return // "nothing found" is only remembered until the app is closed
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify([...onlineCache].filter(([, v]) => v.length).sort((a, b) => b[1].at - a[1].at).slice(0, 80).map(([key, v]) => [key, [...v], v.at]))) } catch { /* full: fine */ }
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify([...onlineCache].filter(([, v]) => v.length).sort((a, b) => b[1].at - a[1].at).slice(0, 200).map(([key, v]) => [key, [...v], v.at]))) } catch { /* full: fine */ }
+}
+
+// Foods found online before that match what's being typed (every typed word starts a word in the name)
+const words = (t) => t.toLowerCase().replace(/['’]/g, '').split(/[^a-z0-9]+/).filter(Boolean)
+function seenOnline(q, limit = 4) {
+  const qs = words(q)
+  if (!qs.length) return []
+  const out = new Map()
+  for (const [, list] of [...onlineCache].sort((a, b) => b[1].at - a[1].at)) {
+    for (const f of list) {
+      const ws = words(f.name)
+      if (qs.every((w) => ws.some((x) => x.startsWith(w))) && !out.has(f.name.toLowerCase())) out.set(f.name.toLowerCase(), { name: f.name, kcal: f.kcal, portion: f.portion || 'found online', seen: true })
+      if (out.size >= limit) return [...out.values()]
+    }
+  }
+  return [...out.values()]
 }
 
 export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemove, editing, forDay, today, profile, updateProfile }) {
@@ -90,6 +107,7 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
     const saved = myFoods.filter((f) => f.name.toLowerCase().includes(t)).map((f) => ({ name: f.name, kcal: f.kcal, portion: f.portion || 'my food' }))
     const past = recent.filter((r) => r.name.toLowerCase().includes(t) && !saved.some((s) => s.name.toLowerCase() === r.name.toLowerCase())).map((r) => ({ name: r.name, kcal: r.kcal, portion: 'your usual' }))
     const own = [...saved, ...past]
+    for (const f of seenOnline(name)) if (!own.some((o) => o.name.toLowerCase() === f.name.toLowerCase())) own.push(f)
     const built = searchFoods(name).filter((f) => !own.some((o) => o.name.toLowerCase() === f.name.toLowerCase()))
     return [...own, ...built].slice(0, 8)
   }, [name, recent, picked, myFoods])
@@ -143,10 +161,10 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
   useEffect(() => {
     const q = name.trim()
     if (picked || photo || q.length < 3 || !navigator.onLine || asked.current === q.toLowerCase()) return
-    const strong = matchFoods(q).filter((m) => m.strong).length + suggestions.filter((sg) => sg.portion === 'my food' || sg.portion === 'your usual').length
+    const strong = matchFoods(q).filter((m) => m.strong).length + suggestions.filter((sg) => sg.portion === 'my food' || sg.portion === 'your usual' || sg.seen).length
     if (strong >= 3) return
     if (onlineCache.has(q.toLowerCase())) { searchAi(true); return } // already looked up: show it now
-    const id = setTimeout(() => searchAi(true), 700) // long enough that slow typing doesn't fire a search per letter
+    const id = setTimeout(() => searchAi(true), 450) // long enough that slow typing doesn't fire a search per letter
     return () => clearTimeout(id)
   }, [name, picked, photo]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -238,11 +256,11 @@ export default function AddSheet({ mine, todays, budget, onClose, onSave, onRemo
               <span className="suggest-kcal">{fmt(f.kcal)}<i>kcal</i></span>
             </button>
           )
-          const own = suggestions.filter((f) => f.portion === 'my food' || f.portion === 'your usual')
+          const own = suggestions.filter((f) => f.portion === 'my food' || f.portion === 'your usual' || (f.seen && !ai.results?.some((r) => r.name === f.name)))
           // nothing in the built-in list matches every word: the online answer is likely the right one,
           // so it goes first and only a few loose matches follow
           const loose = !picked && name.trim().length >= 3 && !matchFoods(name).some((m) => m.strong)
-          const rest = suggestions.filter((f) => !own.includes(f)).slice(0, loose ? 4 : 8)
+          const rest = suggestions.filter((f) => !own.includes(f) && !f.seen).slice(0, loose ? 4 : 8)
           const online = (ai.busy || ai.results?.length > 0) && (
             <>
               <p className="sg-h">Online · AI estimate</p>

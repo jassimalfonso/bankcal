@@ -7,7 +7,7 @@ import { lastLookup } from '../ai'
 import { PartnerSettings } from './Partner'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
-import { soundOn, setSoundOn } from '../sound'
+import { soundOn, setSoundOn, testSound } from '../sound'
 
 // Each background comes with a matching colour; you can still pick another colour after.
 const BACKGROUNDS = [
@@ -306,10 +306,19 @@ function PaceTable({ plan, weight }) {
 // Sounds are a choice for this phone only
 function SoundLine() {
   const [on, setOn] = useState(soundOn)
+  const [res, setRes] = useState('')
+  const test = async () => {
+    const r = await testSound()
+    setRes(r === 'ok' ? 'Playing now. If you hear nothing, turn up the media volume. On iPhone, also switch off Silent mode.' : r === 'blocked' ? 'This phone blocked the sound. Tap the button once more.' : 'This browser can’t play app sounds.')
+  }
   return (
-    <label className="line toggle-line">
-      <span className="line-label">Sounds<small>A chime for milestones and notes from your partner</small></span>
-      <input type="checkbox" className="switch" checked={on} onChange={(e) => { setOn(e.target.checked); setSoundOn(e.target.checked) }} />
-    </label>
+    <>
+      <label className="line toggle-line">
+        <span className="line-label">Sounds<small>Cheers, notes, milestones, deposits and habits</small></span>
+        <input type="checkbox" className="switch" checked={on} onChange={(e) => { setOn(e.target.checked); setSoundOn(e.target.checked) }} />
+      </label>
+      {on && <button className="line link-line" onClick={test}>🔊 Play a sound</button>}
+      {on && res && <p className="fine" role="status">{res}</p>}
+    </>
   )
 }

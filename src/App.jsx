@@ -177,6 +177,7 @@ function Bank({ user }) {
     receiptTimer.current = setTimeout(() => setReceiptMsg(null), 4500)
     if (id) { setFresh(id); setTimeout(() => setFresh((f) => (f === id ? null : f)), 2200) }
     try { navigator.vibrate?.(kind === 'spend' ? 12 : [10, 40, 10]) } catch { /* not allowed yet */ }
+    if (kind === 'spend') play('pop'); else if (kcal > 0) play('coin')
   }
   const budgetRef = useRef(null)
   const notify = (text, undo) => {

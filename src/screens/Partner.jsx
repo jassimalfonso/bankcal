@@ -89,6 +89,7 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0, stre
   const team = habitsAll > 0 ? { target: habitsAll * 5, ticks: myTicks + list.reduce((a, [, s]) => a + (s.weekTicks ?? 0), 0) } : null
   if (team) team.done = team.ticks >= team.target
   const send = async (id, name, msg = '👏', sticker = '') => {
+    play(msg === '👏' ? 'cheer' : msg === 'Loved your note' ? 'love' : 'send') // straight away, so the tap feels answered
     try {
       await cheer(id, msg, sticker)
       setJustSent(id); setTimeout(() => setJustSent((x) => (x === id ? null : x)), 1800)
@@ -199,7 +200,7 @@ function PartnerSheet({ onShareNote, s, sent, got, info, team, myTicks, me, repl
   const [hint] = useState(() => firstTime('cheer-swipe'))
   const send = (t, e) => {
     if (sentKey) return
-    setSentKey(t); onCheer(t, e); play('send')
+    setSentKey(t); onCheer(t, e)
     try { navigator.vibrate?.([8, 30, 8]) } catch { /* ignore */ }
     setTimeout(() => setSentKey(null), 1400)
   }
@@ -210,7 +211,7 @@ function PartnerSheet({ onShareNote, s, sent, got, info, team, myTicks, me, repl
     setNote(text); if (st) setSticker(st); setWriting(true)
     setTimeout(() => { const el = noteRef.current; if (!el) return; el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.focus(); el.setSelectionRange(text.length, text.length) }, 60)
   }
-  const drop = () => { if (!note.trim()) return; onCheer(note.trim(), sticker); play('send'); setNote(''); setWriting(false) }
+  const drop = () => { if (!note.trim()) return; onCheer(note.trim(), sticker); setNote(''); setWriting(false) }
   const all = [
     ...(sent?.log ?? []).map((c) => ({ ...c, who: 'You' })),
     ...(got?.log ?? []).map((c) => ({ ...c, who: s.name })),

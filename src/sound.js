@@ -22,6 +22,16 @@ const TUNES = {
   // a note arrived: a bouncy "you've got love!" run up the scale with a sparkle
   note: [[659, 0, 0.13, 0.17, 'triangle'], [784, 0.1, 0.13, 0.17, 'triangle'], [1047, 0.2, 0.13, 0.17, 'triangle'], [1319, 0.3, 0.4, 0.18, 'triangle'],
     [659, 0.3, 0.4, 0.08, 'sine'], [2637, 0.36, 0.3, 0.05, 'sine'], [0, 0.3, 0.07, 0.1, 'clap']],
+  // 👏 quick cheer: clap-clap, clap-clap-clap and a little "yay"
+  cheer: [...[0, 0.14, 0.34, 0.46, 0.58].map((t) => [0, t, 0.09, 0.24, 'clap']), [600, 0.56, 0.3, 0.09, 'whoo'], [1568, 0.6, 0.25, 0.08, 'sine']],
+  // ❤️ love it: two warm rising notes
+  love: [[784, 0, 0.16, 0.16, 'sine'], [1175, 0.12, 0.4, 0.17, 'sine'], [587, 0.12, 0.4, 0.07, 'triangle']],
+  // deposit: a coin dropping in the bank
+  coin: [[1319, 0, 0.08, 0.15, 'square'], [1976, 0.07, 0.4, 0.14, 'square']],
+  // spending: a soft pop
+  pop: [[520, 0, 0.09, 0.14, 'sine'], [390, 0.05, 0.1, 0.1, 'sine']],
+  // habit ticked: a tiny bright tick
+  tick: [[1397, 0, 0.07, 0.12, 'triangle'], [1865, 0.06, 0.16, 0.12, 'triangle']],
   // note sent: a quick "whoosh-ding!"
   send: [[400, 0, 0.16, 0.08, 'whoo'], [988, 0.12, 0.12, 0.15, 'triangle'], [1319, 0.2, 0.3, 0.16, 'triangle'], [2637, 0.24, 0.2, 0.04, 'sine']],
 }
@@ -61,22 +71,37 @@ function run(name) {
 export function play(name) {
   if (!soundOn() || typeof window === 'undefined') return
   try {
-    if (ctx?.state === 'running') run(name)
-    else waiting = { name, at: Date.now() }
+    if (ctx?.state === 'running') { run(name); return }
+    // not awake yet: most sounds are asked for inside a tap, so try to wake the sound right now
+    waiting = { name, at: Date.now() }
+    wake()
   } catch { /* sound is a nice-to-have */ }
+}
+
+// Phones keep sound locked until a real tap. iPhones only accept the END of a tap
+// (finger lifted / click), so we listen to every kind of touch, and keep listening,
+// because iPhones also put the sound back to sleep when the app goes to the background.
+function wake() {
+  const AC = window.AudioContext || window.webkitAudioContext
+  if (!AC) return
+  try {
+    ctx ??= new AC()
+    const go = () => { if (ctx.state !== 'running') return; if (waiting && Date.now() - waiting.at < 60000 && soundOn()) { const w = waiting; waiting = null; run(w.name) } else waiting = null }
+    if (ctx.state === 'running') go(); else ctx.resume().then(go).catch(() => {})
+  } catch { /* ignore */ }
 }
 
 export function startSound() {
   if (typeof window === 'undefined') return
-  const AC = window.AudioContext || window.webkitAudioContext
-  if (!AC) return
-  const unlock = () => {
-    try {
-      ctx ??= new AC()
-      const go = () => { if (waiting && Date.now() - waiting.at < 60000 && soundOn()) run(waiting.name); waiting = null }
-      if (ctx.state === 'running') go(); else ctx.resume().then(go).catch(() => {})
-    } catch { /* ignore */ }
-  }
-  addEventListener('pointerdown', unlock, { passive: true })
-  addEventListener('keydown', unlock)
+  for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) addEventListener(ev, wake, { passive: true, capture: true })
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ctx && ctx.state !== 'running') ctx.resume().catch(() => {}) })
+}
+
+// For the "Play a sound" button in Settings: says whether this phone let the sound through
+export async function testSound() {
+  try { wake(); await ctx?.resume() } catch { /* ignore */ }
+  if (!ctx) return 'unsupported'
+  if (ctx.state !== 'running') return 'blocked'
+  run('win')
+  return 'ok'
 }
