@@ -38,7 +38,7 @@ const TUNES = {
 
 let noise = null
 let out = null // everything goes through a limiter so loud moments don't crackle
-const master = () => { if (!out) { out = ctx.createDynamicsCompressor(); const g = ctx.createGain(); g.gain.value = 0.8; out.connect(g).connect(master()) } return out }
+const master = () => { if (!out) { out = ctx.createDynamicsCompressor(); const g = ctx.createGain(); g.gain.value = 0.8; out.connect(g).connect(ctx.destination) } return out }
 function run(name) {
   if (import.meta.env.MODE === 'demo') console.log('SOUND', name)
   const now = ctx.currentTime + 0.02
