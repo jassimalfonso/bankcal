@@ -111,6 +111,8 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
   useEscape(onClose)
   const [meal, setMeal] = useState(editing?.meal ?? (forDay && forDay !== today ? 'Lunch' : mealFor()))
   const inputRef = useRef(null)
+  // the name box grows with the text (for phones that can't size it themselves)
+  useEffect(() => { const el = inputRef.current; if (!el || CSS.supports?.('field-sizing', 'content')) return; el.style.height = 'auto'; el.style.height = `${Math.min(140, el.scrollHeight + 4)}px` }, [name])
   useEffect(() => { warmFood() }, []) // wake the online search while the person is still typing
 
   // Keep the sheet inside the part of the screen the keyboard leaves visible (iPhone),
@@ -167,7 +169,7 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
   const otherDay = (editing && editing.day && editing.day !== today) || (forDay && forDay !== today)
   const n = Math.max(0, parseInt(kcal, 10) || 0)
   const after = budget != null && !otherDay ? budget - spent - n : null
-  const valid = name.trim() && n > 0
+  const valid = name.trim() && String(kcal).trim() !== '' // 0 kcal is fine (water, black tea…)
 
   // a chosen food can be scaled: ½, 1, 1½, 2 or 3 portions
   const [base, setBase] = useState(null)
@@ -296,7 +298,9 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
         <label className="field has-clear">
           <span>Food</span>
           {/* tapping a food that's already chosen selects the whole name, so typing replaces it */}
-          <input ref={inputRef} value={name} onKeyDown={onEnter} type="search" onFocus={(e) => { if (picked) e.target.select() }} onChange={(e) => { setName(e.target.value); setPicked(false) }} placeholder="Search or type, e.g. adobo…" aria-label="Food name" autoComplete="off" enterKeyHint="search" />
+          {/* grows onto more lines so a long name is fully visible while editing */}
+          <textarea ref={inputRef} rows={1} className="food-name" value={name} onKeyDown={onEnter} onFocus={(e) => { if (picked) e.target.select() }}
+            onChange={(e) => { setName(e.target.value.replace(/\n/g, ' ')); setPicked(false) }} placeholder="Search or type, e.g. adobo…" aria-label="Food name" autoComplete="off" enterKeyHint="search" spellCheck={false} />
           {name && <button type="button" className="field-clear" aria-label="Clear food" onClick={(e) => { e.preventDefault(); setName(''); setPicked(false); setAi((a) => ({ ...a, results: null, err: null })); inputRef.current?.focus() }}><IconClose size={18} /></button>}
         </label>
 

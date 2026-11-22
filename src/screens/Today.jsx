@@ -41,6 +41,8 @@ export function Ring({ value, size = 220, stroke = 20, children }) {
   )
 }
 
+// any spelling of a meal lands in the right group; unknown counts as a snack
+const mealKey = (m) => { const k = String(m || '').toLowerCase(); return k.startsWith('break') ? 'Breakfast' : k.startsWith('lunch') ? 'Lunch' : k.startsWith('din') || k.startsWith('sup') ? 'Dinner' : 'Snack' }
 // how Meals is shown: grouped by meal, by food type, or one list (remembered on this phone)
 function useMealView() {
   const [v, setV] = useState(() => { try { return localStorage.getItem('bankcal:meal-view') || 'meal' } catch { return 'meal' } })
@@ -195,7 +197,7 @@ export default function Today(props) {
                 if (mealView === 'all' || todays.length < 2) return <ul className="card list">{todays.map(row)}</ul>
                 // grouped: by meal (Breakfast, Lunch…) or by food type (Meals, Drinks…)
                 const groups = mealView === 'meal'
-                  ? ['Breakfast', 'Lunch', 'Snack', 'Dinner'].map((m) => ({ key: m, label: m, e: { Breakfast: '🌅', Lunch: '☀️', Snack: '🍪', Dinner: '🌙' }[m], items: todays.filter((x) => (x.meal || 'Snack') === m) }))
+                  ? ['Breakfast', 'Lunch', 'Snack', 'Dinner'].map((m) => ({ key: m, label: m, e: { Breakfast: '🌅', Lunch: '☀️', Snack: '🍪', Dinner: '🌙' }[m], items: todays.filter((x) => mealKey(x.meal) === m) }))
                   : CATS.map((c) => ({ key: c.id, label: c.label, e: c.e, items: todays.filter((x) => catOf(x, profile?.foodCats) === c.id) }))
                 return groups.filter((g) => g.items.length).map((g) => (
                   <div key={g.key} className="meal-group">

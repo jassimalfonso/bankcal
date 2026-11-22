@@ -2049,3 +2049,6 @@ body:has(.sheet-wrap) .fab { transform: scale(0.4); }
 .mg-head { display: flex; justify-content: space-between; align-items: baseline; margin: 0 6px 8px; font-weight: 850; font-size: 15px; }
 .mg-head small { color: var(--muted); font-weight: 800; font-size: 13px; }
 .group-title:has(.meal-view)::after { order: 1; } .group-title .meal-view { order: 2; }
+.field textarea.food-name { width: 100%; padding: 15px 16px; padding-right: 48px; border-radius: 16px; border: 2px solid transparent; background: var(--card); outline: none; font: inherit; font-size: 17px; font-weight: 650; line-height: 1.35; color: var(--ink); resize: none; overflow: hidden; field-sizing: content; min-height: 56px; max-height: 140px; }
+.field textarea.food-name:focus { border-color: var(--accent); }
+.field textarea.food-name::placeholder { color: var(--muted); opacity: 0.6; font-weight: 600; }
