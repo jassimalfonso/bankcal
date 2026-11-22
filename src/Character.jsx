@@ -20,8 +20,11 @@ const LEGACY = { koala: 'egg', husky: 'egg', poo: 'egg', dog: 'avocado', rat: 'a
 // Dress-up for your buddy: all free, just for fun.
 export const ACCESSORIES = [
   { id: 'bow', e: '🎀', label: 'Bow' }, { id: 'cap', e: '🧢', label: 'Cap' }, { id: 'flowers', e: '🌸', label: 'Flower' },
-  { id: 'tophat', e: '🎩', label: 'Top hat' }, { id: 'crown', e: '👑', label: 'Crown' }, { id: 'party', e: '🥳', label: 'Party' },
-  { id: 'sun', e: '🕶️', label: 'Shades' }, { id: 'santa', e: '🎅', label: 'Festive' }, { id: 'grad', e: '🎓', label: 'Grad cap' },
+  { id: 'tophat', e: '🎩', label: 'Top hat' }, { id: 'crown', e: '👑', label: 'Crown' }, { id: 'butterfly', e: '🦋', label: 'Butterfly' },
+  { id: 'sun', e: '🕶️', label: 'Shades' }, { id: 'tree', e: '🎄', label: 'Festive tree' }, { id: 'grad', e: '🎓', label: 'Grad cap' },
+  { id: 'phones', e: '🎧', label: 'Headphones' }, { id: 'sunhat', e: '👒', label: 'Sun hat' }, { id: 'sunflower', e: '🌻', label: 'Sunflower' },
+  { id: 'star', e: '⭐', label: 'Star' }, { id: 'clover', e: '🍀', label: 'Clover' }, { id: 'balloon', e: '🎈', label: 'Balloon' },
+  { id: 'heart', e: '💖', label: 'Heart' }, { id: 'rainbow', e: '🌈', label: 'Rainbow' }, { id: 'cake', e: '🎂', label: 'Birthday' },
 ]
 export const accById = Object.fromEntries(ACCESSORIES.map((a) => [a.id, a]))
 

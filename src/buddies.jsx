@@ -4,7 +4,7 @@
 
 const INK = '#2b2b30'
 
-export function Face({ mood, y = 60, gap = 15, my, cx = 60, cheeks = '#ff8fa3', iris, eyeInk = INK }) {
+export function Face({ mood, y = 60, gap = 15, my, cx = 60, cheeks = '#ff8fa3', iris, eyeInk = INK, dotEyes, noMouth }) {
   const m = my ?? y + 22
   return (
     <g>
@@ -15,6 +15,11 @@ export function Face({ mood, y = 60, gap = 15, my, cx = 60, cheeks = '#ff8fa3', 
           <path key={x} d={`M${x - 6} ${y} q6 5 12 0`} stroke={eyeInk} strokeWidth="3" strokeLinecap="round" fill="none" />
         ) : mood === 'happy' ? (
           <path key={x} d={`M${x - 6} ${y + 2} q6 -8 12 0`} stroke={eyeInk} strokeWidth="3.2" strokeLinecap="round" fill="none" />
+        ) : dotEyes ? (
+          <g key={x}>
+            <circle cx={x} cy={y} r={mood === 'worried' ? 4.6 : 4} fill={dotEyes} />
+            <circle cx={x + 1.4} cy={y - 1.4} r="1.3" fill={dotEyes === '#fff' ? INK : '#fff'} opacity="0.9" />
+          </g>
         ) : (
           <g key={x}>
             <circle cx={x} cy={y} r={mood === 'worried' ? 8.5 : 7.5} fill="#fff" />
@@ -30,10 +35,10 @@ export function Face({ mood, y = 60, gap = 15, my, cx = 60, cheeks = '#ff8fa3', 
           <path d={`M${cx + gap + 8} ${y - 13} l-10 3`} />
         </g>
       )}
-      {mood === 'happy' && <g><path d={`M${cx - 9} ${m - 2} q9 12 18 0 z`} fill={INK} /><ellipse cx={cx} cy={m + 4} rx="4" ry="2.4" fill="#ff7d93" /></g>}
-      {mood === 'ok' && <path d={`M${cx - 7} ${m} q3.5 -3 7 0 t7 0`} stroke={INK} strokeWidth="3" strokeLinecap="round" fill="none" />}
-      {mood === 'worried' && <ellipse cx={cx} cy={m + 1} rx="5" ry="6.5" fill={INK} />}
-      {mood === 'sleepy' && <ellipse cx={cx} cy={m} rx="3" ry="2.2" fill={INK} />}
+      {!noMouth && mood === 'happy' && <g><path d={`M${cx - 9} ${m - 2} q9 12 18 0 z`} fill={INK} /><ellipse cx={cx} cy={m + 4} rx="4" ry="2.4" fill="#ff7d93" /></g>}
+      {!noMouth && mood === 'ok' && <path d={`M${cx - 7} ${m} q3.5 -3 7 0 t7 0`} stroke={INK} strokeWidth="3" strokeLinecap="round" fill="none" />}
+      {!noMouth && mood === 'worried' && <ellipse cx={cx} cy={m + 1} rx="5" ry="6.5" fill={INK} />}
+      {!noMouth && mood === 'sleepy' && <ellipse cx={cx} cy={m} rx="3" ry="2.2" fill={INK} />}
       {(mood === 'ok' || mood === 'worried') && <path transform={`translate(${cx + gap + 16} ${y - 12})`} d="M0 -7 C4 -1 5 2 5 4 a5 5 0 0 1 -10 0 c0 -2 1 -5 5 -11z" fill="#8fd3ff" />}
       {mood === 'sleepy' && <g fill="#9a9ab0" fontFamily="system-ui" fontWeight="900"><text x="92" y="24" fontSize="15">z</text><text x="102" y="14" fontSize="10">z</text></g>}
     </g>
@@ -108,28 +113,39 @@ export const BUDDIES = {
     <Face mood={m} y={60} gap={16} my={86} />
   </>) },
   ghost: { label: 'Ghost', draw: (m) => (<>
-    <path d="M18 60 C18 30 38 12 60 12 C82 12 102 30 102 60 L102 104 C96 112 90 100 84 108 C78 116 72 102 66 110 C60 118 54 102 48 110 C42 116 36 102 30 108 C24 114 18 104 18 104 Z" fill="#f6f4ff" stroke="#e4e0f5" strokeWidth="2" />
-    <Face mood={m} y={56} gap={15} cheeks="#c9b8ff" />
+    {g('b-ghost', '#ffffff', '#ece8ff')}
+    <ellipse cx="60" cy="112" rx="26" ry="4" fill="#000" opacity="0.06" />
+    <path d="M22 62 C22 34 40 18 60 18 C80 18 98 34 98 62 L98 92 C98 100 92 102 87 97 C82 92 78 100 73 101 C67 102 64 95 60 95 C56 95 53 102 47 101 C42 100 38 92 33 97 C28 102 22 100 22 92 Z" fill="url(#b-ghost)" stroke="#e2dcf7" strokeWidth="2" />
+    <ellipse cx="44" cy="32" rx="10" ry="5" fill="#fff" opacity="0.9" transform="rotate(-25 44 32)" />
+    <ellipse cx="18" cy="70" rx="7" ry="5" fill="#f3f0ff" stroke="#e2dcf7" strokeWidth="2" transform="rotate(-30 18 70)" /><ellipse cx="102" cy="70" rx="7" ry="5" fill="#f3f0ff" stroke="#e2dcf7" strokeWidth="2" transform="rotate(30 102 70)" />
+    <Face mood={m} y={60} gap={12} my={74} cheeks="#c9b8ff" />
   </>) },
   bean: { label: 'Jelly bean', draw: (m) => (<>
-    {g('b-bean', '#c7a6ff', '#8b63e6')}
-    <path d="M26 28 C46 10 86 14 98 40 C108 62 92 74 96 92 C98 108 80 116 60 112 C34 108 14 96 14 70 C14 50 16 38 26 28 Z" fill="url(#b-bean)" />
-    <ellipse cx="44" cy="32" rx="12" ry="5" fill="#fff" opacity="0.35" transform="rotate(-20 44 32)" />
-    <Face mood={m} y={60} gap={15} />
+    {g('b-bean', '#c9adff', '#8d66ea')}
+    <ellipse cx="60" cy="111" rx="34" ry="5" fill="#000" opacity="0.07" />
+    <path d="M30 26 C46 12 78 14 92 30 C104 44 102 60 98 70 C94 80 100 92 92 102 C82 112 50 112 34 104 C18 96 14 76 16 60 C18 46 20 34 30 26 Z" fill="url(#b-bean)" />
+    <ellipse cx="42" cy="30" rx="13" ry="6" fill="#fff" opacity="0.45" transform="rotate(-22 42 30)" /><circle cx="60" cy="24" r="3" fill="#fff" opacity="0.4" />
+    <Face mood={m} y={62} gap={12} my={76} cheeks="#ff9fc4" />
   </>) },
   cloud: { label: 'Cloud monster', draw: (m) => (<>
-    {g('b-cloud', '#a6e3a1', '#5fbf72')}
-    <g fill="url(#b-cloud)"><circle cx="38" cy="40" r="17" /><circle cx="60" cy="31" r="20" /><circle cx="82" cy="40" r="17" /><rect x="18" y="38" width="84" height="66" rx="33" /></g>
-    <g fill="#5fbf72"><rect x="36" y="98" width="12" height="12" rx="6" /><rect x="72" y="98" width="12" height="12" rx="6" /></g>
-    <Face mood={m} y={58} gap={15} />
+    {g('b-cloud', '#b2e9ad', '#5fbf72')}
+    <ellipse cx="60" cy="111" rx="34" ry="5" fill="#000" opacity="0.07" />
+    <g fill="url(#b-cloud)"><circle cx="36" cy="46" r="18" /><circle cx="60" cy="36" r="22" /><circle cx="84" cy="46" r="18" /><rect x="16" y="44" width="88" height="62" rx="31" /></g>
+    <ellipse cx="50" cy="32" rx="9" ry="4" fill="#fff" opacity="0.5" transform="rotate(-20 50 32)" />
+    <g fill="#57b56a"><rect x="38" y="100" width="14" height="10" rx="5" /><rect x="68" y="100" width="14" height="10" rx="5" /></g>
+    <Face mood={m} y={66} gap={12} my={80} />
   </>) },
   blobcat: { label: 'Blob cat', draw: (m) => (<>
-    {g('b-cat', '#ffd28a', '#f3a647')}
-    <path d="M22 50 L26 14 L52 34 Z" fill="#f3a647" /><path d="M98 50 L94 14 L68 34 Z" fill="#f3a647" />
-    <rect x="16" y="28" width="88" height="80" rx="40" fill="url(#b-cat)" />
-    <g stroke="#b9772f" strokeWidth="3" strokeLinecap="round" opacity="0.6"><path d="M52 32 v8" /><path d="M60 30 v10" /><path d="M68 32 v8" /></g>
-    <path d="M55 74 h10 l-5 4 z" fill="#ff7d93" />
-    <Face mood={m} y={62} gap={16} my={86} />
+    {g('b-cat', '#ffd596', '#f2a443')}
+    <ellipse cx="60" cy="111" rx="34" ry="5" fill="#000" opacity="0.07" />
+    <path d="M24 52 L28 18 Q30 14 34 17 L54 34 Z" fill="#f2a443" /><path d="M96 52 L92 18 Q90 14 86 17 L66 34 Z" fill="#f2a443" />
+    <path d="M30 40 L32 24 L45 34 Z" fill="#ffc4cf" /><path d="M90 40 L88 24 L75 34 Z" fill="#ffc4cf" />
+    <ellipse cx="60" cy="72" rx="46" ry="40" fill="url(#b-cat)" />
+    <g stroke="#d98a2e" strokeWidth="3" strokeLinecap="round" opacity="0.5"><path d="M54 36 v7" /><path d="M60 34 v9" /><path d="M66 36 v7" /></g>
+    <ellipse cx="60" cy="90" rx="17" ry="11" fill="#fff4e2" />
+    <g stroke="#b9772f" strokeWidth="1.8" strokeLinecap="round" opacity="0.45"><path d="M30 82 h-12" /><path d="M31 88 l-11 3" /><path d="M90 82 h12" /><path d="M89 88 l11 3" /></g>
+    <Face mood={m} y={68} gap={13} my={86} />
+    <path d="M57 80 h6 l-3 3 z" fill="#ff7d93" />
   </>) },
   boba: { label: 'Boba', draw: (m) => (<>
     {g('b-boba', '#f6dcc0', '#e3b98f')}
@@ -178,21 +194,24 @@ export const BUDDIES = {
     <Face mood={m} y={66} gap={14} my={82} />
   </>) },
   panda: { label: 'Panda', draw: (m) => (<>
-    <circle cx="27" cy="34" r="13" fill="#3b3b44" /><circle cx="93" cy="34" r="13" fill="#3b3b44" />
-    <rect x="14" y="26" width="92" height="84" rx="42" fill="#ffffff" stroke="#ececf1" strokeWidth="2" />
-    <ellipse cx="44" cy="63" rx="11" ry="9" fill="#3b3b44" transform="rotate(-18 44 63)" /><ellipse cx="76" cy="63" rx="11" ry="9" fill="#3b3b44" transform="rotate(18 76 63)" />
-    <ellipse cx="60" cy="80" rx="5" ry="3.5" fill="#3b3b44" />
-    <Face mood={m} y={62} gap={16} my={86} eyeInk="#ffffff" />
+    <ellipse cx="60" cy="111" rx="34" ry="5" fill="#000" opacity="0.07" />
+    <circle cx="28" cy="32" r="14" fill="#3b3b44" /><circle cx="92" cy="32" r="14" fill="#3b3b44" />
+    <circle cx="28" cy="32" r="6" fill="#5c5c68" /><circle cx="92" cy="32" r="6" fill="#5c5c68" />
+    <ellipse cx="60" cy="70" rx="46" ry="40" fill="#ffffff" stroke="#ececf1" strokeWidth="2" />
+    <ellipse cx="45" cy="64" rx="11" ry="12.5" fill="#3b3b44" transform="rotate(25 45 64)" /><ellipse cx="75" cy="64" rx="11" ry="12.5" fill="#3b3b44" transform="rotate(-25 75 64)" />
+    <ellipse cx="60" cy="80" rx="5" ry="3.6" fill="#3b3b44" />
+    <Face mood={m} y={64} gap={15} my={88} eyeInk="#ffffff" dotEyes="#fff" />
   </>) },
   penguin: { label: 'Penguin', draw: (m) => (<>
-    {g('b-peng', '#56627a', '#36405a')}
-    <ellipse cx="60" cy="110" rx="34" ry="5" fill="#000" opacity="0.06" />
-    <ellipse cx="17" cy="74" rx="8" ry="18" fill="#36405a" transform="rotate(18 17 74)" /><ellipse cx="103" cy="74" rx="8" ry="18" fill="#36405a" transform="rotate(-18 103 74)" />
-    <path d="M60 14 C88 14 102 38 102 66 C102 96 84 110 60 110 C36 110 18 96 18 66 C18 38 32 14 60 14 Z" fill="url(#b-peng)" />
-    <path d="M60 40 C66 30 86 30 88 50 C90 66 86 98 60 102 C34 98 30 66 32 50 C34 30 54 30 60 40 Z" fill="#fffdf8" />
+    {g('b-peng', '#5c6a86', '#3a4560')}
+    <ellipse cx="60" cy="111" rx="34" ry="5" fill="#000" opacity="0.07" />
+    <ellipse cx="18" cy="76" rx="8" ry="17" fill="#3a4560" transform="rotate(20 18 76)" /><ellipse cx="102" cy="76" rx="8" ry="17" fill="#3a4560" transform="rotate(-20 102 76)" />
+    <path d="M60 16 C88 16 102 40 102 68 C102 96 84 110 60 110 C36 110 18 96 18 68 C18 40 32 16 60 16 Z" fill="url(#b-peng)" />
+    <path d="M60 38 C67 28 88 30 89 52 C91 74 84 100 60 104 C36 100 29 74 31 52 C32 30 53 28 60 38 Z" fill="#fffdf8" />
+    <ellipse cx="48" cy="28" rx="10" ry="4.5" fill="#fff" opacity="0.18" transform="rotate(-20 48 28)" />
     <g fill="#ffb347"><ellipse cx="46" cy="110" rx="9" ry="4" /><ellipse cx="74" cy="110" rx="9" ry="4" /></g>
-    <Face mood={m} y={58} gap={12} my={78} cheeks="#ffb0c0" />
-    <path d="M53 66 q7 -4 14 0 l-7 7 z" fill="#ffa63d" />
+    <Face mood={m} y={58} gap={12} cheeks="#ffb0c0" noMouth />
+    <path d={m === 'worried' ? 'M53 68 q7 -4 14 0 q-7 8 -14 0 z' : 'M53 67 q7 -5 14 0 l-7 7 z'} fill="#ffa63d" />
   </>) },
 }
 

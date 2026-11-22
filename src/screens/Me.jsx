@@ -232,7 +232,10 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
       <h2 className="group-title" id="buddy">Buddy</h2>
       <div className="card buddy-card"><BuddyGrid value={p.character} onChange={(id) => set({ character: id })} /></div>
       <div className="card acc-card">
-        <p className="acc-title">Dress up<small>Just for fun. Your partner sees it too.</small></p>
+        <div className="acc-head">
+          <span className="acc-preview" key={p.accessory ?? 'none'}><Character kind={p.character} mood="happy" size={72} acc={p.accessory} /></span>
+          <p className="acc-title">Dress up<small>Just for fun. Tap to try one on. Your partner sees it too.</small></p>
+        </div>
         <div className="acc-row">
           <button className={!p.accessory ? 'on' : ''} onClick={() => set({ accessory: null })} aria-pressed={!p.accessory}>None</button>
           {ACCESSORIES.map((a) => (
