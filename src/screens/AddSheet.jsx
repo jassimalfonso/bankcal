@@ -38,7 +38,7 @@ function seenOnline(q, limit = 4) {
   return [...out.values()]
 }
 
-export default function AddSheet({ partner, mine, todays, budget, onClose, onSave, onRemove, editing, forDay, today, profile, updateProfile }) {
+export default function AddSheet({ notify, partner, mine, todays, budget, onClose, onSave, onRemove, editing, forDay, today, profile, updateProfile }) {
   const myFoods = profile?.myFoods ?? []
   const [keep, setKeep] = useState(false)
   const [editMine, setEditMine] = useState(false)
@@ -75,7 +75,22 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
   const Badge = ({ f }) => fixCats
     ? <span role="button" tabIndex={0} className="cat-fix" onClick={(e) => { e.stopPropagation(); nextCat(f) }} onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); nextCat(f) } }} aria-label={`${f.name} is ${catById[typeOf(f)].label}. Tap to change`}>{catById[typeOf(f)].e} {catById[typeOf(f)].label}</span>
     : <span className="cat-e" aria-hidden="true">{catById[typeOf(f)].e}</span>
-  const removeMine = (id) => updateProfile({ myFoods: myFoods.filter((f) => f.id !== id) })
+  // My foods: rename, change kcal, or remove (with Undo). Tapping a food in Edit opens it, never deletes it.
+  const [fixing, setFixing] = useState(null) // { id, name, kcal }
+  const removeMine = (id) => {
+    const before = myFoods
+    const f = myFoods.find((x) => x.id === id)
+    updateProfile({ myFoods: myFoods.filter((x) => x.id !== id) })
+    setFixing(null)
+    notify?.(`Removed ${f?.name ?? 'food'}`, () => updateProfile({ myFoods: before }))
+  }
+  const saveMine = () => {
+    const nm = fixing.name.trim(), kc = Math.max(0, parseInt(fixing.kcal, 10) || 0)
+    if (!nm) return
+    updateProfile({ myFoods: myFoods.map((x) => (x.id === fixing.id ? { ...x, name: nm.slice(0, 120), kcal: kc } : x)) })
+    setFixing(null)
+    notify?.(`Saved ${nm}`)
+  }
   // Your partner's saved foods (the ones you haven't saved yourself), ready to use
   const theirs = useMemo(() => {
     const key = (n) => words(String(n)).join(' ') // "Max’s" and "Max's" count as the same food
@@ -364,14 +379,27 @@ export default function AddSheet({ partner, mine, todays, budget, onClose, onSav
         {fixCats && !name && <p className="cat-hint">Tap a food’s type to change it. BankCal remembers it for next time.</p>}
         {myFoods.length > 0 && !name && myFoods.some(fits) && (
           <div className="myfoods">
-            <div className="mf-head"><b>⭐ My foods</b><button className="link-btn" onClick={() => setEditMine((x) => !x)}>{editMine ? 'Done' : 'Edit'}</button></div>
+            <div className="mf-head"><b>⭐ My foods</b><button className="link-btn" onClick={() => { setEditMine((x) => !x); setFixing(null) }}>{editMine ? 'Done' : 'Edit'}</button></div>
+            {editMine && <p className="cat-hint">Tap a food to rename it, change its kcal or remove it.</p>}
             <div className="mf-list">
               {(() => {
                 const row = (f) => (
-                  <button key={f.id} className={`mf-row ${editMine ? 'edit' : ''}`} onClick={() => (editMine ? removeMine(f.id) : choose(f))} aria-label={editMine ? `Remove ${f.name}` : `${f.name}, ${fmt(f.kcal)} kcal`}>
+                  fixing?.id === f.id ? (
+                    <div key={f.id} className="mf-fix">
+                      <textarea rows={1} className="mf-fix-name" value={fixing.name} autoFocus onChange={(e) => setFixing({ ...fixing, name: e.target.value.replace(/\n/g, ' ') })} aria-label="Food name" />
+                      <div className="mf-fix-row">
+                        <label className="num-in"><input inputMode="numeric" value={fixing.kcal} onChange={(e) => setFixing({ ...fixing, kcal: e.target.value.replace(/\D/g, '') })} aria-label="Calories" onFocus={(e) => e.target.select()} /><span>kcal</span></label>
+                        <button className="link-btn mf-del" onClick={() => removeMine(f.id)}>Remove</button>
+                        <button className="link-btn" onClick={() => setFixing(null)}>Cancel</button>
+                        <button className="sn-save" onClick={saveMine} disabled={!fixing.name.trim()}>Save</button>
+                      </div>
+                    </div>
+                  ) : (
+                  <button key={f.id} className={`mf-row ${editMine ? 'edit' : ''}`} onClick={() => (editMine ? setFixing({ id: f.id, name: f.name, kcal: String(f.kcal) }) : choose(f))} aria-label={editMine ? `Edit ${f.name}` : `${f.name}, ${fmt(f.kcal)} kcal`}>
                     <Badge f={f} /><span className="mf-name">{f.name}</span>
-                    {editMine ? <span className="mf-x">Remove</span> : <span className="mf-kcal">{fmt(f.kcal)}</span>}
+                    {editMine ? <span className="mf-x">✏️ {fmt(f.kcal)}</span> : <span className="mf-kcal">{fmt(f.kcal)}</span>}
                   </button>
+                  )
                 )
                 // a filter or Edit shows a plain list; otherwise grouped by type
                 return filter || editMine || fixCats ? myFoods.filter(fits).map(row) : groups(myFoods, 'mine', row)

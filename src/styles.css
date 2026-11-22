@@ -2052,3 +2052,11 @@ body:has(.sheet-wrap) .fab { transform: scale(0.4); }
 .field textarea.food-name { width: 100%; padding: 15px 16px; padding-right: 48px; border-radius: 16px; border: 2px solid transparent; background: var(--card); outline: none; font: inherit; font-size: 17px; font-weight: 650; line-height: 1.35; color: var(--ink); resize: none; overflow: hidden; field-sizing: content; min-height: 56px; max-height: 140px; }
 .field textarea.food-name:focus { border-color: var(--accent); }
 .field textarea.food-name::placeholder { color: var(--muted); opacity: 0.6; font-weight: 600; }
+.mf-x { color: var(--muted); }
+.mf-fix { padding: 10px 12px 12px; background: var(--soft); border-radius: 14px; margin: 4px 6px; }
+.mf-fix-name { width: 100%; padding: 10px 12px; border-radius: 12px; border: 2px solid var(--accent); background: var(--card); font: inherit; font-size: 16px; font-weight: 700; color: var(--ink); resize: none; field-sizing: content; min-height: 44px; }
+.mf-fix-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.mf-fix-row .num-in input { width: 70px; }
+.mf-fix-row .sn-save { margin-left: auto; }
+.mf-del { color: var(--neg); }
+.mf-fix-name:focus { outline: none; box-shadow: none; } .mf-fix-row .num-in { background: var(--card); padding: 6px 10px; border-radius: 12px; }
