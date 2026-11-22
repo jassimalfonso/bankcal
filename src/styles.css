@@ -1995,3 +1995,13 @@ body[data-bg='paper'] { background: linear-gradient(180deg, #ffffff 0%, #f5f5f3 
   .fab { right: max(18px, calc(50% - 260px + 6px)); }
   .plus-menu { right: max(18px, calc(50% - 260px + 6px)); }
 }
+
+/* recap: compact, no chart of its own (the chart below already shows each day) */
+.recap { padding: 16px; }
+.recap h3 { font-size: 21px; }
+.rc-stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 10px; }
+.rc-stats div { flex: 1 1 auto; padding: 8px 12px; border-radius: 14px; display: flex; align-items: baseline; gap: 6px; }
+.rc-stats b { font-size: 17px; white-space: nowrap; } .rc-stats span { font-size: 12.5px; line-height: 1.2; }
+.rc-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rc-stats div:last-child:nth-child(odd) { grid-column: auto; }
+.rc-btns { margin-top: 10px; }

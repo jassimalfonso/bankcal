@@ -4,7 +4,7 @@
 
 const INK = '#2b2b30'
 
-export function Face({ mood, y = 60, gap = 15, my, cx = 60, cheeks = '#ff8fa3', iris }) {
+export function Face({ mood, y = 60, gap = 15, my, cx = 60, cheeks = '#ff8fa3', iris, eyeInk = INK }) {
   const m = my ?? y + 22
   return (
     <g>
@@ -12,9 +12,9 @@ export function Face({ mood, y = 60, gap = 15, my, cx = 60, cheeks = '#ff8fa3', 
       <ellipse cx={cx + gap + 7} cy={y + 13} rx="6.5" ry="4" fill={cheeks} opacity={mood === 'worried' ? 0.2 : 0.5} />
       {[cx - gap, cx + gap].map((x) =>
         mood === 'sleepy' ? (
-          <path key={x} d={`M${x - 6} ${y} q6 5 12 0`} stroke={INK} strokeWidth="3" strokeLinecap="round" fill="none" />
+          <path key={x} d={`M${x - 6} ${y} q6 5 12 0`} stroke={eyeInk} strokeWidth="3" strokeLinecap="round" fill="none" />
         ) : mood === 'happy' ? (
-          <path key={x} d={`M${x - 6} ${y + 2} q6 -8 12 0`} stroke={INK} strokeWidth="3.2" strokeLinecap="round" fill="none" />
+          <path key={x} d={`M${x - 6} ${y + 2} q6 -8 12 0`} stroke={eyeInk} strokeWidth="3.2" strokeLinecap="round" fill="none" />
         ) : (
           <g key={x}>
             <circle cx={x} cy={y} r={mood === 'worried' ? 8.5 : 7.5} fill="#fff" />
@@ -158,8 +158,8 @@ export const BUDDIES = {
     <rect x="16" y="56" width="88" height="48" rx="22" fill="#fffdf8" stroke="#ece6da" strokeWidth="2" />
     <path d="M12 60 C14 36 36 28 60 28 C84 28 106 36 108 60 C108 70 96 70 60 70 C24 70 12 70 12 60 Z" fill="#ff9a6b" />
     <g stroke="#ffd2bb" strokeWidth="4" strokeLinecap="round" opacity="0.9"><path d="M30 40 l12 22" /><path d="M54 32 l10 34" /><path d="M78 36 l6 28" /></g>
-    <rect x="52" y="56" width="16" height="48" fill="#2f3d33" />
-    <Face mood={m} y={82} gap={22} my={92} />
+    <rect x="16" y="90" width="88" height="12" fill="#2f3d33" />
+    <Face mood={m} y={74} gap={16} my={84} />
   </>) },
   cupcake: { label: 'Cupcake', draw: (m) => (<>
     <path d="M24 66 h72 l-9 42 c-1 4 -4 6 -8 6 h-38 c-4 0 -7 -2 -8 -6 z" fill="#8fd3ff" />
@@ -178,18 +178,21 @@ export const BUDDIES = {
     <Face mood={m} y={66} gap={14} my={82} />
   </>) },
   panda: { label: 'Panda', draw: (m) => (<>
-    <circle cx="28" cy="30" r="14" fill="#2f2f36" /><circle cx="92" cy="30" r="14" fill="#2f2f36" />
-    <rect x="14" y="24" width="92" height="86" rx="43" fill="#ffffff" stroke="#e6e6ec" strokeWidth="2" />
-    <ellipse cx="42" cy="62" rx="13" ry="16" fill="#2f2f36" transform="rotate(20 42 62)" /><ellipse cx="78" cy="62" rx="13" ry="16" fill="#2f2f36" transform="rotate(-20 78 62)" />
-    <Face mood={m} y={62} gap={18} my={86} />
+    <circle cx="27" cy="34" r="13" fill="#3b3b44" /><circle cx="93" cy="34" r="13" fill="#3b3b44" />
+    <rect x="14" y="26" width="92" height="84" rx="42" fill="#ffffff" stroke="#ececf1" strokeWidth="2" />
+    <ellipse cx="44" cy="63" rx="11" ry="9" fill="#3b3b44" transform="rotate(-18 44 63)" /><ellipse cx="76" cy="63" rx="11" ry="9" fill="#3b3b44" transform="rotate(18 76 63)" />
+    <ellipse cx="60" cy="80" rx="5" ry="3.5" fill="#3b3b44" />
+    <Face mood={m} y={62} gap={16} my={86} eyeInk="#ffffff" />
   </>) },
   penguin: { label: 'Penguin', draw: (m) => (<>
-    {g('b-peng', '#4a5468', '#2b3242')}
-    <rect x="16" y="16" width="88" height="96" rx="44" fill="url(#b-peng)" />
-    <path d="M60 32 C82 32 92 52 92 76 C92 98 78 108 60 108 C42 108 28 98 28 76 C28 52 38 32 60 32 Z" fill="#fff" />
-    <path d="M52 80 h16 l-8 7 z" fill="#ffb347" />
-    <g fill="#ffb347"><ellipse cx="44" cy="112" rx="10" ry="4" /><ellipse cx="76" cy="112" rx="10" ry="4" /></g>
-    <Face mood={m} y={62} gap={14} my={94} />
+    {g('b-peng', '#56627a', '#36405a')}
+    <ellipse cx="60" cy="110" rx="34" ry="5" fill="#000" opacity="0.06" />
+    <ellipse cx="17" cy="74" rx="8" ry="18" fill="#36405a" transform="rotate(18 17 74)" /><ellipse cx="103" cy="74" rx="8" ry="18" fill="#36405a" transform="rotate(-18 103 74)" />
+    <path d="M60 14 C88 14 102 38 102 66 C102 96 84 110 60 110 C36 110 18 96 18 66 C18 38 32 14 60 14 Z" fill="url(#b-peng)" />
+    <path d="M60 40 C66 30 86 30 88 50 C90 66 86 98 60 102 C34 98 30 66 32 50 C34 30 54 30 60 40 Z" fill="#fffdf8" />
+    <g fill="#ffb347"><ellipse cx="46" cy="110" rx="9" ry="4" /><ellipse cx="74" cy="110" rx="9" ry="4" /></g>
+    <Face mood={m} y={58} gap={12} my={78} cheeks="#ffb0c0" />
+    <path d="M53 66 q7 -4 14 0 l-7 7 z" fill="#ffa63d" />
   </>) },
 }
 

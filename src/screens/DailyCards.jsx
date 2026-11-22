@@ -260,7 +260,7 @@ export function WeeklyCard({ profile, mine, budgetFor, today, onClose, notify, s
           ].filter(Boolean).slice(0, 4) }} />
       )}
       <div className="card recap">
-        <span className="rc-pill">🗓️ Your week · {d(w.from)} – {d(w.to)}</span>
+        <div className="rc-top"><span className="rc-pill">🗓️ Your week · {d(w.from)} – {d(w.to)}</span><button className="link-btn" onClick={() => setPic(true)}>Share</button></div>
         <h3>{title}, {profile.name}!</h3>
         <p className="rc-lead">{w.logged > 0 ? `${w.within} of ${w.logged} logged days on budget. ` : ''}{line}</p>
         {covered.length > 0 && <p className="rc-shield">🧊 Your shield kept the streak safe on {covered.map(dn).join(' and ')}</p>}
@@ -271,21 +271,8 @@ export function WeeklyCard({ profile, mine, budgetFor, today, onClose, notify, s
           {pname && cheers > 0 ? <div><b>💌 {cheers}</b><span>cheers from {pname}</span></div>
             : w.habitPossible > 0 ? <div><b>{w.habitDone}<small>/{w.habitPossible}</small></b><span>habit ticks</span></div> : null}
         </div>
-        {w.logged > 1 && (
-          <div className="rc-bars" aria-label="Each day's balance this week">
-            {w.bars.map((b) => (
-              <div key={b.k} className="rc-bar">
-                <i className={b.net == null ? 'none' : b.k === w.best?.k ? 'best' : b.net < 0 ? 'over' : ''} style={{ height: b.net == null ? '8%' : `${Math.max(10, (Math.abs(b.net) / top) * 100)}%` }} />
-                <span>{dn(b.k)}</span>
-              </div>
-            ))}
-          </div>
-        )}
         {w.best && <p className="rc-best">⭐ Best day: {new Date(w.best.k + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long' })}, {fmt(w.best.net)} under budget</p>}
-        <div className="rc-btns">
-          <button className="btn-soft" onClick={() => setPic(true)}>Share</button>
-          {onClose && <button className="btn-primary" onClick={onClose}>Next week 💪</button>}
-        </div>
+        {onClose && <div className="rc-btns"><button className="btn-primary" onClick={onClose}>Next week 💪</button></div>}
       </div>
     </section>
   )
