@@ -298,14 +298,11 @@ function Bank({ user }) {
         </ErrorBoundary>
       )}
 
-      {farDown && !adding && (
-        <button className="to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Back to top">↑ Top</button>
-      )}
       <nav className="tabbar">
-        <TabBtn id="today" tab={tab} setTab={setTab} label="Today" Icon={IconToday} />
-        <TabBtn id="week" tab={tab} setTab={setTab} label="Progress" Icon={IconStatement} />
-        <TabBtn id="train" tab={tab} setTab={setTab} label="Train" Icon={IconTrain} />
-        <TabBtn id="me" tab={tab} setTab={setTab} label="Settings" Icon={IconMe} />
+        <TabBtn id="today" tab={tab} setTab={setTab} up={farDown} label="Today" Icon={IconToday} />
+        <TabBtn id="week" tab={tab} setTab={setTab} up={farDown} label="Progress" Icon={IconStatement} />
+        <TabBtn id="train" tab={tab} setTab={setTab} up={farDown} label="Train" Icon={IconTrain} />
+        <TabBtn id="me" tab={tab} setTab={setTab} up={farDown} label="Settings" Icon={IconMe} />
       </nav>
 
       {cheer && (
@@ -395,11 +392,13 @@ function Bank({ user }) {
   )
 }
 
-function TabBtn({ id, tab, setTab, label, Icon }) {
+// Scrolled far down: the tab you're on turns into "↑ Top", one tap takes you back up
+function TabBtn({ id, tab, setTab, label, Icon, up }) {
+  const top = up && tab === id
   return (
-    <button className={`tab ${tab === id ? 'on' : ''}`} onClick={() => setTab(id)} aria-current={tab === id ? 'page' : undefined}>
-      <Icon />
-      <span>{label}</span>
+    <button className={`tab ${tab === id ? 'on' : ''} ${top ? 'to-top' : ''}`} onClick={() => setTab(id)} aria-current={tab === id ? 'page' : undefined} aria-label={top ? 'Back to top' : undefined}>
+      {top ? <svg className="tab-up" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg> : <Icon />}
+      <span>{top ? 'Top' : label}</span>
     </button>
   )
 }
