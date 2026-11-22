@@ -104,8 +104,18 @@ function Bank({ user }) {
   const seenKey = `bankcal:morning:${user.uid}:${today}`
   const [morning, setMorning] = useState(() => { try { return !localStorage.getItem(seenKey) } catch { return false } })
   useEffect(() => { try { setMorning(!localStorage.getItem(seenKey)) } catch { /* ignore */ } }, [seenKey])
-  // Welcome back on every fresh open, and again after being away for 30+ minutes
-  const [hello, setHello] = useState(true)
+  // Welcome back screen. Settings → Your day decides when: every open, after 2+ hours away, or never.
+  //   'always': every fresh open, and again after 30+ minutes away
+  //   'away':   only after 2+ hours away (the default)
+  const awayFor = () => { try { return Date.now() - (+localStorage.getItem('bankcal:last-active') || 0) } catch { return Infinity } }
+  const [hello, setHello] = useState(() => awayFor() > 2 * 3600e3 ? 'away' : 'always')
+  useEffect(() => {
+    const mark = () => { try { localStorage.setItem('bankcal:last-active', String(Date.now())) } catch { /* ignore */ } }
+    mark()
+    const id = setInterval(mark, 60000)
+    document.addEventListener('visibilitychange', mark)
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', mark) }
+  }, [])
   // The morning welcome: first open of the day (unless switched off in Settings), or on request
   const [replay, setReplay] = useState(false)
   const [plus, setPlus] = useState(false) // the + menu
@@ -128,12 +138,15 @@ function Bank({ user }) {
     setLeaving(true)
     setTimeout(() => { then(); setLeaving(false) }, 620)
   }, [])
+  const helloMode = profile?.helloMode ?? 'away'
+  const helloOn = !!hello && helloMode !== 'never' && (helloMode === 'always' || hello === 'away')
   const doneHello = useCallback(() => leave(() => setHello(false)), [leave])
   useEffect(() => {
     let away = 0
     const onVis = () => {
       if (document.hidden) away = Date.now()
-      else if (away && Date.now() - away > 30 * 60 * 1000) setHello(true)
+      else if (away && Date.now() - away > 2 * 3600e3) setHello('away')
+      else if (away && Date.now() - away > 30 * 60 * 1000) setHello((h) => h || 'always')
     }
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
@@ -270,14 +283,14 @@ function Bank({ user }) {
   const reachedIds = profile?.onboarded ? reached({ entries, profile: pf, streakDays }) : []
   const newIds = reachedIds.filter((id) => !pf.badges?.[id])
   useEffect(() => {
-    if (!newIds.length || showM || hello) return // wait until the welcome screen is out of the way
+    if (!newIds.length || showM || helloOn) return // wait until the welcome screen is out of the way
     store.updateProfile({ badges: { ...(pf.badges ?? {}), ...Object.fromEntries(newIds.map((id) => [id, today])) } })
     const m = MILESTONES.find((x) => x.id === newIds[0])
     celebrate(newIds.length > 1 ? `${newIds.length} milestones reached! ${m.emoji}` : `Milestone: ${m.label} ${m.emoji}`, m)
-  }, [newIds.join(','), showM, hello]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [newIds.join(','), showM, helloOn]) // eslint-disable-line react-hooks/exhaustive-deps
   // Best-ever streak unlocks buddy accessories (kept forever); the newest one goes straight on
   useEffect(() => {
-    if (!profile?.onboarded || hello || showM) return
+    if (!profile?.onboarded || helloOn || showM) return
     const old = pf.bestStreak ?? 0
     if (streakDays <= old) return
     const fresh = ACCESSORIES.filter((a) => a.at > old && a.at <= streakDays)
@@ -286,7 +299,7 @@ function Bank({ user }) {
       const a = fresh.at(-1), next = ACCESSORIES.find((x) => x.at > streakDays)
       celebrate(`${streakDays} days on budget! Your buddy earned ${a.label} ${a.e}${next ? ` Next: ${next.label} at ${next.at} days.` : ''}`)
     }
-  }, [streakDays, hello, showM]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [streakDays, helloOn, showM]) // eslint-disable-line react-hooks/exhaustive-deps
   const focus = profile?.onboarded ? oneThing({ profile: pf, todayKey: today, yesterday, plans: PLANS }) : null
 
   if (!profile) return <div className="loading" />
@@ -298,7 +311,7 @@ function Bank({ user }) {
   } }
 
   return (
-    <div className={`app theme-${profile.theme} ${(showM || hello) && !leaving ? 'behind' : ''} ${leaving ? 'entering' : ''}`}>
+    <div className={`app theme-${profile.theme} ${(showM || helloOn) && !leaving ? 'behind' : ''} ${leaving ? 'entering' : ''}`}>
       <main className={`screen slide-${dir} tab-${tab}`} key={tab}>
         {tab === 'today' && <Today {...ctx} />}
         {tab === 'week' && <Statement {...ctx} />}
@@ -377,7 +390,8 @@ function Bank({ user }) {
           {toast.undo && <button onClick={() => { toast.undo(); setToast(null) }}>Undo</button>}
         </Swipeable>
       )}
-      {!showM && hello && profile.onboarded && <WelcomeBack leaving={leaving} profile={profile} left={budget != null ? budget - spent : null} onDone={doneHello} />}
+      {!showM && helloOn && profile.onboarded && <WelcomeBack leaving={leaving} profile={profile} left={budget != null ? budget - spent : null} onDone={doneHello}
+        onSkipNext={() => { store.updateProfile({ helloMode: 'never' }); notify('Got it, you’ll go straight in next time. Change it in Settings → Your day.') ; doneHello() }} />}
       {showM && <MorningCard notify={notify} isNew={shareNew} focus={focus} leaving={leaving} profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
       {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true, isBreak)} today={today} onClose={() => setResult(false)} />}
 

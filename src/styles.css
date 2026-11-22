@@ -1977,3 +1977,21 @@ body[data-bg='paper'] { background: linear-gradient(180deg, #ffffff 0%, #f5f5f3 
   .screen.tab-today > .hero { grid-column: 1; grid-row: 2 / span 6; position: sticky; top: 16px; align-self: start; margin-top: 0; }
 }
 .rc-stats div:last-child:nth-child(odd) { grid-column: span 2; }
+.dawn-skip { display: block; margin: 10px auto 0; color: inherit; opacity: 0.75; font-size: 14px; }
+.recap-teaser { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; margin: 0 0 12px; text-align: left; animation: rc-in 0.45s var(--spring) both; }
+.recap-teaser > span:first-child { font-size: 28px; }
+.recap-teaser b { display: block; font-weight: 850; } .recap-teaser small { color: var(--muted); font-weight: 700; font-size: 13px; }
+.recap-teaser > span:nth-child(2) { flex: 1; } .rt-go { font-size: 26px; color: var(--muted); }
+#recap { scroll-margin-top: 12px; } #recap .block { margin-top: 0; }
+@media (min-width: 700px) and (max-width: 1023.98px) {
+  /* Progress: your week recap on the left, charts and details on the right */
+  .screen.tab-week { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 20px; align-items: start; }
+  .screen.tab-week > * { grid-column: 2; max-width: none; margin-left: 0; margin-right: 0; min-width: 0; }
+  .screen.tab-week > .large-title, .screen.tab-week > .view-seg { grid-column: 1 / -1; }
+  .screen.tab-week > #recap { grid-column: 1; grid-row: 3 / span 8; position: sticky; top: 16px; }
+  /* sheets: a centred panel instead of edge to edge */
+  .sheet { max-width: 620px; margin-left: auto; margin-right: auto; }
+  .tabbar { max-width: 520px; }
+  .fab { right: max(18px, calc(50% - 260px + 6px)); }
+  .plus-menu { right: max(18px, calc(50% - 260px + 6px)); }
+}

@@ -149,7 +149,7 @@ export function MorningCard({ profile, words, yesterday, streakDays, birthday, o
 }
 
 // Later opens the same day: the card shows what's left, then fades into the app.
-export function WelcomeBack({ profile, left, onDone, leaving }) {
+export function WelcomeBack({ profile, left, onDone, onSkipNext, leaving }) {
   useEscape(onDone)
   return (
     <div className={`dawn hello-back theme-${profile.theme} ${leaving ? 'leaving' : ''}`} role="dialog" aria-label="Welcome back">
@@ -159,6 +159,7 @@ export function WelcomeBack({ profile, left, onDone, leaving }) {
         <h1>Welcome back, {profile.name}</h1>
         <p className="dawn-line">{helloFor()}. {left == null ? '' : left >= 0 ? 'Your balance is ready when you are.' : 'Go gently for the rest of today.'}</p>
         <button className="btn-primary dawn-btn" onClick={onDone}>Open my day</button>
+        {onSkipNext && <button className="link-btn dawn-skip" onClick={onSkipNext}>Go straight in next time</button>}
         <VersionLine />
       </div>
     </div>
@@ -283,7 +284,7 @@ export function WeeklyCard({ profile, mine, budgetFor, today, onClose, notify, s
         {w.best && <p className="rc-best">⭐ Best day: {new Date(w.best.k + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long' })}, {fmt(w.best.net)} under budget</p>}
         <div className="rc-btns">
           <button className="btn-soft" onClick={() => setPic(true)}>Share</button>
-          <button className="btn-primary" onClick={onClose}>Next week 💪</button>
+          {onClose && <button className="btn-primary" onClick={onClose}>Next week 💪</button>}
         </div>
       </div>
     </section>

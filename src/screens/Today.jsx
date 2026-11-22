@@ -8,7 +8,6 @@ import { missingFor } from '../calc'
 import { SECTION_ICONS, SECTION_NAMES, fullLayout } from '../layout'
 import CardStack from './CardStack'
 import { HabitsCard, JournalCard } from './Habits'
-import { WeeklyCard } from './DailyCards'
 import { PartnerCard } from './Partner'
 import { WeighCard } from './WeighIn'
 import { weekTicks } from '../habits'
@@ -140,7 +139,11 @@ export default function Today(props) {
       </section>
 
 
-      {showWeek && <WeeklyCard {...props} onClose={hideWeek} />}
+      {showWeek && (
+        <button className="card recap-teaser" onClick={() => { hideWeek(); props.goTab('week'); setTimeout(() => document.getElementById('recap')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350) }}>
+          <span aria-hidden="true">🗓️</span><span><b>Your week recap is ready</b><small>See how it went, in Progress</small></span><span className="rt-go" aria-hidden="true">›</span>
+        </button>
+      )}
       <CardStack order={fullLayout(profile.layout2)} names={SECTION_NAMES} icons={SECTION_ICONS} arranging={arranging} setArranging={setArranging}
         onChange={(layout2) => props.updateProfile({ layout2 })} render={(id) => {
         if (id === 'words') return <WordsCard key="words" words={words} profile={profile} updateProfile={props.updateProfile} notify={props.notify} onReplay={openWords} />

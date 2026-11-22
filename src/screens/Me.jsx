@@ -208,6 +208,13 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
             {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => <option key={d} value={i}>Weekly, {d}</option>)}
           </select>
         </Line>
+        <Line label="Welcome screen">
+          <select className="date-in" value={p.helloMode ?? 'away'} onChange={(e) => set({ helloMode: e.target.value })} aria-label="When to show the welcome screen">
+            <option value="always">Every time I open</option>
+            <option value="away">After 2+ hours away</option>
+            <option value="never">Never, go straight in</option>
+          </select>
+        </Line>
         <label className="line toggle-line">
           <span className="line-label">Morning welcome<small>Verse and motivation on your first open each day</small></span>
           <input type="checkbox" className="switch" checked={p.morningCard !== false} onChange={(e) => set({ morningCard: e.target.checked })} />

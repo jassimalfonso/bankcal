@@ -7,6 +7,7 @@ import BodyCard from './BodyCard'
 import Progress from './Progress'
 import ShareSheet from './ShareSheet'
 import Activity from './Activity'
+import { WeeklyCard } from './DailyCards'
 
 export default function Statement(props) {
   const { mine, base: budget, budgetFor } = props
@@ -39,6 +40,7 @@ export default function Statement(props) {
         <button className={view === 'month' ? 'on' : ''} onClick={() => setView('month')}>Calendar</button>
       </div>
       {view === 'month' ? <Calendar {...props} /> : <>
+      <div id="recap"><WeeklyCard {...props} /></div>
 
       <section className="card chart">
         <div className="bars">
