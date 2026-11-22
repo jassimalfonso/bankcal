@@ -1908,7 +1908,6 @@ body[data-bg='paper'] { background: linear-gradient(180deg, #ffffff 0%, #f5f5f3 
 .uc-add:active { transform: scale(0.95); }
 /* buddy accessories sit on the head */
 .buddy-acc { position: absolute; left: 50%; top: 0; transform: translate(-50%, -38%) rotate(-8deg); line-height: 1; pointer-events: none; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.12)); }
-.buddy-acc.acc-bow, .buddy-acc.acc-flowers { left: 76%; transform: translate(-50%, -22%) rotate(14deg); }
 .streak-chip.shield { background: #e3f1ff; color: #2d6fb7; margin-left: 6px; }
 :root[data-mode='dark'] .streak-chip.shield { background: #12263a; color: #8cc4ff; }
 .shield-note { display: flex; gap: 12px; align-items: center; width: 100%; padding: 12px 14px; margin: 0 0 12px; text-align: left; background: linear-gradient(135deg, #e6f3ff, #eef0ff); color: #1d2b3c; animation: rc-in 0.45s var(--spring) both; }
@@ -2021,8 +2020,15 @@ body[data-bg='paper'] { background: linear-gradient(180deg, #ffffff 0%, #f5f5f3 
 .acc-preview { flex: none; width: 88px; height: 88px; border-radius: 24px; background: var(--soft); display: grid; place-items: center; padding-top: 8px; }
 .acc-preview .buddy-acc { animation: acc-on 0.45s var(--spring) both; }
 @keyframes acc-on { from { opacity: 0; transform: translate(-50%, -90%) scale(0.4); } }
-.buddy-acc.acc-balloon, .buddy-acc.acc-heart, .buddy-acc.acc-butterfly, .buddy-acc.acc-tree, .buddy-acc.acc-star, .buddy-acc.acc-clover, .buddy-acc.acc-sunflower { left: 82%; transform: translate(-50%, -20%) rotate(12deg); }
-.buddy-acc.acc-balloon { top: -14%; }
 .acc-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 8px; }
 .acc-row button { min-width: 0; width: 100%; }
 @media (prefers-reduced-motion: reduce) { .acc-preview .buddy-acc { animation: none; } }
+
+/* accessories sit ON the buddy: hats overlap the top of the head, clips tuck in at the side */
+.buddy-acc.at-hat { left: 50%; top: 0; transform: translate(-50%, -30%) rotate(-6deg); }
+.buddy-acc.at-clip { left: 72%; top: 20%; transform: translate(-50%, -30%) rotate(14deg); }
+.buddy-acc.at-held { left: 90%; top: 22%; transform: translate(-50%, -30%) rotate(10deg); }
+.buddy-acc.acc-cap { transform: translate(-50%, -26%) scaleX(-1) rotate(-6deg); }
+.acc-preview .buddy-acc { animation: none; }
+.acc-preview .buddy-acc.at-hat { animation: acc-hat 0.45s var(--spring) both; }
+@keyframes acc-hat { from { opacity: 0; transform: translate(-50%, -110%) rotate(-6deg); } }
