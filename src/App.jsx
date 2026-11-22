@@ -258,7 +258,14 @@ function Bank({ user }) {
     const id = store.addEntry({ ...e, day: today })
     receipt({ kind: 'spend', what: e.name, kcal: e.kcal, id, undo: () => store.removeEntry(id) })
   }
-  const closeDay = () => { if (budget != null && spent - budget <= 0) { store.setDay(today, { closed: true }); play('win') } setResult(true) }
+  // Close my day: available any time once something is logged; can be reopened
+  const closeDay = () => {
+    const under = budget != null && spent - budget <= 0
+    store.setDay(today, { closed: true })
+    if (under) play('win')
+    setResult(true)
+  }
+  const reopenDay = () => { store.setDay(today, { closed: false }); notify('Day reopened. Log away.') }
   const livePartner = usePartners({
     enabled: !DEMO, uid: user.uid, profile, updateProfile: store.updateProfile, notify, celebrate, usual: usualFoods(entries),
     summary: { day: today, streak: streakDays, habitsDone: (pf.habits ?? []).filter((id) => dayLog.habits?.[id]).length, habitsTotal: (pf.habits ?? []).length, moved: earn.total > 0, logged: todays.length > 0, weekTicks: weekTicks(pf, today), acc: pf.accessory ?? null,
@@ -298,7 +305,7 @@ function Bank({ user }) {
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const ctx = { ...store, sInfo, logFood, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setReplay(true), goSetup: (section) => {
+  const ctx = { ...store, sInfo, logFood, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, reopenDay, closed, openWords: () => setReplay(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }
@@ -318,6 +325,7 @@ function Bank({ user }) {
         <div className="plus-menu" role="menu">
           <button role="menuitem" onClick={() => { setPlus(false); setWorking(true) }}><span>💪</span><b>Log a workout</b><small>Deposit calories</small></button>
           <button role="menuitem" onClick={() => { setPlus(false); setAdding(true) }}><span>🍽️</span><b>Log food</b><small>Spend calories</small></button>
+          {todays.length > 0 && !closed && <button role="menuitem" onClick={() => { setPlus(false); closeDay() }}><span>🌙</span><b>Close my day</b><small>See how today went</small></button>}
         </div>
       )}
       <button className={`fab ${plus ? 'open' : ''}`} onClick={() => setPlus((x) => !x)} aria-label={plus ? 'Close menu' : 'Log food or a workout'} aria-expanded={plus}>

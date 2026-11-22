@@ -128,7 +128,9 @@ export default function Today(props) {
             </div>
             <p className="hero-msg">{message(profile.name, budget, spent)}</p>
             {props.focus && <button className="focus-chip" onClick={() => props.focus.go === 'train' ? props.goTab('train') : props.focus.go === 'habits' ? goSetup('habits') : null}><span>One thing today</span>{props.focus.emoji} {props.focus.text}</button>}
-            {(windDown || location.search.includes('evening')) && todays.length > 0 && <button className="btn-soft close-day" onClick={closeDay}>Close my day</button>}
+            {todays.length > 0 && (props.closed
+              ? <p className="day-closed">🌙 Day closed <button className="link-btn" onClick={props.reopenDay}>Reopen</button></p>
+              : <button className={`${windDown ? 'btn-soft' : 'link-btn'} close-day`} onClick={closeDay}>🌙 Close my day</button>)}
             <div className="hero-stats three">
               <div><b>{fmt(shownSpent)}</b><span>Eaten</span></div>
               <div><b className="pos">+{fmt(shownEarn)}</b><span>Burned</span></div>

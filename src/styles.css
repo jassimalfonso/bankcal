@@ -2060,3 +2060,4 @@ body:has(.sheet-wrap) .fab { transform: scale(0.4); }
 .mf-fix-row .sn-save { margin-left: auto; }
 .mf-del { color: var(--neg); }
 .mf-fix-name:focus { outline: none; box-shadow: none; } .mf-fix-row .num-in { background: var(--card); padding: 6px 10px; border-radius: 12px; }
+.day-closed { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 12px 0 0; font-weight: 800; color: var(--muted); } .link-btn.close-day { display: block; margin: 12px auto 0; }
