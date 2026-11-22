@@ -1,4 +1,4 @@
-import { useState, Children, cloneElement, isValidElement } from 'react'
+import { useEffect, useState, Children, cloneElement, isValidElement } from 'react'
 import { maintainStatus, targetCheck, KCAL_PER_KG, ageOf, DEFAULT_BED, DEFAULT_WAKE, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
 import Character from '../Character'
 import { HabitPicker } from './Habits'
@@ -35,6 +35,20 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
   const [confirmReset, setConfirmReset] = useState(false)
   const set = updateProfile
   const num = (k) => (e) => set({ [k]: e.target.value.replace(/[^\d.]/g, '') })
+  // Target weight: saved with clear feedback, then point to "How fast?"
+  const saveTarget = (v) => {
+    set({ targetWeight: v || null, ...(v ? {} : { endDate: null, startDate: null }) })
+    if (!v) { notify?.('Target cleared. BankCal takes off 550 kcal a day.'); return }
+    const togo = +p.weight - +v
+    notify?.(togo > 0 ? `Target saved: ${v} kg, ${togo.toFixed(1)} kg to go. Pick how fast below 👇` : `Target saved: ${v} kg.`)
+    setTimeout(() => document.querySelector('.recs')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 350)
+  }
+  const pickPace = (date, label) => {
+    const next = { ...p, endDate: date, startDate: dayKey() }
+    set({ endDate: date, startDate: dayKey() })
+    const b = dailyBudget(next)
+    notify?.(`Plan saved${label ? ` (${label})` : ''}: ${p.targetWeight} kg by ${prettyDate(date)}.${b ? ` Your budget is ${fmt(b)} kcal a day.` : ''}`)
+  }
   const [h, setH] = useState(() => toFtIn(p.height))
   const setHeight = (patch) => {
     const next = { ...h, ...patch }
@@ -62,6 +76,12 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
         </div>
       </header>
 
+      <nav className="jump-row" aria-label="Jump to a section">
+        {[['goal', '🎯 Goal'], ['breaks', '🏖️ Breaks'], ['about', '👤 About you'], ['day', '🌙 Your day'], ['habits', '✅ Habits'], ...(partner ? [['partner', '🤝 Partner']] : []), ['buddy', '🥚 Buddy'], ['look', '🎨 Look']].map(([id, l]) => (
+          <button key={id} onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{l}</button>
+        ))}
+      </nav>
+
       <section className="card account">
         <Character kind={p.character} mood="happy" size={58} />
         <div>
@@ -80,7 +100,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
         </p>
       </section>
 
-      <h2 className="group-title">Your goal</h2>
+      <h2 className="group-title" id="goal">Your goal</h2>
       <div className="seg goal-seg">
         <button className={!maintaining ? 'on' : ''} onClick={() => maintaining && set({ goal: 'lose05', ...(p.losePlan ?? {}), maintainWeight: null })}>Lose weight</button>
         <button className={maintaining ? 'on' : ''} onClick={() => { if (maintaining) return; goMaintain(); notify?.('Switched to Maintain. Your lose-weight plan is kept, tap Lose weight to bring it back.') }}>Maintain</button>
@@ -89,14 +109,14 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
       {!maintaining && (
         <>
           <div className="card form-list goal-card">
-            <Line label="Target weight"><Num value={p.targetWeight ?? ''} onChange={num('targetWeight')} unit="kg" ph="75" decimal /></Line>
+            <Line label="Target weight"><SaveNum value={p.targetWeight ?? ''} unit="kg" ph="75" decimal onSave={saveTarget} /></Line>
           </div>
           {+p.targetWeight > 0 && +p.weight > +p.targetWeight ? (
             <div className="recs">
               <p className="recs-title">How fast?</p>
               <div className="recs-row">
                 {recommendDates(p.weight, p.targetWeight).map((r) => (
-                  <button key={r.id} className={`rec ${p.endDate === r.date ? 'on' : ''} ${r.best ? 'best' : ''}`} onClick={() => set({ endDate: r.date, startDate: dayKey() })}>
+                  <button key={r.id} className={`rec ${p.endDate === r.date ? 'on' : ''} ${r.best ? 'best' : ''}`} onClick={() => pickPace(r.date, r.label)}>
                     <b>{r.label}</b>
                     <span>{prettyDate(r.date)}</span>
                     <small>{r.rate} kg/week</small>
@@ -105,7 +125,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
               </div>
               <details className="own-date">
                 <summary>Or choose my own date</summary>
-                <input className="date-in" type="date" aria-label="Reach my target by" value={p.endDate ?? ''} min={dayKey()} onChange={(e) => set({ endDate: e.target.value, startDate: dayKey() })} />
+                <input className="date-in" type="date" aria-label="Reach my target by" value={p.endDate ?? ''} min={dayKey()} onChange={(e) => e.target.value && pickPace(e.target.value)} />
               </details>
             </div>
           ) : !(+p.targetWeight > 0) && (
@@ -175,10 +195,10 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
             <Num value={h.inch} onChange={(e) => setHeight({ inch: e.target.value.replace(/\D/g, '').slice(0, 2) })} unit="in" ph="9" />
           </div>
         </Line>
-        <Line label="Weight"><Num value={p.weight} onChange={num('weight')} unit="kg" ph="80" decimal /></Line>
+        <Line label="Weight"><SaveNum value={p.weight ?? ''} unit="kg" ph="80" decimal onSave={(v) => { set({ weight: v }); notify?.(`Weight saved: ${v} kg. Your budget is updated.`) }} /></Line>
       </div>
 
-      <h2 className="group-title">Your day</h2>
+      <h2 className="group-title" id="day">Your day</h2>
       <div className="card form-list">
         <Line label="Wake up"><input className="date-in" type="time" value={p.wakeTime ?? DEFAULT_WAKE} onChange={(e) => set({ wakeTime: e.target.value })} /></Line>
         <Line label="Bedtime"><input className="date-in" type="time" value={p.bedTime ?? DEFAULT_BED} onChange={(e) => set({ bedTime: e.target.value })} /></Line>
@@ -201,10 +221,10 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
 
       {partner && <PartnerSettings partner={partner} profile={p} updateProfile={set} />}
 
-      <h2 className="group-title">Buddy</h2>
+      <h2 className="group-title" id="buddy">Buddy</h2>
       <div className="card buddy-card"><BuddyGrid value={p.character} onChange={(id) => set({ character: id })} /></div>
 
-      <h2 className="group-title">Look and feel</h2>
+      <h2 className="group-title" id="look">Look and feel</h2>
       <div className="card form-list">
         <div className="line colour-line">
           <span className="line-label">Colour</span>
@@ -238,14 +258,14 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
         <summary>More settings</summary>
       <h3 className="more-h">Daily activity targets</h3>
         <div className="form-list">
-        <Line label="Steps"><Num value={p.stepsGoal ?? ''} onChange={num('stepsGoal')} unit="steps" ph="8000" /></Line>
-        <Line label="Treadmill"><Num value={p.treadGoalMin ?? ''} onChange={num('treadGoalMin')} unit="min" ph="30" /></Line>
+        <Line label="Steps"><SaveNum value={p.stepsGoal ?? ''} unit="steps" ph="8000" onSave={(v) => { set({ stepsGoal: v || null }); notify?.(v ? `Steps goal saved: ${fmt(+v)} steps` : 'Steps goal cleared') }} /></Line>
+        <Line label="Treadmill"><SaveNum value={p.treadGoalMin ?? ''} unit="min" ph="30" onSave={(v) => { set({ treadGoalMin: v || null }); notify?.(v ? `Treadmill goal saved: ${fmt(+v)} min` : 'Treadmill goal cleared') }} /></Line>
         <Line label="Treadmill speed"><Num value={p.treadSpeed ?? ''} onChange={num('treadSpeed')} unit="km/h" ph="5" decimal /></Line>
         </div>
 
         <h3 className="more-h">Custom budget</h3>
         <div className="form-list">
-          <Line label="Fixed daily budget"><Num value={p.customBudget ?? ''} onChange={num('customBudget')} unit="kcal" ph="Off" /></Line>
+          <Line label="Fixed daily budget"><SaveNum value={p.customBudget ?? ''} unit="kcal" ph="Off" onSave={(v) => { set({ customBudget: v || null }); notify?.(v ? `Daily budget saved: ${fmt(+v)} kcal` : 'Daily budget cleared') }} /></Line>
         </div>
         <p className="fine">Only if a doctor or dietitian gave you a number. It replaces your goal.</p>
         <h3 className="more-h">Start fresh</h3>
@@ -279,12 +299,42 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
 
 function Line({ label, children }) {
   // give a bare input inside the row an accessible name from the row label
-  const kids = Children.map(children, (c) => (isValidElement(c) && (c.type === 'input' || c.type === Num) && !c.props['aria-label'] ? cloneElement(c, { 'aria-label': label }) : c))
+  const kids = Children.map(children, (c) => (isValidElement(c) && (c.type === 'input' || c.type === Num || c.type === SaveNum) && !c.props['aria-label'] ? cloneElement(c, { 'aria-label': label }) : c))
   return (
     <div className="line">
       <span className="line-label">{label}</span>
       {kids}
     </div>
+  )
+}
+
+// A number box with its own Save: shows a Save button once changed, saves on Save, Enter or leaving
+// the box, then flashes "Saved".
+function SaveNum({ value, onSave, unit, ph, decimal, 'aria-label': al }) {
+  const [draft, setDraft] = useState(String(value ?? ''))
+  const [saved, setSaved] = useState(false)
+  const [focus, setFocus] = useState(false)
+  useEffect(() => { if (!focus) setDraft(String(value ?? '')) }, [value, focus])
+  const dirty = draft.trim() !== String(value ?? '')
+  const commit = () => {
+    if (!dirty) return
+    const v = draft.replace(/[^\d.]/g, '')
+    onSave(v === '' ? '' : v)
+    setSaved(true); setTimeout(() => setSaved(false), 1800)
+  }
+  return (
+    <span className="save-num">
+      <label className="num-in">
+        <input inputMode={decimal ? 'decimal' : 'numeric'} enterKeyHint="done" value={draft} placeholder={ph} aria-label={al}
+          onChange={(e) => setDraft(e.target.value.replace(/[^\d.]/g, ''))}
+          onFocus={(e) => { setFocus(true); e.target.select() }}
+          onBlur={() => { setFocus(false); commit() }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }} />
+        <span>{unit}</span>
+      </label>
+      {dirty ? <button type="button" className="sn-save" onMouseDown={(e) => e.preventDefault()} onClick={commit}>Save</button>
+        : saved ? <span className="sn-ok" role="status">✓ Saved</span> : null}
+    </span>
   )
 }
 

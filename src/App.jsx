@@ -70,6 +70,14 @@ function Bank({ user }) {
     window.scrollTo(0, 0) // every page starts at the top
   }
   const [adding, setAdding] = useState(false)
+  // a "Back to top" button once you've scrolled down a long page
+  const [farDown, setFarDown] = useState(false)
+  useEffect(() => {
+    let raf = 0
+    const on = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setFarDown(window.scrollY > window.innerHeight * 1.2)) }
+    addEventListener('scroll', on, { passive: true })
+    return () => removeEventListener('scroll', on)
+  }, [])
   useMode(profile?.mode ?? 'light')
   useEffect(() => {
     const bg = profile?.bg ?? 'glow'
@@ -290,6 +298,9 @@ function Bank({ user }) {
         </ErrorBoundary>
       )}
 
+      {farDown && !adding && (
+        <button className="to-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Back to top">↑ Top</button>
+      )}
       <nav className="tabbar">
         <TabBtn id="today" tab={tab} setTab={setTab} label="Today" Icon={IconToday} />
         <TabBtn id="week" tab={tab} setTab={setTab} label="Progress" Icon={IconStatement} />
