@@ -270,7 +270,12 @@ function Bank({ user }) {
       } : { meal: false, close: false },
       // today's wins for your partner to react to: names only, never food or weight
       wins: [
-        ...(dayLog.workouts ?? []).slice(0, 4).map((w) => ({ id: `w-${w.id}`, e: '💪', t: [w.label || WORKOUTS.find((x) => x.id === w.type)?.label, describeWorkout(w)].filter(Boolean).join(' · ') })),
+        // all of today's workouts as one win, so the list stays short
+        ...((dayLog.workouts ?? []).length ? [(() => {
+          const names = (dayLog.workouts ?? []).map((w) => w.label || WORKOUTS.find((x) => x.id === w.type)?.label).filter(Boolean)
+          const n = (dayLog.workouts ?? []).length
+          return { id: `w-${n}`, e: '💪', t: n === 1 ? [names[0], describeWorkout(dayLog.workouts[0])].filter(Boolean).join(' · ') : `${n} workouts: ${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}` }
+        })()] : []),
         ...((+dayLog.steps || 0) >= (+pf.stepsGoal || 8000) ? [{ id: 'steps', e: '🚶', t: `Hit ${fmt(+dayLog.steps)} steps` }] : []),
         ...((pf.habits ?? []).length > 0 && (pf.habits ?? []).every((id) => dayLog.habits?.[id]) ? [{ id: 'habits', e: '✅', t: 'All habits done' }] : []),
         ...(dayLog.closed ? [{ id: 'closed', e: '🎯', t: 'Closed the day on budget' }] : []),

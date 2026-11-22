@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { firstTime } from '../keyboard'
 import { play } from '../sound'
 import ShareSheet from './ShareSheet'
@@ -262,7 +263,7 @@ function PartnerSheet({ onShareNote, s, sent, got, info, team, myTicks, me, repl
     ['Workouts, last 7 days', s.weekWorkouts > 0 ? String(s.weekWorkouts) : 'None yet'],
     s.kgChange != null && ['Weight so far', `${s.kgChange < 0 ? '−' : s.kgChange > 0 ? '+' : ''}${Math.abs(s.kgChange).toFixed(1)} kg${s.goalPct != null ? ` · ${s.goalPct}% to goal` : ''}`],
   ].filter(Boolean)
-  return (
+  return createPortal(
     <div className="sheet-wrap" onClick={onClose}>
       <div className={`sheet partner-sheet theme-${s.theme}`} style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`${s.name}’s progress`}>
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
@@ -365,7 +366,7 @@ function PartnerSheet({ onShareNote, s, sent, got, info, team, myTicks, me, repl
         {log.length > 5 && <button className="link-btn cl-more" onClick={() => setAllLog((x) => !x)}>{allLog ? 'Show less' : `Show all (${Math.min(30, log.length)})`}</button>}
       </div>
     </div>
-  )
+  , document.body)
 }
 
 // Settings: link a partner with a code.

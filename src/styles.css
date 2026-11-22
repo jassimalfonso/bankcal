@@ -1957,7 +1957,7 @@ body[data-bg='paper'] { background: linear-gradient(180deg, #ffffff 0%, #f5f5f3 
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
     .screen .block, .screen > .card:not(.hero) { animation: scroll-in linear both; animation-timeline: view(); animation-range: entry 0% entry 35%; }
-    @keyframes scroll-in { from { opacity: 0.25; transform: translateY(18px) scale(0.985); } }
+    @keyframes scroll-in { from { opacity: 0.3; } } /* opacity only: a moving card would trap pop-up sheets inside it */
   }
   .char-btn .character { animation: breathe 4.5s ease-in-out infinite; transform-origin: 50% 100%; }
   @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04, 0.98); } }
@@ -2032,3 +2032,11 @@ body[data-bg='paper'] { background: linear-gradient(180deg, #ffffff 0%, #f5f5f3 
 .acc-preview .buddy-acc { animation: none; }
 .acc-preview .buddy-acc.at-hat { animation: acc-hat 0.45s var(--spring) both; }
 @keyframes acc-hat { from { opacity: 0; transform: translate(-50%, -110%) rotate(-6deg); } }
+
+/* while a sheet is open, the tab bar and + step aside so the sheet clearly sits on top */
+body:has(.sheet-wrap) .tabbar, body:has(.sheet-wrap) .fab { opacity: 0; pointer-events: none; transform: translate(-50%, 140%); }
+body:has(.sheet-wrap) .fab { transform: scale(0.4); }
+.tabbar, .fab { transition: transform 0.25s var(--ease), opacity 0.2s; }
+/* partner sheet: name and ✕ stay pinned at the top while you scroll it */
+.partner-sheet .sheet-head { position: sticky; top: -8px; z-index: 3; margin: 0 -16px; padding: 8px 16px 10px; background: var(--bg); }
+.partner-sheet .sheet-head h2 { font-size: 22px; }
