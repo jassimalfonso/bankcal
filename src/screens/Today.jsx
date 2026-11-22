@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { VacationBanner, JoinVacation } from './Breaks'
 import { useCountUp, useSwipe } from '../motion'
 import { breakdown, fmt, KCAL_PER_KG, mealFor, usualFor } from '../calc'
-import { foodEmoji } from '../foodCats'
+import { CATS, catOf, foodEmoji } from '../foodCats'
 import Character, { moodFor } from '../Character'
 import { missingFor } from '../calc'
 import { SECTION_ICONS, SECTION_NAMES, fullLayout } from '../layout'
@@ -41,7 +41,21 @@ export function Ring({ value, size = 220, stroke = 20, children }) {
   )
 }
 
+// how Meals is shown: grouped by meal, by food type, or one list (remembered on this phone)
+function useMealView() {
+  const [v, setV] = useState(() => { try { return localStorage.getItem('bankcal:meal-view') || 'meal' } catch { return 'meal' } })
+  return [v, (x) => { setV(x); try { localStorage.setItem('bankcal:meal-view', x) } catch { /* ignore */ } }]
+}
+function MealView({ value, onChange }) {
+  return (
+    <span className="meal-view" role="group" aria-label="Group meals">
+      {[['meal', 'By meal'], ['type', 'By type'], ['all', 'All']].map(([k, l]) => <button key={k} className={value === k ? 'on' : ''} aria-pressed={value === k} onClick={() => onChange(k)}>{l}</button>)}
+    </span>
+  )
+}
+
 export default function Today(props) {
+  const [mealView, setMealView] = useMealView()
   const { profile, mine, todays, budget, base, earn, addEntry, removeEntry, goSetup, words, streakDays, closeDay, openWords, windDown, notify } = props
   // Weekly check-in appears on Sundays until hidden
   const weekKey = `bankcal:week:${props.today}`
@@ -168,7 +182,7 @@ export default function Today(props) {
         ) : null
         if (id === 'meals') return (
           <section key="meals" className="block">
-            <h2 className="group-title">Meals</h2>
+            <h2 className="group-title">Meals{todays.length > 1 && <MealView value={mealView} onChange={setMealView} />}</h2>
             <UsualCard {...props} />
             {todays.length === 0 ? (
               <div className="card empty">
@@ -176,9 +190,20 @@ export default function Today(props) {
                 <p className="muted">Tap the + button before you eat.</p>
               </div>
             ) : (
-              <ul className="card list">
-                {todays.map((e) => <Row key={e.id} e={e} cats={profile?.foodCats} fresh={props.fresh === e.id} onEdit={() => props.editEntry?.(e)} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo })) }} />)}
-              </ul>
+              (() => {
+                const row = (e) => <Row key={e.id} e={e} cats={profile?.foodCats} fresh={props.fresh === e.id} onEdit={() => props.editEntry?.(e)} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo, cat: e.cat })) }} />
+                if (mealView === 'all' || todays.length < 2) return <ul className="card list">{todays.map(row)}</ul>
+                // grouped: by meal (Breakfast, Lunch…) or by food type (Meals, Drinks…)
+                const groups = mealView === 'meal'
+                  ? ['Breakfast', 'Lunch', 'Snack', 'Dinner'].map((m) => ({ key: m, label: m, e: { Breakfast: '🌅', Lunch: '☀️', Snack: '🍪', Dinner: '🌙' }[m], items: todays.filter((x) => (x.meal || 'Snack') === m) }))
+                  : CATS.map((c) => ({ key: c.id, label: c.label, e: c.e, items: todays.filter((x) => catOf(x, profile?.foodCats) === c.id) }))
+                return groups.filter((g) => g.items.length).map((g) => (
+                  <div key={g.key} className="meal-group">
+                    <p className="mg-head"><span>{g.e} {g.label}</span><small>{fmt(g.items.reduce((a, x) => a + x.kcal, 0))} kcal</small></p>
+                    <ul className="card list">{g.items.map(row)}</ul>
+                  </div>
+                ))
+              })()
             )}
           </section>
         )

@@ -37,20 +37,20 @@ export const catOf = (f, overrides = {}) => overrides[keyOf(f.name)] || (isCat(f
 
 // A picture for foods without a photo: the closest food emoji, else the type's emoji
 const PICS = [
-  ['☕', 'coffee latte cappuccino americano espresso macchiato mocha capp flat white'], ['🧋', 'boba bubble tea milk tea'], ['🍵', 'tea chai karak matcha'],
+  ['☕', 'coffee latte cappuccino americano espresso macchiato mocha capp flat white'], ['🧋', 'boba bubble_tea milk_tea pearl'], ['🍵', 'tea chai karak matcha chamomile infusion herbal'],
   ['🥤', 'juice smoothie shake soda cola pepsi coke sprite fanta laban frappe frappuccino'], ['🥛', 'milk lassi yogurt drink'], ['💧', 'water'],
   ['🍌', 'banana saging'], ['🍎', 'apple'], ['🍊', 'orange mandarin'], ['🥭', 'mango'], ['🍇', 'grape grapes'], ['🍉', 'watermelon'], ['🍓', 'strawberry strawberries berries'],
   ['🍍', 'pineapple'], ['🥑', 'avocado'], ['🥗', 'salad fattoush tabbouleh'], ['🥕', 'carrot carrots'], ['🥒', 'cucumber'], ['🌴', 'dates date'],
   ['🍔', 'burger zinger big mac whopper'], ['🍕', 'pizza'], ['🌯', 'shawarma wrap burrito'], ['🌮', 'taco'], ['🥪', 'sandwich sub panini club'], ['🍟', 'fries'],
   ['🍗', 'chicken fried chicken nuggets wings drumstick inasal'], ['🥩', 'steak beef lamb'], ['🐟', 'fish salmon tuna bangus tilapia'], ['🍤', 'shrimp prawn prawns'],
   ['🍜', 'noodles ramen pancit pho laksa mami'], ['🍝', 'pasta spaghetti carbonara lasagna'], ['🍲', 'soup sinigang curry stew kare nilaga tinola bulalo adobo'],
-  ['🍛', 'biryani kabsa mandi machboos'], ['🍚', 'rice'], ['🍣', 'sushi'], ['🥟', 'dumpling dumplings siomai gyoza lumpia samosa'], ['🍳', 'egg eggs omelette silog tapsilog'],
+  ['🍛', 'biryani kabsa mandi machboos'], ['🍚', 'rice'], ['🍣', 'sushi'], ['🥟', 'dumpling dumplings siomai gyoza lumpia samosa'], ['🥚', 'boiled_egg boiled_eggs hard_boiled'], ['🍳', 'egg eggs omelette silog tapsilog fried_egg'],
   ['🥣', 'oats oatmeal porridge cereal granola champorado lugaw arroz caldo congee'], ['🥞', 'pancake pancakes waffle'], ['🥐', 'croissant pastry'],
   ['🍞', 'bread toast pandesal bun roti chapati naan paratha khubz pita'], ['🍰', 'cake cheesecake slice'], ['🧁', 'cupcake muffin'], ['🍩', 'donut doughnut'],
   ['🍪', 'cookie cookies biscuit biscuits'], ['🍫', 'chocolate choc kitkat snickers mars twix'], ['🍦', 'ice cream gelato soft serve'], ['🍿', 'popcorn'],
   ['🥜', 'nuts almonds cashews peanuts pistachio'], ['🥔', 'chips crisps pringles lays doritos'], ['🧀', 'cheese'], ['🍯', 'honey'], ['🍮', 'flan pudding leche'],
 ]
-const PIC_WORDS = PICS.map(([e, w]) => [e, w.split(' ')])
+const PIC_WORDS = PICS.map(([e, w]) => [e, w.split(' ').map((x) => x.replace(/_/g, ' '))])
 export function foodEmoji(f, overrides) {
   const n = norm(f.name)
   // the food named first wins: "oats with banana" is oats
