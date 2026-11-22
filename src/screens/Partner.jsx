@@ -126,7 +126,7 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0, stre
           <div key={'n' + id} className="sticky-note" role="status">
             <span className="sn-sticker" aria-hidden="true">{c.s || '💌'}</span>
             <p>{c.msg}</p>
-            <small>{s.name} · {ago(c.at)}</small>
+            <small className="sn-from"><Character kind={c.kind || s.character} mood="happy" size={26} acc={c.acc ?? s.acc} />{s.name} · {ago(c.at)}</small>
             <div className="sn-acts">
               <button onClick={() => { send(id, s.name, 'Loved your note', '❤️'); markRead(id, c) }}>❤️ Love it</button>
               <button onClick={() => { markRead(id, c); setReplyTo(true); setOpen(id) }}>Reply</button>

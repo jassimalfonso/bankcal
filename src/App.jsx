@@ -174,7 +174,7 @@ function Bank({ user }) {
   const [msShare, setMsShare] = useState(null) // a milestone to share, from the pop-up
   const showNext = useRef(null)
   // sound only for the moments that matter most: all habits done, day closed on budget, a cheer received
-  const celebrate = useCallback((text, share = null, sound = false) => {
+  const celebrate = useCallback((text, share = null, sound = false, who = null) => {
     // one at a time: a second celebration waits for the first to finish
     const show = () => {
       const next = cheerQueue.current[0]
@@ -185,7 +185,7 @@ function Bank({ user }) {
       cheerTimer.current = setTimeout(() => { cheerQueue.current.shift(); show() }, next.share ? 6000 : 3200)
     }
     showNext.current = show
-    cheerQueue.current.push({ text, share, sound })
+    cheerQueue.current.push({ text, share, sound, who })
     if (cheerQueue.current.length === 1) show()
   }, [])
   // swipe or tap a pop-up away: the next one (if any) comes straight after
@@ -358,7 +358,7 @@ function Bank({ user }) {
             <span className="bc-bubble">{cheer.text}
               {cheer.share && <button className="bc-share" onClick={() => setMsShare(cheer.share)}>Share it</button>}
             </span>
-            <Character kind={profile.character} mood="happy" size={84} acc={profile.accessory} />
+            <Character kind={cheer.who?.kind || profile.character} mood="happy" size={84} acc={cheer.who ? cheer.who.acc : profile.accessory} />
           </Swipeable>
         </div>
       )}

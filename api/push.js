@@ -59,10 +59,12 @@ export default async function handler(req, res) {
   const from = fields.cheers?.[me]?.name || 'Your partner'
   const msg = String(body.msg || '👏').slice(0, 120)
   const st = String(body.s || '').slice(0, 8)
+  const kind = /^[a-z]{2,16}$/.test(String(body.kind || '')) ? body.kind : null // sender's buddy, shown as the notification picture
   const payload = JSON.stringify({
     title: msg === '👏' ? `👏 ${from} cheered you on` : st ? `${st} ${from} left you a note` : `${from} cheered you on`,
     body: msg === '👏' ? 'Open BankCal to see your day.' : msg,
     tag: `cheer-${me}`,
+    ...(kind ? { icon: `/buddies/${kind}.png` } : {}),
   })
   const webpush = await import('web-push') // loaded only when sending
   webpush.setVapidDetails('https://bankcal.vercel.app', pub, priv)

@@ -2040,3 +2040,4 @@ body:has(.sheet-wrap) .fab { transform: scale(0.4); }
 /* partner sheet: name and ✕ stay pinned at the top while you scroll it */
 .partner-sheet .sheet-head { position: sticky; top: -8px; z-index: 3; margin: 0 -16px; padding: 8px 16px 10px; background: var(--bg); }
 .partner-sheet .sheet-head h2 { font-size: 22px; }
+.sn-from { display: flex; align-items: center; gap: 6px; } .sn-from .character { flex: none; }

@@ -57,7 +57,10 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
     const trim = Object.fromEntries(Object.entries(cheers).filter(([, v]) => (v.log?.length ?? 0) > 30).map(([k, v]) => [`cheers.${k}.log`, [...v.log].sort((a, b) => a.at - b.at).slice(-30)]))
     if (Object.keys(trim).length) updateDoc(doc(db, 'shares', uid), trim).catch(() => {})
     const c = fresh.sort((a, b) => b.at - a.at)[0]
-    ;(celebrate ?? notify)(c.msg && c.msg !== '👏' ? `${c.s ? c.s + ' ' : ''}${c.name}: ${c.msg}` : `👏 ${c.name} cheered you on`)
+    const from = Object.keys(cheers).find((k) => cheers[k] === c)
+    const who = { kind: c.kind || shares[from]?.character, acc: c.acc ?? shares[from]?.acc ?? null } // their buddy pops up, not yours
+    const text = c.msg && c.msg !== '👏' ? `${c.s ? c.s + ' ' : ''}${c.name}: ${c.msg}` : `👏 ${c.name} cheered you on`
+    if (celebrate) celebrate(text, null, false, who); else notify(text)
   }, [mineShare?.cheers]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // my pending invite: when the partner accepts, link them here too
@@ -100,10 +103,10 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
     const m = String(msg).trim().slice(0, 120) || '👏'
     const st = String(sticker).slice(0, 8)
     const k = `cheers.${uid}`
-    await updateDoc(doc(db, 'shares', p), { [`${k}.at`]: at, [`${k}.name`]: profile.name, [`${k}.msg`]: m, [`${k}.s`]: st, [`${k}.count`]: increment(1), [`${k}.log`]: arrayUnion(st ? { at, msg: m, s: st } : { at, msg: m }) })
+    await updateDoc(doc(db, 'shares', p), { [`${k}.at`]: at, [`${k}.name`]: profile.name, [`${k}.kind`]: profile.character ?? null, [`${k}.acc`]: profile.accessory ?? null, [`${k}.msg`]: m, [`${k}.s`]: st, [`${k}.count`]: increment(1), [`${k}.log`]: arrayUnion(st ? { at, msg: m, s: st } : { at, msg: m }) })
     // ping their phone too (only if they've turned notifications on); never blocks the cheer
-    auth.currentUser?.getIdToken().then((t) => fetch('/api/push', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${t}` }, body: JSON.stringify({ to: p, msg: m, s: st }) })).catch(() => {})
-  }, [uid, profile?.name])
+    auth.currentUser?.getIdToken().then((t) => fetch('/api/push', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${t}` }, body: JSON.stringify({ to: p, msg: m, s: st, kind: profile.character }) })).catch(() => {})
+  }, [uid, profile?.name, profile?.character, profile?.accessory])
 
   // Notifications on this phone
   const push = usePush(enabled, uid)

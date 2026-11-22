@@ -16,8 +16,11 @@ startSound()
 
 // demo only: ?buddies shows every buddy big, in each mood (for design checks)
 const gallery = import.meta.env.MODE === 'demo' && location.search.includes('buddies')
+const iconOf = import.meta.env.MODE === 'demo' && new URLSearchParams(location.search).get('icon')
 const accGallery = import.meta.env.MODE === 'demo' && location.search.includes('accs')
-createRoot(document.getElementById('root')).render(accGallery ? (
+createRoot(document.getElementById('root')).render(iconOf ? (
+  <div id="icon" style={{ width: 192, height: 192, display: 'grid', placeItems: 'center', background: '#f3f0ea', borderRadius: 96 }}><Buddy id={iconOf} mood="happy" size={150} /></div>
+) : accGallery ? (
   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 120px)', gap: 8, padding: 30, background: '#f2f3f7' }}>
     {ACCESSORIES.flatMap((a) => ['egg', 'onigiri', 'blobcat'].map((k) => <div key={a.id + k} style={{ background: '#fff', borderRadius: 16, padding: '26px 10px 6px', textAlign: 'center', font: '700 11px system-ui' }}><Character kind={k} size={90} acc={a.id} /><div>{a.id}</div></div>))}
   </div>
