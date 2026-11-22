@@ -75,8 +75,8 @@ export function BreaksSettings({ profile: p, updateProfile: set, today, partner,
               {end && <button type="button" className="link-btn" onClick={(e) => { e.preventDefault(); setEnd('') }}>Clear</button>}
             </label>
             {partnerName && (
-              <label className="keep-food"><input type="checkbox" checked={together} onChange={(e) => setTogether(e.target.checked)} />
-                <span>Together with <b>{partnerName}</b>. They’ll get an invite to join.</span></label>
+              <label className="ps-share"><span>Together with <b>{partnerName}</b>. They’ll get an invite to join.</span>
+                <input type="checkbox" className="switch" checked={together} onChange={(e) => setTogether(e.target.checked)} /></label>
             )}
             <button className="btn-primary" onClick={start}>Start vacation 🏖️</button>
           </div>

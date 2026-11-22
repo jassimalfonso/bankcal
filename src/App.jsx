@@ -24,7 +24,7 @@ import { usePartners, usualFoods } from './partner'
 import { MILESTONES, reached } from './milestones'
 import { oneThing, weekTicks } from './habits'
 import { PLANS } from './training'
-import Character, { ACCESSORIES } from './Character'
+import Character from './Character'
 import AddSheet from './screens/AddSheet'
 import SignIn from './screens/SignIn'
 import Onboarding from './screens/Onboarding'
@@ -288,18 +288,6 @@ function Bank({ user }) {
     const m = MILESTONES.find((x) => x.id === newIds[0])
     celebrate(newIds.length > 1 ? `${newIds.length} milestones reached! ${m.emoji}` : `Milestone: ${m.label} ${m.emoji}`, m)
   }, [newIds.join(','), showM, helloOn]) // eslint-disable-line react-hooks/exhaustive-deps
-  // Best-ever streak unlocks buddy accessories (kept forever); the newest one goes straight on
-  useEffect(() => {
-    if (!profile?.onboarded || helloOn || showM) return
-    const old = pf.bestStreak ?? 0
-    if (streakDays <= old) return
-    const fresh = ACCESSORIES.filter((a) => a.at > old && a.at <= streakDays)
-    store.updateProfile({ bestStreak: streakDays, ...(fresh.length ? { accessory: fresh.at(-1).id } : {}) })
-    if (fresh.length) {
-      const a = fresh.at(-1), next = ACCESSORIES.find((x) => x.at > streakDays)
-      celebrate(`${streakDays} days on budget! Your buddy earned ${a.label} ${a.e}${next ? ` Next: ${next.label} at ${next.at} days.` : ''}`)
-    }
-  }, [streakDays, helloOn, showM]) // eslint-disable-line react-hooks/exhaustive-deps
   const focus = profile?.onboarded ? oneThing({ profile: pf, todayKey: today, yesterday, plans: PLANS }) : null
 
   if (!profile) return <div className="loading" />

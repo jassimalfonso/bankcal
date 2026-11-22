@@ -78,7 +78,7 @@ export default function Today(props) {
     <>
       <header className="large-title">
         <div>
-          <p className="date">{date}{streakDays > 0 && <span className="streak-chip">🔥 {streakDays}</span>}{props.sInfo?.shields > 0 && <span className="streak-chip shield" title="Streak shields">🧊 {props.sInfo.shields}</span>}</p>
+          <p className="date">{date}{streakDays > 0 && <span className="streak-chip">🔥 {streakDays}</span>}</p>
           <h1>{(() => { const h = new Date().getHours(); return h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 17 ? 'Good afternoon' : h >= 17 && h < 22 ? 'Good evening' : 'Hi' })()}, {profile.name}</h1>
         </div>
         <button className="char-btn" onClick={goSetup} aria-label="Settings">
@@ -231,7 +231,7 @@ function UsualCard({ mine, todays, today, logFood, profile }) {
   )
 }
 
-// A shield just saved the streak: say so once, gently
+// An off day was let go: say so once, gently
 function ShieldNote({ sInfo, today }) {
   const day = sInfo?.covered?.at(-1)
   const k = `bankcal:shield-seen:${day}`
@@ -241,8 +241,8 @@ function ShieldNote({ sInfo, today }) {
   const when = (() => { const d = Math.round((new Date(today + 'T12:00') - new Date(day + 'T12:00')) / 864e5); return d === 1 ? 'yesterday' : new Date(day + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long' }) })()
   return (
     <button className="card shield-note" onClick={close}>
-      <span aria-hidden="true">🧊</span>
-      <span><b>Your shield covered {when}</b><small>Streak safe at {sInfo.days} days. Earn a shield every 7 days on budget. Tap to hide.</small></span>
+      <span aria-hidden="true">🌿</span>
+      <span><b>{when[0].toUpperCase() + when.slice(1)} was a rest day</b><small>No worries, your streak carries on at {sInfo.days} days. Tap to hide.</small></span>
     </button>
   )
 }

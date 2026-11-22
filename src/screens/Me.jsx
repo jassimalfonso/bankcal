@@ -208,7 +208,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
             {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => <option key={d} value={i}>Weekly, {d}</option>)}
           </select>
         </Line>
-        <Line label="Welcome screen">
+        <Line label="Welcome card">
           <select className="date-in" value={p.helloMode ?? 'away'} onChange={(e) => set({ helloMode: e.target.value })} aria-label="When to show the welcome screen">
             <option value="always">Every time I open</option>
             <option value="away">After 2+ hours away</option>
@@ -232,13 +232,12 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
       <h2 className="group-title" id="buddy">Buddy</h2>
       <div className="card buddy-card"><BuddyGrid value={p.character} onChange={(id) => set({ character: id })} /></div>
       <div className="card acc-card">
-        <p className="acc-title">Accessories<small>Earned with your best streak ({p.bestStreak ?? 0} days). Yours to keep.</small></p>
+        <p className="acc-title">Dress up<small>Just for fun. Your partner sees it too.</small></p>
         <div className="acc-row">
           <button className={!p.accessory ? 'on' : ''} onClick={() => set({ accessory: null })} aria-pressed={!p.accessory}>None</button>
-          {ACCESSORIES.map((a) => {
-            const got = (p.bestStreak ?? 0) >= a.at
-            return <button key={a.id} disabled={!got} className={p.accessory === a.id ? 'on' : ''} aria-pressed={p.accessory === a.id} onClick={() => set({ accessory: a.id })} aria-label={got ? a.label : `${a.label}, unlocks at ${a.at} days`}><span>{a.e}</span><small>{got ? '' : `${a.at} d`}</small></button>
-          })}
+          {ACCESSORIES.map((a) => (
+            <button key={a.id} className={p.accessory === a.id ? 'on' : ''} aria-pressed={p.accessory === a.id} onClick={() => set({ accessory: a.id })} aria-label={a.label} title={a.label}><span>{a.e}</span></button>
+          ))}
         </div>
       </div>
 

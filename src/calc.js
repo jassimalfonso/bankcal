@@ -272,33 +272,30 @@ export function recommendDates(currentKg, targetKg, from = new Date()) {
 }
 
 // ───────── Streak: days in a row within budget (before today, plus today once closed) ─────────
-// Streak with shields 🧊: every 7 days on budget earns a shield (you hold up to 2). A day over budget
-// or not logged uses a shield instead of ending the streak. Vacation days pause it.
-export const SHIELD_EVERY = 7, SHIELD_MAX = 2
+// A forgiving streak: life happens, so one off day in any 7 never breaks it. Nothing to earn or
+// spend; an off day (over budget or not logged) is simply let go. Vacation days pause it.
 export function streakInfo(entries, budgetFor, todayKey, includeToday, isBreak) {
   const byDay = {}
   for (const e of entries) byDay[e.day] = (byDay[e.day] || 0) + e.kcal
   const first = Object.keys(byDay).sort()[0]
-  const out = { days: 0, shields: 0, covered: [], next: SHIELD_EVERY, earnedOn: null }
+  const out = { days: 0, covered: [] }
   if (!first) return out
   const end = parseDay(todayKey)
   if (!includeToday) end.setDate(end.getDate() - 1)
   const d = parseDay(first)
   const start = new Date(end); start.setDate(start.getDate() - 365)
   if (d < start) d.setTime(start.getTime())
-  let n = 0, shields = 0, covered = [], sinceShield = 0, earnedOn = null
+  let n = 0, covered = [], lastOff = null
   for (; d <= end; d.setDate(d.getDate() + 1)) {
     const k = dayKey(d)
     if (isBreak?.(k)) continue
     const b = budgetFor(k)
     const good = k in byDay && b != null && byDay[k] <= b
-    if (good) {
-      n++; sinceShield++
-      if (sinceShield >= SHIELD_EVERY) { sinceShield = 0; if (shields < SHIELD_MAX) { shields++; earnedOn = k } }
-    } else if (n > 0 && shields > 0) { shields--; covered.push(k) }
-    else { n = 0; sinceShield = 0; covered = []; earnedOn = null }
+    if (good) n++
+    else if (n > 0 && (!lastOff || (parseDay(k) - parseDay(lastOff)) / 864e5 >= 7)) { covered.push(k); lastOff = k }
+    else { n = 0; covered = []; lastOff = null }
   }
-  return { days: n, shields, covered, next: SHIELD_EVERY - sinceShield, earnedOn }
+  return { days: n, covered }
 }
 export function streak(entries, budgetFor, todayKey, includeToday, isBreak) {
   return streakInfo(entries, budgetFor, todayKey, includeToday, isBreak).days

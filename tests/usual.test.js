@@ -63,15 +63,14 @@ test('your usual: most logged for this meal, not already eaten today', () => {
 })
 
 import { streakInfo } from '../src/calc.js'
-test('a shield covers one bad day after 7 good ones', () => {
+test('streak is forgiving: one off day in 7 is let go, a second one in the same week resets', () => {
   const days = ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08', '2026-11-10', '2026-11-11']
   const entries = days.map((day) => ({ day, kcal: 1000 }))
   const r = streakInfo(entries, () => 2000, '2026-11-11', true)
   assert.equal(r.days, 10)
   assert.deepEqual(r.covered, ['2026-11-09'])
-  assert.equal(r.shields, 0)
-  const noShield = streakInfo(entries.slice(3), () => 2000, '2026-11-11', true)
-  assert.equal(noShield.days, 2)
+  const twice = streakInfo(entries.filter((e) => e.day !== '2026-11-11'), () => 2000, '2026-11-12', true)
+  assert.equal(twice.days, 0) // 9 let go, 11 off again within 7 days resets
 })
 
 import { dueFor } from '../api/remind.js'

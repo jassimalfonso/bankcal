@@ -24,7 +24,6 @@ export default function Statement(props) {
   const [view, setView] = useState('week')
   const sel = days.find((d) => d.key === pick)
   const logged = days.filter((d) => d.net != null)
-  const weekNet = logged.reduce((a, d) => a + d.net, 0)
   const top = Math.max(budget ?? 0, ...days.map((d) => d.spent), 1) * 1.1
 
   return (
@@ -63,21 +62,6 @@ export default function Statement(props) {
 
       <DeficitCard {...props} keys={days.map((d) => d.key)} />
       <WeightCheckCard {...props} />
-
-      <div className="tiles">
-        <div className="card tile-stat">
-          <span>{weekNet >= 0 ? 'Under budget' : 'Over budget'}</span>
-          <b className={weekNet < 0 ? 'neg' : 'pos'}>{fmt(Math.abs(weekNet))}<small> kcal</small></b>
-        </div>
-        <div className="card tile-stat">
-          <span>Days on budget</span>
-          <b>{logged.filter((d) => d.net >= 0).length}<small> of {logged.length || 0}</small></b>
-        </div>
-        <div className="card tile-stat">
-          <span>Days logged</span>
-          <b>{logged.length}<small> of 7</small></b>
-        </div>
-      </div>
 
       <SleepWeek days={days} log={props.profile?.days ?? {}} profile={props.profile} mine={mine} />
       </>}

@@ -263,7 +263,7 @@ export function WeeklyCard({ profile, mine, budgetFor, today, onClose, notify, s
         <div className="rc-top"><span className="rc-pill">🗓️ Your week · {d(w.from)} – {d(w.to)}</span><button className="link-btn" onClick={() => setPic(true)}>Share</button></div>
         <h3>{title}, {profile.name}!</h3>
         <p className="rc-lead">{w.logged > 0 ? `${w.within} of ${w.logged} logged days on budget. ` : ''}{line}</p>
-        {covered.length > 0 && <p className="rc-shield">🧊 Your shield kept the streak safe on {covered.map(dn).join(' and ')}</p>}
+        {covered.length > 0 && <p className="rc-shield">🌿 {covered.map(dn).join(' and ')} was a rest day, and your streak carried on</p>}
         <div className="rc-stats">
           {w.logged > 0 && <div><b className={w.saved >= 0 ? 'pos' : ''}>{fmt(Math.abs(w.saved))}</b><span>kcal {w.saved >= 0 ? 'saved' : 'over'}</span></div>}
           {kg >= 0.05 && <div><b>≈ {kg.toFixed(1)} kg</b><span>of fat, gone</span></div>}

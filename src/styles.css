@@ -2005,3 +2005,13 @@ body[data-bg='paper'] { background: linear-gradient(180deg, #ffffff 0%, #f5f5f3 
 .rc-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .rc-stats div:last-child:nth-child(odd) { grid-column: auto; }
 .rc-btns { margin-top: 10px; }
+/* consistent: the drag dots always sit right after the section title */
+.cards:not(.arranging) .slot-body .group-title:not(:has(> span)) { justify-content: flex-start; }
+.cards:not(.arranging) .slot-body .group-title::after { margin-left: 8px; align-self: center; vertical-align: 0; }
+.wcheck.empty { text-align: left; }
+#recap .card { margin-bottom: 12px; }
+.screen.tab-week .card + .card, .screen.tab-week section.card { margin-top: 12px; }
+/* on/off choices look the same everywhere: text on the left, switch on the right */
+.ps-share { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 0; padding: 10px 0; line-height: 1.4; font-size: 14.5px; font-weight: 650; color: var(--ink); }
+.ps-share b { font-weight: 850; }
+.ps-share .switch { flex: none; margin: 0; }

@@ -400,18 +400,18 @@ export function PartnerSettings({ partner, profile, updateProfile }) {
         </form>
         {msg && <p className="ps-msg" role="status">{msg}</p>}
         {partners.length > 0 && push && (
-          <label className="keep-food ps-share">
-            <input type="checkbox" checked={push.on} disabled={busy} onChange={(e) => run(e.target.checked ? push.turnOn : push.turnOff)} />
+          <label className="ps-share">
             <span><b>Notify me</b> on this phone when I’m cheered{!push.supported && ' (open BankCal from your Home Screen to turn this on)'}</span>
+            <input type="checkbox" className="switch" checked={push.on} disabled={busy} onChange={(e) => run(e.target.checked ? push.turnOn : push.turnOff)} />
           </label>
         )}
-        <label className="keep-food ps-share">
-          <input type="checkbox" checked={profile.shareFoods !== false} onChange={(e) => updateProfile({ shareFoods: e.target.checked })} />
+        <label className="ps-share">
           <span>Share my <b>saved foods and workouts</b>, so my partner can log them without setting them up again</span>
+          <input type="checkbox" className="switch" checked={profile.shareFoods !== false} onChange={(e) => updateProfile({ shareFoods: e.target.checked })} />
         </label>
-        <label className="keep-food ps-share">
-          <input type="checkbox" checked={!!profile.shareWeight} onChange={(e) => updateProfile({ shareWeight: e.target.checked })} />
+        <label className="ps-share">
           <span>Also share my <b>weight progress</b> (kg lost so far and % to goal, not my actual weight)</span>
+          <input type="checkbox" className="switch" checked={!!profile.shareWeight} onChange={(e) => updateProfile({ shareWeight: e.target.checked })} />
         </label>
       </div>
       <p className="fine">Partners always see your streak, habits ticked, whether you moved today, and how many of the last 7 days were on budget. Plus your saved foods and workouts if that’s ticked. Never your daily calories, what you ate, actual weight or journal.</p>

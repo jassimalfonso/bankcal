@@ -17,16 +17,13 @@ export const CHARACTERS = ORDER.map((id) => ({ id, label: BUDDIES[id].label }))
 // ids used by earlier versions
 const LEGACY = { koala: 'egg', husky: 'egg', poo: 'egg', dog: 'avocado', rat: 'avocado', roo: 'avocado', mouse: 'avocado', panda: 'mochi' }
 
-// Little things your buddy earns with your best-ever streak. Never taken away.
+// Dress-up for your buddy: all free, just for fun.
 export const ACCESSORIES = [
-  { id: 'bow', e: '🎀', label: 'a bow', at: 3 },
-  { id: 'cap', e: '🧢', label: 'a cap', at: 7 },
-  { id: 'flowers', e: '🌸', label: 'a flower', at: 14 },
-  { id: 'tophat', e: '🎩', label: 'a top hat', at: 21 },
-  { id: 'crown', e: '👑', label: 'a crown', at: 30 },
+  { id: 'bow', e: '🎀', label: 'Bow' }, { id: 'cap', e: '🧢', label: 'Cap' }, { id: 'flowers', e: '🌸', label: 'Flower' },
+  { id: 'tophat', e: '🎩', label: 'Top hat' }, { id: 'crown', e: '👑', label: 'Crown' }, { id: 'party', e: '🥳', label: 'Party' },
+  { id: 'sun', e: '🕶️', label: 'Shades' }, { id: 'santa', e: '🎅', label: 'Festive' }, { id: 'grad', e: '🎓', label: 'Grad cap' },
 ]
 export const accById = Object.fromEntries(ACCESSORIES.map((a) => [a.id, a]))
-export const unlockedAcc = (best) => ACCESSORIES.filter((a) => (best ?? 0) >= a.at)
 
 export default function Character({ kind, mood = 'happy', size = 64, className = '', acc }) {
   const id = BUDDIES[kind] ? kind : LEGACY[kind] ?? 'cloud'
