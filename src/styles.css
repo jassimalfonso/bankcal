@@ -2063,3 +2063,6 @@ body:has(.sheet-wrap) .fab { transform: scale(0.4); }
 .rcd-sub, .rcd-goal { margin: 4px 0 0; font-size: 13.5px; font-weight: 650; color: var(--muted); line-height: 1.4; }
 .rcd-sub b, .rcd-goal b { color: var(--ink); font-weight: 850; }
 .rcd-goal { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+/* Day closed · Reopen on one line, same size */
+.day-closed { gap: 8px; font-size: 15px; line-height: 1.3; }
+.day-closed .link-btn { padding: 4px 8px; margin: 0; font-size: 15px; line-height: 1.3; min-height: 0; }

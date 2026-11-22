@@ -95,7 +95,7 @@ export default function Today(props) {
       <header className="large-title">
         <div>
           <p className="date">{date}{streakDays > 0 && <span className="streak-chip">🔥 {streakDays}</span>}</p>
-          <h1>{(() => { const h = new Date().getHours(); return h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 17 ? 'Good afternoon' : h >= 17 && h < 22 ? 'Good evening' : 'Hi' })()}, {profile.name}</h1>
+          <h1>{(() => { const h = new Date().getHours(); return h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 17 ? 'Good afternoon' : h >= 17 ? 'Good evening' : 'Hi' })()}, {profile.name}</h1>
         </div>
         <button className="char-btn" onClick={goSetup} aria-label="Settings">
           <Character kind={profile.character} mood={mood} size={44} acc={profile.accessory} />
