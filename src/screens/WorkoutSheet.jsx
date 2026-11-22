@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { Children, cloneElement, isValidElement, useState } from 'react'
 import { WORKOUTS, earned, fmt, workoutKcal, workoutMinutes } from '../calc'
 import { IconClose } from '../icons'
@@ -42,7 +43,7 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
   const mins = entry ? workoutMinutes(entry) : 0
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value.replace(/[^\d.]/g, '') }))
 
-  return (
+  return createPortal(
     <div className="sheet-wrap" onClick={onClose}>
       <div className="sheet" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Log a workout">
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
@@ -169,6 +170,7 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
         )}
       </div>
     </div>
+  , document.body
   )
 }
 

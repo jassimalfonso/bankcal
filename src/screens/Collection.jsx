@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 // Your collection: every journal note, and the verses, reflections and quotes you saved.
 import { useMemo, useState } from 'react'
 import { JOURNAL_PROMPTS, MOODS } from '../habits'
@@ -33,7 +34,7 @@ export default function CollectionSheet({ tab: start = 'journal', profile, updat
     groups.at(-1).list.push(n)
   }
 
-  return (
+  return createPortal(
     <>
     <div className="sheet-wrap" onClick={onClose}>
       <div className="sheet collection" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Your collection">
@@ -122,5 +123,5 @@ export default function CollectionSheet({ tab: start = 'journal', profile, updat
         />
       )}
     </>
-  )
+  , document.body)
 }

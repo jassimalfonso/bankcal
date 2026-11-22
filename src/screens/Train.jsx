@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useState } from 'react'
 import { fmt, workoutKcal } from '../calc'
 import { IconClose } from '../icons'
@@ -175,7 +176,7 @@ function ExerciseSheet({ ex, level, profile, kg, fav, onFav, onKg, onLog, onClos
   const order = LEVELS.map((l) => l.id)
   const easier = order[order.indexOf(level) - 1], harder = order[order.indexOf(level) + 1]
   const kcal = workoutKcal(toWorkout(ex, level, kg), profile.weight)
-  return (
+  return createPortal(
     <div className="sheet-wrap" onClick={onClose}>
       <div className="sheet ex-sheet" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={ex.name}>
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
@@ -235,5 +236,6 @@ function ExerciseSheet({ ex, level, profile, kg, fav, onFav, onKg, onLog, onClos
         </div>
       </div>
     </div>
+  , document.body
   )
 }

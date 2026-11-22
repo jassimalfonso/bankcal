@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useState } from 'react'
 import { fmt, workoutKcal } from '../calc'
 import { IconClose } from '../icons'
@@ -110,7 +111,7 @@ export function CustomSheet({ initial: given, weight, inRoutine, existing = [], 
   const valid = c.name.trim().length > 1 && !twin
   const sample = { id: 'x', name: c.name, kind: c.kind, sets: 3, reps: 10, sec: 30, rest: 60, met: c.met }
   const saved = () => { const out = { ...c, name: c.name.trim(), id: c.id ?? `c${Date.now().toString(36)}` }; onSave(out); return out }
-  return (
+  return createPortal(
     <div className="sheet-wrap" onClick={onClose}>
       <div className="sheet custom-sheet" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={initial ? 'Edit my exercise' : 'Create my own exercise'}>
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
@@ -165,5 +166,6 @@ export function CustomSheet({ initial: given, weight, inRoutine, existing = [], 
         </div>
       </div>
     </div>
+  , document.body
   )
 }

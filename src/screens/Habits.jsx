@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useRef, useState } from 'react'
 import { HABITS, JOURNAL_PROMPTS, MOODS, WINS, dayMoments, habitById, habitDays, journalStarters, suggestHabits } from '../habits'
 import { describeWorkout, sleepHours, WORKOUTS } from '../calc'
@@ -148,7 +149,7 @@ export function JournalSheet({ j, prompt, setDay, today, day = today, dayLog, pr
     onType(v)
     setTimeout(() => { const el = area.current; if (el) { el.focus(); el.setSelectionRange(v.length, v.length) } }, 60)
   }
-  return (
+  return createPortal(
     <div className="sheet-wrap" onClick={close}>
       <div className="sheet journal-sheet" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Journal">
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
@@ -201,5 +202,6 @@ export function JournalSheet({ j, prompt, setDay, today, day = today, dayLog, pr
         <p className="fine center">Private to you. All your notes are kept under Journal → All notes.</p>
       </div>
     </div>
+  , document.body
   )
 }

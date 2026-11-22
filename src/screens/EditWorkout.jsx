@@ -21,7 +21,7 @@ export default function EditWorkout({ w, profile, onSave, onRemove, onClose }) {
   const shownKcal = changed ? kcal : workoutKcal(w, profile.weight)
   const name = w.label ?? def?.label ?? 'Workout'
 
-  return (
+  return createPortal(
     <div className="sheet-wrap" onClick={onClose}>
       <div className="sheet" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`Edit ${name}`}>
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
@@ -61,6 +61,7 @@ export default function EditWorkout({ w, profile, onSave, onRemove, onClose }) {
         <button className="remove-entry" onClick={onRemove}>Remove this workout</button>
       </div>
     </div>
+  , document.body
   )
 }
 

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useState } from 'react'
 import { fmt, prettyDate, weighDue, weighInReport } from '../calc'
 import { IconClose } from '../icons'
@@ -69,7 +70,7 @@ function WeighSheet({ r, profile, today, onClose }) {
   const wins = recentWins(profile, today, 14)
   const drag = useSheetDrag(onClose)
   useEscape(onClose)
-  return (
+  return createPortal(
     <div className="sheet-wrap" onClick={onClose}>
       <div className="sheet weigh-sheet" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Weigh-in check-in">
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
@@ -120,5 +121,6 @@ function WeighSheet({ r, profile, today, onClose }) {
         <p className="fine center">Your budget has been updated for this weight. The trend matters more than any single day.</p>
       </div>
     </div>
+  , document.body
   )
 }

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 // One share screen for every card: shows the picture first, Story or Post, then Share.
 // The picture is made before you tap Share, so iPhone opens the share sheet straight away.
 import { useEffect, useRef, useState } from 'react'
@@ -31,7 +32,7 @@ export default function ShareSheet({ kind, data, buddies = [], title = 'Share', 
 
   const pick = (f) => { setFormat(f); try { localStorage.setItem(FMT_KEY, f) } catch { /* ignore */ } }
 
-  return (
+  return createPortal(
     <div className="sheet-wrap share-wrap" onClick={onClose}>
       <div ref={rootRef} className="sheet share-sheet" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={title}>
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
@@ -58,5 +59,6 @@ export default function ShareSheet({ kind, data, buddies = [], title = 'Share', 
         {extra}
       </div>
     </div>
+  , document.body
   )
 }

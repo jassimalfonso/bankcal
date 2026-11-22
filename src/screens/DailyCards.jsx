@@ -1,4 +1,5 @@
-import { weekSummary, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET, DEFAULT_BED, DEFAULT_WAKE } from '../calc'
+import { createPortal } from 'react-dom'
+import { weekSummary, deficitDays, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET, DEFAULT_BED, DEFAULT_WAKE } from '../calc'
 import { GOOD_REFS, OVER_REFS, pick, useVerse } from '../quotes'
 import { BOUNCE_BACK, GOOD_DAY } from '../motivation'
 import { useEffect, useRef, useState } from 'react'
@@ -174,7 +175,7 @@ export function DayResult({ profile, budget, spent, earn, streakDays, today, onC
   const quote = pick(good ? GOOD_DAY : BOUNCE_BACK, today)
   // 30 min brisk walk (5.6 km/h ≈ 4.3 MET, net of resting)
   const walkKcal = Math.round(3.3 * (+profile.weight || 70) * 0.5)
-  return (
+  return createPortal(
     <div className="sheet-wrap center" onClick={onClose}>
       <div className={`daily-card result ${good ? 'good' : 'over'}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Today's result">
         {good && <div className="confetti" aria-hidden="true">{Array.from({ length: 18 }, (_, i) => <i key={i} style={{ '--i': i }} />)}</div>}
@@ -211,6 +212,7 @@ export function DayResult({ profile, budget, spent, earn, streakDays, today, onC
         <button className="btn-primary" onClick={onClose}>{good ? 'Close my day' : 'Got it'}</button>
       </div>
     </div>
+  , document.body
   )
 }
 
@@ -242,7 +244,15 @@ export function WeeklyCard({ profile, mine, budgetFor, today, onClose, notify, s
     : 'Some weeks are harder. Showing up is what counts.'
   const d = (k) => new Date(k + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
   const dn = (k) => new Date(k + 'T12:00').toLocaleDateString('en-GB', { weekday: 'short' })
-  const kg = w.saved > 0 ? w.saved / KCAL_PER_KG : 0
+  // the week's real deficit (what you burned minus what you ate) and what it means for your goal
+  const dd = (deficitDays({ entries: mine, profile, keys: w.bars.map((b) => b.k), todayKey: today }) ?? [])
+    .filter((x) => x.deficit != null && (x.key !== today || profile.days?.[today]?.closed))
+  const def = dd.reduce((a, x) => a + x.deficit, 0)
+  const kg = def > 0 ? def / KCAL_PER_KG : 0
+  const nowW = (() => { const ws = Object.entries(profile.days ?? {}).filter(([, v]) => +v?.weight > 0).sort(([a], [b]) => (a < b ? 1 : -1)); return ws.length ? +ws[0][1].weight : +profile.weight })()
+  const togo = profile.goal !== 'maintain' && +profile.targetWeight > 0 ? nowW - +profile.targetWeight : null
+  const perWeek = dd.length ? (def / dd.length) * 7 / KCAL_PER_KG : 0
+  const eta = togo > 0 && perWeek > 0.05 ? (() => { const t = new Date(); t.setDate(t.getDate() + Math.round((togo / perWeek) * 7)); return t.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) })() : null
   const pid = partner?.partners?.[0]
   const pname = pid ? partner.shares?.[pid]?.name : null
   const cheers = pid ? (partner.received?.[pid]?.log ?? []).filter((c) => c.at >= new Date(w.from + 'T00:00').getTime()).length : 0
@@ -266,11 +276,21 @@ export function WeeklyCard({ profile, mine, budgetFor, today, onClose, notify, s
         {covered.length > 0 && <p className="rc-shield">🌿 {covered.map(dn).join(' and ')} was a rest day, and your streak carried on</p>}
         <div className="rc-stats">
           {w.logged > 0 && <div><b className={w.saved >= 0 ? 'pos' : ''}>{fmt(Math.abs(w.saved))}</b><span>kcal {w.saved >= 0 ? 'saved' : 'over'}</span></div>}
-          {kg >= 0.05 && <div><b>≈ {kg.toFixed(1)} kg</b><span>of fat, gone</span></div>}
           {w.workouts > 0 && <div><b>{w.workouts}</b><span>workout{w.workouts > 1 ? 's' : ''}</span></div>}
           {pname && cheers > 0 ? <div><b>💌 {cheers}</b><span>cheers from {pname}</span></div>
             : w.habitPossible > 0 ? <div><b>{w.habitDone}<small>/{w.habitPossible}</small></b><span>habit ticks</span></div> : null}
         </div>
+        {dd.length > 0 && (
+          <div className="rc-deficit">
+            <p className="rcd-main"><span>🔥 Weekly deficit</span><b className={def >= 0 ? 'pos' : 'neg'}>{def >= 0 ? '' : '+'}{fmt(Math.abs(def))} kcal</b></p>
+            <p className="rcd-sub">{def > 0
+              ? <>≈ <b>{kg.toFixed(2)} kg of fat</b> over {dd.length} logged day{dd.length > 1 ? 's' : ''} (7,700 kcal ≈ 1 kg)</>
+              : <>You ate about what you burned over {dd.length} logged day{dd.length > 1 ? 's' : ''}, so your weight held steady.</>}</p>
+            {togo != null && (togo > 0
+              ? <p className="rcd-goal">🎯 {kg > 0 ? <>That’s <b>{Math.min(100, (kg / togo) * 100).toFixed(0)}%</b> of the {togo.toFixed(1)} kg to your goal of {profile.targetWeight} kg.</> : <>{togo.toFixed(1)} kg to your goal of {profile.targetWeight} kg.</>}{eta ? <> At this pace (≈ {perWeek.toFixed(2)} kg a week) you’d get there around <b>{eta}</b>.</> : ''}</p>
+              : <p className="rcd-goal">🎉 You’re at your goal weight. Maintenance mode might suit you now.</p>)}
+          </div>
+        )}
         {w.best && <p className="rc-best">⭐ Best day: {new Date(w.best.k + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long' })}, {fmt(w.best.net)} under budget</p>}
         {onClose && <div className="rc-btns"><button className="btn-primary" onClick={onClose}>Next week 💪</button></div>}
       </div>
