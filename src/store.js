@@ -87,14 +87,14 @@ export function useStore(user) {
   const addEntry = useCallback((e) => {
     const ref = doc(collection(db, 'users', uid, 'entries'))
     const now = new Date()
-    const entry = { ts: now.getTime(), day: e.day ?? dayKey(now), name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo ?? null }
+    const entry = { ts: now.getTime(), day: e.day ?? dayKey(now), name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo ?? null, ...(e.cat ? { cat: e.cat } : {}) }
     setDoc(ref, entry) // the local cache updates instantly; the cloud catches up when online
     return ref.id
   }, [uid])
 
   const removeEntry = useCallback((id) => { deleteDoc(doc(db, 'users', uid, 'entries', id)) }, [uid])
   const updateEntry = useCallback((id, patch) => {
-    const keep = Object.fromEntries(Object.entries(patch).filter(([k]) => ['name', 'kcal', 'meal', 'photo'].includes(k)))
+    const keep = Object.fromEntries(Object.entries(patch).filter(([k]) => ['name', 'kcal', 'meal', 'photo', 'cat'].includes(k)))
     setDoc(doc(db, 'users', uid, 'entries', id), keep, { merge: true })
   }, [uid])
 

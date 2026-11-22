@@ -1,4 +1,4 @@
-import { weekSummary, fmt, fmtSleep, sleepHours, SLEEP_TARGET, DEFAULT_BED, DEFAULT_WAKE } from '../calc'
+import { weekSummary, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET, DEFAULT_BED, DEFAULT_WAKE } from '../calc'
 import { GOOD_REFS, OVER_REFS, pick, useVerse } from '../quotes'
 import { BOUNCE_BACK, GOOD_DAY } from '../motivation'
 import { useEffect, useRef, useState } from 'react'
@@ -177,7 +177,7 @@ export function DayResult({ profile, budget, spent, earn, streakDays, today, onC
     <div className="sheet-wrap center" onClick={onClose}>
       <div className={`daily-card result ${good ? 'good' : 'over'}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Today's result">
         {good && <div className="confetti" aria-hidden="true">{Array.from({ length: 18 }, (_, i) => <i key={i} style={{ '--i': i }} />)}</div>}
-        <Character kind={profile.character} mood={good ? 'happy' : 'worried'} size={110} className="bob" />
+        <Character kind={profile.character} mood={good ? 'happy' : 'worried'} size={110} className="bob" acc={profile.accessory} />
         <h2>{good ? 'Good job!' : 'Not today, and that’s okay'}</h2>
         <p className="big-net">{good ? `+${fmt(net)}` : `−${fmt(-net)}`} <span>kcal {good ? 'saved' : 'over'}</span></p>
         {good ? (
@@ -230,44 +230,60 @@ export function WordsCard({ words, profile, updateProfile, notify, onReplay }) {
 }
 
 // Sunday: a calm look back at the week. Encouraging, never a report card.
-export function WeeklyCard({ profile, mine, budgetFor, today, onClose, notify, streakDays }) {
+export function WeeklyCard({ profile, mine, budgetFor, today, onClose, notify, streakDays, sInfo, partner }) {
   const w = weekSummary({ entries: mine, profile, budgetFor, todayKey: today })
   const [pic, setPic] = useState(false)
   if (w.logged === 0 && w.habitDone === 0 && w.workouts === 0) return null
-  const line = w.logged < 3 ? 'A lighter week of logging, and that’s okay. Each new week is a fresh page.'
-    : w.within >= 5 ? 'A strong, steady week. This is exactly how lasting change is built.'
+  const title = w.logged < 3 ? 'A quieter week' : w.within >= 5 ? 'What a week' : w.within >= 3 ? 'A good week' : 'You kept showing up'
+  const line = w.logged < 3 ? 'Each new week is a fresh page.'
+    : w.within >= 5 ? 'Steady days like these are how lasting change is built.'
     : w.within >= 3 ? 'More days on track than off. That’s real progress.'
-    : 'Some weeks are harder. You kept showing up, and that’s what counts.'
+    : 'Some weeks are harder. Showing up is what counts.'
   const d = (k) => new Date(k + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  const dn = (k) => new Date(k + 'T12:00').toLocaleDateString('en-GB', { weekday: 'short' })
+  const kg = w.saved > 0 ? w.saved / KCAL_PER_KG : 0
+  const pid = partner?.partners?.[0]
+  const pname = pid ? partner.shares?.[pid]?.name : null
+  const cheers = pid ? (partner.received?.[pid]?.log ?? []).filter((c) => c.at >= new Date(w.from + 'T00:00').getTime()).length : 0
+  const covered = (sInfo?.covered ?? []).filter((k) => k >= w.from && k <= w.to)
+  const top = Math.max(1, ...w.bars.map((b) => Math.abs(b.net ?? 0)))
   return (
     <section className="block">
-      <div className="block-head">
-        <h2 className="group-title">Your week</h2>
-        <span className="head-links">
-          <button className="link-btn" onClick={() => setPic(true)}>Share</button>
-          <button className="link-btn" onClick={onClose}>Hide</button>
-        </span>
-      </div>
       {pic && (
         <ShareSheet kind="week" title="Share my week" file="my-week.png" buddies={[profile.character]} notify={notify} onClose={() => setPic(false)}
           data={{ from: w.from, to: w.to, line, say: w.within >= 5 ? 'What a week!' : 'Still showing up!', stats: [
             w.logged > 0 && { emoji: '🎯', value: `${w.within}/${w.logged}`, label: 'days on budget' },
+            kg >= 0.05 && { emoji: '🔥', value: `≈ ${kg.toFixed(1)} kg`, label: 'of fat' },
             w.workouts > 0 && { emoji: '💪', value: String(w.workouts), label: w.workouts > 1 ? 'workouts' : 'workout' },
-            w.habitDone > 0 && { emoji: '✅', value: String(w.habitDone), label: 'habit ticks' },
             streakDays > 1 && { emoji: '🔥', value: String(streakDays), label: 'day streak' },
-            w.logged > 0 && { emoji: '📝', value: String(w.logged), label: w.logged > 1 ? 'days logged' : 'day logged' },
           ].filter(Boolean).slice(0, 4) }} />
       )}
-      <div className="card weekly">
-        <p className="wk-range">{d(w.from)} – {d(w.to)}</p>
-        <p className="wk-line">{line}</p>
-        <div className="wk-grid">
+      <div className="card recap">
+        <span className="rc-pill">🗓️ Your week · {d(w.from)} – {d(w.to)}</span>
+        <h3>{title}, {profile.name}!</h3>
+        <p className="rc-lead">{w.logged > 0 ? `${w.within} of ${w.logged} logged days on budget. ` : ''}{line}</p>
+        {covered.length > 0 && <p className="rc-shield">🧊 Your shield kept the streak safe on {covered.map(dn).join(' and ')}</p>}
+        <div className="rc-stats">
           {w.logged > 0 && <div><b className={w.saved >= 0 ? 'pos' : ''}>{fmt(Math.abs(w.saved))}</b><span>kcal {w.saved >= 0 ? 'saved' : 'over'}</span></div>}
-          {w.logged > 0 && <div><b>{w.within}<small>/{w.logged}</small></b><span>days within budget</span></div>}
-          {w.weightChange != null && <div><b>{w.weightChange > 0 ? '+' : w.weightChange < 0 ? '−' : ''}{Math.abs(w.weightChange).toFixed(1)}<small> kg</small></b><span>weight trend</span></div>}
-          {w.habitPossible > 0 && <div><b>{w.habitDone}<small>/{w.habitPossible}</small></b><span>habit ticks</span></div>}
+          {kg >= 0.05 && <div><b>≈ {kg.toFixed(1)} kg</b><span>of fat, gone</span></div>}
           {w.workouts > 0 && <div><b>{w.workouts}</b><span>workout{w.workouts > 1 ? 's' : ''}</span></div>}
-          {w.sleepAvg != null && <div><b>{fmtSleep(w.sleepAvg)}</b><span>average sleep</span></div>}
+          {pname && cheers > 0 ? <div><b>💌 {cheers}</b><span>cheers from {pname}</span></div>
+            : w.habitPossible > 0 ? <div><b>{w.habitDone}<small>/{w.habitPossible}</small></b><span>habit ticks</span></div> : null}
+        </div>
+        {w.logged > 1 && (
+          <div className="rc-bars" aria-label="Each day's balance this week">
+            {w.bars.map((b) => (
+              <div key={b.k} className="rc-bar">
+                <i className={b.net == null ? 'none' : b.k === w.best?.k ? 'best' : b.net < 0 ? 'over' : ''} style={{ height: b.net == null ? '8%' : `${Math.max(10, (Math.abs(b.net) / top) * 100)}%` }} />
+                <span>{dn(b.k)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {w.best && <p className="rc-best">⭐ Best day: {new Date(w.best.k + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long' })}, {fmt(w.best.net)} under budget</p>}
+        <div className="rc-btns">
+          <button className="btn-soft" onClick={() => setPic(true)}>Share</button>
+          <button className="btn-primary" onClick={onClose}>Next week 💪</button>
         </div>
       </div>
     </section>

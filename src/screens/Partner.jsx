@@ -73,8 +73,8 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0, stre
   const [shareNote, setShareNote] = useState(null) // { id, c }: a note you got, to share as a picture
   const [, bump] = useState(0)
   const list = partners.map((id) => [id, shares[id]]).filter(([, s]) => s)
-  // A soft chime the first time a new note shows up (once per note, not on every open)
-  const newest = Math.max(0, ...partners.map((id) => { const c = received[id]; return c?.msg && c.msg !== '👏' && c.msg !== 'Loved your note' && Date.now() - c.at < 3 * 864e5 ? c.at : 0 }))
+  // A chime the first time a new cheer or note shows up (once each, not on every open)
+  const newest = Math.max(0, ...partners.map((id) => { const c = received[id]; return c?.msg && Date.now() - c.at < 3 * 864e5 ? c.at : 0 }))
   useEffect(() => {
     if (!newest) return
     const k = `bankcal:note-chime:${myId}`
@@ -90,7 +90,6 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0, stre
   const team = habitsAll > 0 ? { target: habitsAll * 5, ticks: myTicks + list.reduce((a, [, s]) => a + (s.weekTicks ?? 0), 0) } : null
   if (team) team.done = team.ticks >= team.target
   const send = async (id, name, msg = '👏', sticker = '') => {
-    play(msg === '👏' ? 'cheer' : msg === 'Loved your note' ? 'love' : 'send') // straight away, so the tap feels answered
     try {
       await cheer(id, msg, sticker)
       setJustSent(id); setTimeout(() => setJustSent((x) => (x === id ? null : x)), 1800)
@@ -142,7 +141,7 @@ export function PartnerCard({ partner, today, notify, profile, myTicks = 0, stre
           return (
             <div className={`partner theme-${s.theme}`} key={id}>
               <button className="p-open" onClick={() => setOpen(id)} aria-label={`See ${s.name}’s progress`}>
-                <Character kind={s.character} mood={fresh ? 'happy' : 'calm'} size={46} />
+                <Character kind={s.character} mood={fresh ? 'happy' : 'calm'} size={46} acc={s.acc} />
                 <span className="p-main">
                   <b>{s.name}</b>
                   <small>{bits.length ? bits.join(' · ') : fresh ? 'Starting the day' : 'Hasn’t opened BankCal yet today'}</small>
@@ -269,11 +268,13 @@ function PartnerSheet({ onShareNote, s, sent, got, info, team, myTicks, me, repl
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
         <div className="sheet-head">
           <div className="psh-who">
-            <Character kind={s.character} mood="happy" size={56} />
+            <Character kind={s.character} mood="happy" size={56} acc={s.acc} />
             <div><p className="muted">{info.fresh ? 'Active today' : 'Not in yet today'}</p><h2>{s.name}</h2></div>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
         </div>
+
+        {info.fresh && s.wins?.length > 0 && <Kudos s={s} onCheer={onCheer} />}
 
         <div className="cheer-ideas">
           <div className="ci-head"><b>Make {s.name}’s day</b></div>
@@ -415,5 +416,37 @@ export function PartnerSettings({ partner, profile, updateProfile }) {
       </div>
       <p className="fine">Partners always see your streak, habits ticked, whether you moved today, and how many of the last 7 days were on budget. Plus your saved foods and workouts if that’s ticked. Never your daily calories, what you ate, actual weight or journal.</p>
     </>
+  )
+}
+
+// One-tap reactions on your partner's wins today. Each sends a little cheer (they hear a chime).
+const REACTS = ['👏', '❤️', '🔥']
+function Kudos({ s, onCheer }) {
+  const key = `bankcal:kudos:${s.uid ?? s.name}:${s.day}`
+  const [given, setGiven] = useState(() => { try { return JSON.parse(localStorage.getItem(key) || '{}') } catch { return {} } })
+  const give = (w, r) => {
+    if (given[w.id] === r) return
+    const next = { ...given, [w.id]: r }
+    setGiven(next)
+    try { localStorage.setItem(key, JSON.stringify(next)) } catch { /* ignore */ }
+    try { navigator.vibrate?.(8) } catch { /* ignore */ }
+    onCheer(`${r} ${w.t}`, r)
+  }
+  return (
+    <section className="kudos">
+      <p className="kd-head"><b>{s.name}’s wins today</b><small>Tap to react. They’ll hear it.</small></p>
+      <div className="card kd-list">
+        {s.wins.map((w) => (
+          <div key={w.id} className="kd-row">
+            <span className="kd-e" aria-hidden="true">{w.e}</span>
+            <span className="kd-t">{w.t}</span>
+            <span className="kd-btns">
+              {REACTS.map((r) => <button key={r} className={given[w.id] === r ? 'on' : ''} aria-pressed={given[w.id] === r} aria-label={`React ${r} to ${w.t}`} onClick={() => give(w, r)}>{r}</button>)}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="kd-note">Only wins show here, never what they ate or their weight.</p>
+    </section>
   )
 }

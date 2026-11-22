@@ -13,7 +13,7 @@ import { applyUpdate, onUpdateReady } from './update'
 import { myWorkouts, partnerWorkouts } from './training'
 
 const DEMO = import.meta.env.MODE === 'demo'
-import { vacationOn, partnerProgress, dailyBudget, dayKey, earned, fmt, isBedtime, isBirthday, isWindDown, logicalDayKey, streak, workoutKcal, WORKOUTS } from './calc'
+import { vacationOn, partnerProgress, dailyBudget, dayKey, earned, fmt, isBedtime, isBirthday, isWindDown, logicalDayKey, streak, streakInfo, describeWorkout, DEFAULT_BED, workoutKcal, WORKOUTS } from './calc'
 import { useDailyWords } from './quotes'
 import { MorningCard, DayResult, WelcomeBack } from './screens/DailyCards'
 import Today from './screens/Today'
@@ -24,7 +24,7 @@ import { usePartners, usualFoods } from './partner'
 import { MILESTONES, reached } from './milestones'
 import { oneThing, weekTicks } from './habits'
 import { PLANS } from './training'
-import Character from './Character'
+import Character, { ACCESSORIES } from './Character'
 import AddSheet from './screens/AddSheet'
 import SignIn from './screens/SignIn'
 import Onboarding from './screens/Onboarding'
@@ -160,18 +160,19 @@ function Bank({ user }) {
   const cheerQueue = useRef([])
   const [msShare, setMsShare] = useState(null) // a milestone to share, from the pop-up
   const showNext = useRef(null)
-  const celebrate = useCallback((text, share = null) => {
+  // sound only for the moments that matter most: all habits done, day closed on budget, a cheer received
+  const celebrate = useCallback((text, share = null, sound = false) => {
     // one at a time: a second celebration waits for the first to finish
     const show = () => {
       const next = cheerQueue.current[0]
       if (!next) { setCheer(null); return }
       try { navigator.vibrate?.([12, 40, 12]) } catch { /* not allowed yet */ }
-      play('win')
+      if (next.sound) play('win')
       setCheer({ ...next, key: Date.now() })
       cheerTimer.current = setTimeout(() => { cheerQueue.current.shift(); show() }, next.share ? 6000 : 3200)
     }
     showNext.current = show
-    cheerQueue.current.push({ text, share })
+    cheerQueue.current.push({ text, share, sound })
     if (cheerQueue.current.length === 1) show()
   }, [])
   // swipe or tap a pop-up away: the next one (if any) comes straight after
@@ -190,7 +191,6 @@ function Bank({ user }) {
     receiptTimer.current = setTimeout(() => setReceiptMsg(null), 4500)
     if (id) { setFresh(id); setTimeout(() => setFresh((f) => (f === id ? null : f)), 2200) }
     try { navigator.vibrate?.(kind === 'spend' ? 12 : [10, 40, 10]) } catch { /* not allowed yet */ }
-    if (kind === 'spend') play('pop'); else if (kcal > 0) play('coin')
   }
   const budgetRef = useRef(null)
   const notify = (text, undo) => {
@@ -226,14 +226,43 @@ function Bank({ user }) {
   budgetRef.current = budget != null ? budget - spent : null
   const closed = !!dayLog.closed
   const isBreak = (k) => !!pf.days?.[k]?.vac
-  const streakDays = streak(entries, budgetFor, today, closed, isBreak)
+  const sInfo = streakInfo(entries, budgetFor, today, closed, isBreak)
+  const streakDays = sInfo.days
   const yKey = (() => { const [y, m, d] = today.split('-').map(Number); return dayKey(new Date(y, m - 1, d - 1)) })()
   const yEntries = entries.filter((e) => e.day === yKey)
   const yesterday = yEntries.length && budgetFor(yKey) != null ? { net: budgetFor(yKey) - yEntries.reduce((a, e) => a + e.kcal, 0) } : null
-  const closeDay = () => { if (budget != null && spent - budget <= 0) store.setDay(today, { closed: true }); setResult(true) }
+  // Log a food for today; the same food again in the same meal bumps that line's quantity instead
+  const logFood = (e) => {
+    const base = (nm) => String(nm).replace(/\s×\d+$/, '')
+    const q = (nm) => +(String(nm).match(/\s×(\d+)$/)?.[1] ?? 1)
+    const same = !e.photo && todays.find((x) => x.meal === e.meal && base(x.name).toLowerCase() === e.name.toLowerCase() && Math.round(x.kcal / q(x.name)) === e.kcal)
+    if (same) {
+      const n = q(same.name) + 1
+      store.updateEntry(same.id, { name: `${base(same.name)} ×${n}`, kcal: same.kcal + e.kcal })
+      receipt({ kind: 'spend', what: `${base(same.name)} ×${n}`, kcal: e.kcal, id: same.id, undo: () => store.updateEntry(same.id, { name: same.name, kcal: same.kcal }) })
+      return
+    }
+    const id = store.addEntry({ ...e, day: today })
+    receipt({ kind: 'spend', what: e.name, kcal: e.kcal, id, undo: () => store.removeEntry(id) })
+  }
+  const closeDay = () => { if (budget != null && spent - budget <= 0) { store.setDay(today, { closed: true }); play('win') } setResult(true) }
   const livePartner = usePartners({
     enabled: !DEMO, uid: user.uid, profile, updateProfile: store.updateProfile, notify, celebrate, usual: usualFoods(entries),
-    summary: { day: today, streak: streakDays, habitsDone: (pf.habits ?? []).filter((id) => dayLog.habits?.[id]).length, habitsTotal: (pf.habits ?? []).length, moved: earn.total > 0, logged: todays.length > 0, weekTicks: weekTicks(pf, today), vacation: vacationOn(pf, today) ? { start: pf.vacation.start, end: pf.vacation.end ?? null, together: !!pf.vacation.together } : null, kgChange: null, goalPct: null, ...partnerProgress({ entries, profile: pf, budgetFor, todayKey: today }) },
+    summary: { day: today, streak: streakDays, habitsDone: (pf.habits ?? []).filter((id) => dayLog.habits?.[id]).length, habitsTotal: (pf.habits ?? []).length, moved: earn.total > 0, logged: todays.length > 0, weekTicks: weekTicks(pf, today), acc: pf.accessory ?? null,
+      // gentle reminders: what the server needs to decide if one is due (times and flags only)
+      remind: pf.remindMeal || pf.remindClose ? {
+        meal: !!pf.remindMeal, close: !!pf.remindClose, tz: Intl.DateTimeFormat().resolvedOptions().timeZone, bed: pf.bedTime || DEFAULT_BED, name: pf.name,
+        left: budget != null ? Math.round(budget - spent) : null, lastFood: todays.length ? Math.max(...todays.map((e) => e.ts || 0)) : null,
+        loggedDay: todays.length ? today : null, closed: dayLog.closed ? today : null,
+      } : { meal: false, close: false },
+      // today's wins for your partner to react to: names only, never food or weight
+      wins: [
+        ...(dayLog.workouts ?? []).slice(0, 4).map((w) => ({ id: `w-${w.id}`, e: '💪', t: [w.label || WORKOUTS.find((x) => x.id === w.type)?.label, describeWorkout(w)].filter(Boolean).join(' · ') })),
+        ...((+dayLog.steps || 0) >= (+pf.stepsGoal || 8000) ? [{ id: 'steps', e: '🚶', t: `Hit ${fmt(+dayLog.steps)} steps` }] : []),
+        ...((pf.habits ?? []).length > 0 && (pf.habits ?? []).every((id) => dayLog.habits?.[id]) ? [{ id: 'habits', e: '✅', t: 'All habits done' }] : []),
+        ...(dayLog.closed ? [{ id: 'closed', e: '🎯', t: 'Closed the day on budget' }] : []),
+        ...(streakDays >= 3 ? [{ id: `streak-${streakDays}`, e: '🔥', t: `${streakDays} days on budget` }] : []),
+      ], vacation: vacationOn(pf, today) ? { start: pf.vacation.start, end: pf.vacation.end ?? null, together: !!pf.vacation.together } : null, kgChange: null, goalPct: null, ...partnerProgress({ entries, profile: pf, budgetFor, todayKey: today }) },
   })
   const partner = DEMO && location.search.includes('partner') ? demoPartner(today) : livePartner
 
@@ -246,12 +275,24 @@ function Bank({ user }) {
     const m = MILESTONES.find((x) => x.id === newIds[0])
     celebrate(newIds.length > 1 ? `${newIds.length} milestones reached! ${m.emoji}` : `Milestone: ${m.label} ${m.emoji}`, m)
   }, [newIds.join(','), showM, hello]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Best-ever streak unlocks buddy accessories (kept forever); the newest one goes straight on
+  useEffect(() => {
+    if (!profile?.onboarded || hello || showM) return
+    const old = pf.bestStreak ?? 0
+    if (streakDays <= old) return
+    const fresh = ACCESSORIES.filter((a) => a.at > old && a.at <= streakDays)
+    store.updateProfile({ bestStreak: streakDays, ...(fresh.length ? { accessory: fresh.at(-1).id } : {}) })
+    if (fresh.length) {
+      const a = fresh.at(-1), next = ACCESSORIES.find((x) => x.at > streakDays)
+      celebrate(`${streakDays} days on budget! Your buddy earned ${a.label} ${a.e}${next ? ` Next: ${next.label} at ${next.at} days.` : ''}`)
+    }
+  }, [streakDays, hello, showM]) // eslint-disable-line react-hooks/exhaustive-deps
   const focus = profile?.onboarded ? oneThing({ profile: pf, todayKey: today, yesterday, plans: PLANS }) : null
 
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const ctx = { ...store, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setReplay(true), goSetup: (section) => {
+  const ctx = { ...store, sInfo, logFood, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, openWords: () => setReplay(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }
@@ -311,7 +352,7 @@ function Bank({ user }) {
             <span className="bc-bubble">{cheer.text}
               {cheer.share && <button className="bc-share" onClick={() => setMsShare(cheer.share)}>Share it</button>}
             </span>
-            <Character kind={profile.character} mood="happy" size={84} />
+            <Character kind={profile.character} mood="happy" size={84} acc={profile.accessory} />
           </Swipeable>
         </div>
       )}
@@ -368,20 +409,7 @@ function Bank({ user }) {
               setAdding(false)
               return
             }
-            // the same food again in the same meal today: bump that line's quantity instead
-            const base = (nm) => String(nm).replace(/\s×\d+$/, '')
-            const q = (nm) => +(String(nm).match(/\s×(\d+)$/)?.[1] ?? 1)
-            const same = !e.photo && todays.find((x) => x.meal === e.meal && base(x.name).toLowerCase() === e.name.toLowerCase() && Math.round(x.kcal / q(x.name)) === e.kcal)
-            if (same) {
-              const n = q(same.name) + 1
-              store.updateEntry(same.id, { name: `${base(same.name)} ×${n}`, kcal: same.kcal + e.kcal })
-              receipt({ kind: 'spend', what: `${base(same.name)} ×${n}`, kcal: e.kcal, id: same.id, undo: () => store.updateEntry(same.id, { name: same.name, kcal: same.kcal }) })
-              setAdding(false)
-              setTab('today')
-              return
-            }
-            const id = store.addEntry({ ...e, day: today })
-            receipt({ kind: 'spend', what: e.name, kcal: e.kcal, id, undo: () => store.removeEntry(id) })
+            logFood(e)
             setAdding(false)
             setTab('today')
           }}

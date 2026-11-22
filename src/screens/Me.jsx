@@ -1,6 +1,6 @@
 import { useEffect, useState, Children, cloneElement, isValidElement } from 'react'
 import { maintainStatus, targetCheck, KCAL_PER_KG, ageOf, DEFAULT_BED, DEFAULT_WAKE, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
-import Character from '../Character'
+import Character, { ACCESSORIES } from '../Character'
 import { HabitPicker } from './Habits'
 import { BUILD, VERSION } from '../update'
 import { lastLookup } from '../ai'
@@ -83,7 +83,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
       </nav>
 
       <section className="card account">
-        <Character kind={p.character} mood="happy" size={58} />
+        <Character kind={p.character} mood="happy" size={58} acc={p.accessory} />
         <div>
           <input className="name-in" value={p.name} maxLength={24} onChange={(e) => set({ name: e.target.value })} aria-label="Your name in the app" />
           <small>Tap your name to change it</small>
@@ -214,6 +214,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
         </label>
         {openWords && <button className="line link-line" onClick={openWords}>Show it now</button>}
         <SoundLine />
+        <RemindLines p={p} set={set} push={partner?.push} notify={notify} />
       </div>
       <p className="fine">A new day starts at midnight. If the morning welcome is on, it greets you the first time you open the app that day. An hour before bed, “Close my day” appears, and at bedtime BankCal offers to close it for you. Anything eaten after midnight counts toward the new day.</p>
 
@@ -223,6 +224,16 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
 
       <h2 className="group-title" id="buddy">Buddy</h2>
       <div className="card buddy-card"><BuddyGrid value={p.character} onChange={(id) => set({ character: id })} /></div>
+      <div className="card acc-card">
+        <p className="acc-title">Accessories<small>Earned with your best streak ({p.bestStreak ?? 0} days). Yours to keep.</small></p>
+        <div className="acc-row">
+          <button className={!p.accessory ? 'on' : ''} onClick={() => set({ accessory: null })} aria-pressed={!p.accessory}>None</button>
+          {ACCESSORIES.map((a) => {
+            const got = (p.bestStreak ?? 0) >= a.at
+            return <button key={a.id} disabled={!got} className={p.accessory === a.id ? 'on' : ''} aria-pressed={p.accessory === a.id} onClick={() => set({ accessory: a.id })} aria-label={got ? a.label : `${a.label}, unlocks at ${a.at} days`}><span>{a.e}</span><small>{got ? '' : `${a.at} d`}</small></button>
+          })}
+        </div>
+      </div>
 
       <h2 className="group-title" id="look">Look and feel</h2>
       <div className="card form-list">
@@ -373,11 +384,38 @@ function SoundLine() {
   return (
     <>
       <label className="line toggle-line">
-        <span className="line-label">Sounds<small>Cheers, notes, milestones, deposits and habits</small></span>
+        <span className="line-label">Sounds<small>When all habits are done, your day closes on budget, or a cheer arrives</small></span>
         <input type="checkbox" className="switch" checked={on} onChange={(e) => { setOn(e.target.checked); setSoundOn(e.target.checked) }} />
       </label>
       {on && <button className="line link-line" onClick={test}>🔊 Play a sound</button>}
       {on && res && <p className="line-status" role="status">{res}</p>}
+    </>
+  )
+}
+
+// Gentle reminders: phone notifications, only when useful, never more than two a day
+function RemindLines({ p, set, push, notify }) {
+  const [busy, setBusy] = useState(false)
+  const flip = async (key, v) => {
+    if (v && push && !push.on) {
+      setBusy(true)
+      try { await push.turnOn() } catch (e) { notify?.(e.message || 'Couldn’t turn on notifications.'); setBusy(false); return }
+      setBusy(false)
+    }
+    set({ [key]: v })
+    if (v) notify?.(key === 'remindMeal' ? 'Meal reminders on. Only when nothing’s logged yet.' : 'Close-my-day reminder on, at your bedtime.')
+  }
+  return (
+    <>
+      <label className="line toggle-line">
+        <span className="line-label">🍽️ Meal reminders<small>Around 12:30 and 19:30, only if nothing was logged in the last 3 hours</small></span>
+        <input type="checkbox" className="switch" disabled={busy} checked={!!p.remindMeal} onChange={(e) => flip('remindMeal', e.target.checked)} />
+      </label>
+      <label className="line toggle-line">
+        <span className="line-label">🌙 Close my day<small>At bedtime, if you logged food and haven’t closed the day</small></span>
+        <input type="checkbox" className="switch" disabled={busy} checked={!!p.remindClose} onChange={(e) => flip('remindClose', e.target.checked)} />
+      </label>
+      {(p.remindMeal || p.remindClose) && push && !push.supported && <p className="line-status">Open BankCal from your Home Screen so reminders can reach this phone.</p>}
     </>
   )
 }

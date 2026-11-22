@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react'
-import { play } from '../sound'
 import { HABITS, JOURNAL_PROMPTS, MOODS, WINS, dayMoments, habitById, habitDays, journalStarters, suggestHabits } from '../habits'
 import { describeWorkout, sleepHours, WORKOUTS } from '../calc'
 import { IconClose } from '../icons'
@@ -39,7 +38,7 @@ export function HabitsCard({ profile, updateProfile, dayLog, setDay, today, goSe
           const two = habitDays(profile.days, id, today, 14).filter(Boolean).length
           const on = !!done[id]
           return (
-            <button key={id} className={`habit ${on ? 'on' : ''}`} onClick={() => { setDay(today, { habits: { ...done, [id]: !on } }); if (!on) play('tick'); if (!on && mine.length > 1 && mine.every((x) => x === id || done[x])) celebrate?.('All your habits done today! 🎉') }} aria-pressed={on}>
+            <button key={id} className={`habit ${on ? 'on' : ''}`} onClick={() => { setDay(today, { habits: { ...done, [id]: !on } }); if (!on && mine.every((x) => x === id || done[x])) celebrate?.('All your habits done today! 🎉', null, true) }} aria-pressed={on}>
               <span className="h-emoji">{h.emoji}</span>
               <span className="h-main">
                 <b>{h.label}</b>

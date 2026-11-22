@@ -1,0 +1,13 @@
+# Gentle reminders: asks BankCal every 30 minutes whether anyone's reminder is due.
+# The server decides and never sends the same reminder twice a day, so this is safe to run often.
+name: reminders
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: curl -fsS --max-time 60 https://bankcal.vercel.app/api/remind || true

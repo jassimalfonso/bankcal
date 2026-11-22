@@ -49,3 +49,40 @@ test('food types are guessed from the name, and your fix wins', () => {
   assert.equal(catOf({ name: 'Black coffee' }, { 'black coffee': 'snack' }), 'snack')
   assert.equal(catOf({ name: 'Mystery', cat: 'drink' }), 'drink')
 })
+
+import { usualFor } from '../src/calc.js'
+test('your usual: most logged for this meal, not already eaten today', () => {
+  const e = [
+    { name: 'Black coffee ×2', kcal: 10, meal: 'Breakfast', day: '2026-11-20' },
+    { name: 'Black coffee', kcal: 5, meal: 'Breakfast', day: '2026-11-19' },
+    { name: 'Oats', kcal: 330, meal: 'Breakfast', day: '2026-11-19' },
+  ]
+  assert.deepEqual(usualFor(e, 'Breakfast', '2026-11-22', []), { name: 'Black coffee', kcal: 5, cat: undefined, meal: 'Breakfast', times: 2 })
+  assert.equal(usualFor(e, 'Breakfast', '2026-11-22', [{ name: 'Black coffee', meal: 'Breakfast' }]), null)
+  assert.equal(usualFor(e, 'Lunch', '2026-11-22', []), null)
+})
+
+import { streakInfo } from '../src/calc.js'
+test('a shield covers one bad day after 7 good ones', () => {
+  const days = ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08', '2026-11-10', '2026-11-11']
+  const entries = days.map((day) => ({ day, kcal: 1000 }))
+  const r = streakInfo(entries, () => 2000, '2026-11-11', true)
+  assert.equal(r.days, 10)
+  assert.deepEqual(r.covered, ['2026-11-09'])
+  assert.equal(r.shields, 0)
+  const noShield = streakInfo(entries.slice(3), () => 2000, '2026-11-11', true)
+  assert.equal(noShield.days, 2)
+})
+
+import { dueFor } from '../api/remind.js'
+test('reminders: lunch only if nothing logged lately, close day only once at bedtime', () => {
+  const at = (hhmm) => new Date(`2026-11-22T${hhmm}:00+04:00`)
+  const r = { meal: true, close: true, tz: 'Asia/Dubai', name: 'FM', bed: '23:30', left: 500 }
+  assert.equal(dueFor(r, at('12:40')).slot, 'lunch')
+  assert.equal(dueFor({ ...r, lastFood: at('11:00').getTime() }, at('12:40')), null)
+  assert.equal(dueFor({ ...r, sent: { lunch: '2026-11-22' } }, at('12:45')), null)
+  assert.equal(dueFor(r, at('15:00')), null)
+  assert.equal(dueFor({ ...r, loggedDay: '2026-11-22' }, at('23:35')).slot, 'close')
+  assert.equal(dueFor({ ...r, loggedDay: '2026-11-22', closed: '2026-11-22' }, at('23:35')), null)
+  assert.equal(dueFor({ ...r, meal: false }, at('12:40')), null)
+})

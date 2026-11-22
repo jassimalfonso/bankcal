@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { foodEmoji } from '../foodCats'
 import { VacationBanner, JoinVacation } from './Breaks'
 import { useCountUp, useSwipe } from '../motion'
-import { breakdown, fmt, KCAL_PER_KG } from '../calc'
+import { breakdown, fmt, KCAL_PER_KG, mealFor, usualFor } from '../calc'
+import { foodEmoji } from '../foodCats'
 import Character, { moodFor } from '../Character'
 import { missingFor } from '../calc'
 import { SECTION_ICONS, SECTION_NAMES, fullLayout } from '../layout'
@@ -79,19 +79,20 @@ export default function Today(props) {
     <>
       <header className="large-title">
         <div>
-          <p className="date">{date}{streakDays > 0 && <span className="streak-chip">🔥 {streakDays}</span>}</p>
-          <h1>Hi, {profile.name}</h1>
+          <p className="date">{date}{streakDays > 0 && <span className="streak-chip">🔥 {streakDays}</span>}{props.sInfo?.shields > 0 && <span className="streak-chip shield" title="Streak shields">🧊 {props.sInfo.shields}</span>}</p>
+          <h1>{(() => { const h = new Date().getHours(); return h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 17 ? 'Good afternoon' : h >= 17 && h < 22 ? 'Good evening' : 'Hi' })()}, {profile.name}</h1>
         </div>
         <button className="char-btn" onClick={goSetup} aria-label="Settings">
-          <Character kind={profile.character} mood={mood} size={44} />
+          <Character kind={profile.character} mood={mood} size={44} acc={profile.accessory} />
         </button>
       </header>
 
+      <ShieldNote {...props} />
       <VacationBanner {...props} spentOver={(() => { const b = breakdown(profile); return b ? Math.round(spent - b.tdee - earn.total) : 0 })()} />
       <JoinVacation {...props} />
       <section className={`card hero ${over ? 'is-over' : ''}`}>
         <Ring value={budget ? (over ? 1 : left / budget) : 0}>
-          <span className="munch" key={todays.length}><Character kind={profile.character} mood={mood} size={112} className="bob" /></span>
+          <span className="munch" key={todays.length}><Character kind={profile.character} mood={mood} size={112} className="bob" acc={profile.accessory} /></span>
         </Ring>
 
         {budget == null ? (
@@ -139,7 +140,7 @@ export default function Today(props) {
       </section>
 
 
-      {showWeek && <WeeklyCard {...props} onClose={hideWeek} notify={props.notify} streakDays={props.streakDays} />}
+      {showWeek && <WeeklyCard {...props} onClose={hideWeek} />}
       <CardStack order={fullLayout(profile.layout2)} names={SECTION_NAMES} icons={SECTION_ICONS} arranging={arranging} setArranging={setArranging}
         onChange={(layout2) => props.updateProfile({ layout2 })} render={(id) => {
         if (id === 'words') return <WordsCard key="words" words={words} profile={profile} updateProfile={props.updateProfile} notify={props.notify} onReplay={openWords} />
@@ -165,6 +166,7 @@ export default function Today(props) {
         if (id === 'meals') return (
           <section key="meals" className="block">
             <h2 className="group-title">Meals</h2>
+            <UsualCard {...props} />
             {todays.length === 0 ? (
               <div className="card empty">
                 <p>No meals yet today.</p>
@@ -208,5 +210,36 @@ export function Row({ e, onDelete, onEdit, fresh, cats }) {
         <span className="row-kcal">{fmt(e.kcal)}<small> kcal</small></span>
       </div>
     </li>
+  )
+}
+
+// "Your usual": the food you log most at this time of day, one tap to add
+function UsualCard({ mine, todays, today, logFood, profile }) {
+  const [gone, setGone] = useState(null)
+  const meal = mealFor()
+  const u = usualFor(mine, meal, today, todays)
+  if (!u || !logFood || gone === u.name) return null
+  return (
+    <div className="card usual-card">
+      <span className="uc-e" aria-hidden="true">{foodEmoji(u, profile?.foodCats)}</span>
+      <span className="uc-t"><b>{u.name}</b><small>Your usual {meal.toLowerCase()} · {fmt(u.kcal)} kcal</small></span>
+      <button className="uc-add" onClick={() => { logFood({ name: u.name, kcal: u.kcal, meal, ...(u.cat ? { cat: u.cat } : {}) }); setGone(u.name) }} aria-label={`Add ${u.name}, ${fmt(u.kcal)} kcal`}>+ Add</button>
+    </div>
+  )
+}
+
+// A shield just saved the streak: say so once, gently
+function ShieldNote({ sInfo, today }) {
+  const day = sInfo?.covered?.at(-1)
+  const k = `bankcal:shield-seen:${day}`
+  const [hide, setHide] = useState(() => { try { return !!localStorage.getItem(k) } catch { return false } })
+  if (!day || hide) return null
+  const close = () => { try { localStorage.setItem(k, '1') } catch { /* ignore */ } setHide(true) }
+  const when = (() => { const d = Math.round((new Date(today + 'T12:00') - new Date(day + 'T12:00')) / 864e5); return d === 1 ? 'yesterday' : new Date(day + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long' }) })()
+  return (
+    <button className="card shield-note" onClick={close}>
+      <span aria-hidden="true">🧊</span>
+      <span><b>Your shield covered {when}</b><small>Streak safe at {sInfo.days} days. Earn a shield every 7 days on budget. Tap to hide.</small></span>
+    </button>
   )
 }

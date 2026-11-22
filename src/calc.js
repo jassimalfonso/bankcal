@@ -272,21 +272,36 @@ export function recommendDates(currentKg, targetKg, from = new Date()) {
 }
 
 // ───────── Streak: days in a row within budget (before today, plus today once closed) ─────────
-export function streak(entries, budgetFor, todayKey, includeToday, isBreak) {
+// Streak with shields 🧊: every 7 days on budget earns a shield (you hold up to 2). A day over budget
+// or not logged uses a shield instead of ending the streak. Vacation days pause it.
+export const SHIELD_EVERY = 7, SHIELD_MAX = 2
+export function streakInfo(entries, budgetFor, todayKey, includeToday, isBreak) {
   const byDay = {}
   for (const e of entries) byDay[e.day] = (byDay[e.day] || 0) + e.kcal
-  let n = 0
-  const d = parseDay(todayKey)
-  if (!includeToday) d.setDate(d.getDate() - 1)
-  for (let i = 0; i < 365; i++) {
+  const first = Object.keys(byDay).sort()[0]
+  const out = { days: 0, shields: 0, covered: [], next: SHIELD_EVERY, earnedOn: null }
+  if (!first) return out
+  const end = parseDay(todayKey)
+  if (!includeToday) end.setDate(end.getDate() - 1)
+  const d = parseDay(first)
+  const start = new Date(end); start.setDate(start.getDate() - 365)
+  if (d < start) d.setTime(start.getTime())
+  let n = 0, shields = 0, covered = [], sinceShield = 0, earnedOn = null
+  for (; d <= end; d.setDate(d.getDate() + 1)) {
     const k = dayKey(d)
-    if (isBreak?.(k)) { d.setDate(d.getDate() - 1); continue } // vacation days pause the streak, they don't break it
+    if (isBreak?.(k)) continue
     const b = budgetFor(k)
-    if (!(k in byDay) || b == null || byDay[k] > b) break
-    n++
-    d.setDate(d.getDate() - 1)
+    const good = k in byDay && b != null && byDay[k] <= b
+    if (good) {
+      n++; sinceShield++
+      if (sinceShield >= SHIELD_EVERY) { sinceShield = 0; if (shields < SHIELD_MAX) { shields++; earnedOn = k } }
+    } else if (n > 0 && shields > 0) { shields--; covered.push(k) }
+    else { n = 0; sinceShield = 0; covered = []; earnedOn = null }
   }
-  return n
+  return { days: n, shields, covered, next: SHIELD_EVERY - sinceShield, earnedOn }
+}
+export function streak(entries, budgetFor, todayKey, includeToday, isBreak) {
+  return streakInfo(entries, budgetFor, todayKey, includeToday, isBreak).days
 }
 
 // ───────── Your day: wake-up and bedtime ─────────
@@ -383,14 +398,17 @@ export function weekSummary({ entries, profile, budgetFor, todayKey }) {
   const keys = Array.from({ length: 7 }, (_, i) => addDays(todayKey, i - 7))
   const days = profile.days ?? {}
   let logged = 0, within = 0, saved = 0, workouts = 0, sleepSum = 0, sleepN = 0, habitDone = 0
+  const bars = []
   for (const k of keys) {
     const items = entries.filter((e) => e.day === k)
+    let net = null
     if (items.length) {
       logged++
-      const net = (budgetFor(k) ?? 0) - items.reduce((a, e) => a + e.kcal, 0)
+      net = (budgetFor(k) ?? 0) - items.reduce((a, e) => a + e.kcal, 0)
       saved += net
       if (net >= 0) within++
     }
+    bars.push({ k, net, vac: !!days[k]?.vac })
     workouts += days[k]?.workouts?.length ?? 0
     const sh = sleepHours(days[k]?.sleep)
     if (sh != null) { sleepSum += sh; sleepN++ }
@@ -404,6 +422,7 @@ export function weekSummary({ entries, profile, budgetFor, todayKey }) {
     from: keys[0], to: keys[6], logged, within, saved: Math.round(saved), workouts,
     sleepAvg: sleepN ? sleepSum / sleepN : null, weightChange,
     habitDone, habitPossible: (profile.habits ?? []).length * 7,
+    bars, best: bars.filter((b) => b.net != null && b.net >= 0).sort((a, b) => b.net - a.net)[0] ?? null,
   }
 }
 
@@ -603,3 +622,23 @@ export function usualFoods(entries, limit = 60) {
   return out
 }
 
+
+// "Your usual": the food you log most for this meal (last 30 days, at least twice),
+// as one serving, unless it's already logged in this meal today.
+export function usualFor(entries, meal, todayKey, todays = []) {
+  const from = dayKey(new Date(parseDay(todayKey).getTime() - 30 * 864e5))
+  const strip = (n) => String(n ?? '').replace(/\s×(½|1½|\d+)$/, '').trim()
+  const qty = (n) => { const m = /\s×(½|1½|\d+)$/.exec(String(n ?? '')); return m ? ({ '½': 0.5, '1½': 1.5 })[m[1]] ?? +m[1] : 1 }
+  const tally = new Map()
+  for (const e of entries ?? []) {
+    if (e.meal !== meal || !e.day || e.day < from || e.day >= todayKey || e.photo) continue
+    const name = strip(e.name), k = name.toLowerCase()
+    if (!name) continue
+    const t = tally.get(k) ?? { name, kcal: Math.round(e.kcal / (qty(e.name) || 1)), cat: e.cat, n: 0, days: new Set() }
+    t.days.add(e.day); t.n = t.days.size
+    tally.set(k, t)
+  }
+  const done = new Set(todays.filter((e) => e.meal === meal).map((e) => strip(e.name).toLowerCase()))
+  const best = [...tally.values()].filter((t) => t.n >= 2 && !done.has(t.name.toLowerCase())).sort((a, b) => b.n - a.n)[0]
+  return best ? { name: best.name, kcal: best.kcal, cat: best.cat, meal, times: best.n } : null
+}
