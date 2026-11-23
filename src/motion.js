@@ -25,8 +25,8 @@ export function useCountUp(value, ms = 650) {
   return shown
 }
 
-// Swipe a row left to reveal / trigger delete.
-export function useSwipe(onDelete) {
+// Swipe a row left to reveal / trigger delete. With onRight, a swipe right runs it (log again).
+export function useSwipe(onDelete, onRight) {
   const [dx, setDx] = useState(0)
   const st = useRef(null)
   const handlers = {
@@ -36,10 +36,11 @@ export function useSwipe(onDelete) {
       if (!s) return
       const mx = e.touches[0].clientX - s.x, my = e.touches[0].clientY - s.y
       if (s.lock == null && (Math.abs(mx) > 8 || Math.abs(my) > 8)) s.lock = Math.abs(mx) > Math.abs(my) ? 'x' : 'y'
-      if (s.lock === 'x') setDx(Math.min(0, Math.max(-140, mx)))
+      if (s.lock === 'x') setDx(Math.min(onRight ? 120 : 0, Math.max(-140, mx)))
     },
     onTouchEnd: () => {
-      if (dx < -100) { navigator.vibrate?.(15); onDelete() } else setDx(dx < -40 ? -84 : 0)
+      if (dx > 84 && onRight) { navigator.vibrate?.(12); setDx(0); onRight() }
+      else if (dx < -100) { navigator.vibrate?.(15); onDelete() } else setDx(dx < -40 ? -84 : 0)
       st.current = null
     },
   }

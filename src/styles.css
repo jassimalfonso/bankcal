@@ -2094,3 +2094,30 @@ body:has(.sheet-wrap) .fab { transform: scale(0.4); }
 .w-more { flex: none; height: 30px; padding: 0 10px; border-radius: 99px; background: var(--soft); color: var(--accent); font-size: 12.5px; font-weight: 850; white-space: nowrap; }
 .w-more:active { transform: scale(.95); }
 .remove-entry.peek-log { color: var(--accent); }
+/* ---- Press-and-hold shortcuts ---- */
+.holdable { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+.plus-tip { margin: 0 6px 2px 0; padding: 6px 12px; border-radius: 99px; background: var(--card); color: var(--muted); font-size: 12.5px; font-weight: 750; box-shadow: 0 8px 20px -10px rgba(30, 20, 60, 0.3); }
+/* hold to confirm: fills up while held */
+.hold-confirm { position: relative; overflow: hidden; }
+.link-btn.hold-confirm { border-radius: 99px; padding: 8px 16px; }
+.hold-confirm::before { content: ''; position: absolute; inset: 0; background: color-mix(in srgb, var(--accent) 24%, transparent); transform: scaleX(0); transform-origin: left; transition: transform 0.18s ease-out; }
+.hold-confirm.holding::before { transform: scaleX(1); transition: transform var(--hold-ms, 650ms) linear; }
+.hold-confirm > span { position: relative; }
+@media (prefers-reduced-motion: reduce) { .hold-confirm.holding::before { transition: none; opacity: 0.6; } }
+/* swipe a food right to log it again */
+.row-again-bg { position: absolute; inset: 0; display: flex; align-items: center; padding-left: 18px; background: color-mix(in srgb, var(--accent) 55%, var(--card)); color: #fff; font-weight: 850; font-size: 14px; transition: background 0.15s; }
+.row-again-bg.go { background: var(--accent); }
+.row-tip { margin: 10px 4px 0; text-align: center; }
+/* the menu from holding a food */
+.row-menu { padding-bottom: calc(var(--safe-b, 0px) + 18px); }
+.rm-head { padding: 6px 4px 14px; display: grid; gap: 2px; }
+.rm-head b { font-size: 19px; font-weight: 850; line-height: 1.25; overflow-wrap: anywhere; }
+.rm-head small { color: var(--muted); font-weight: 700; font-size: 14px; }
+.rm-list { display: grid; background: var(--card); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; }
+.rm-list button { display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 0 16px; font-size: 16px; font-weight: 800; text-align: left; }
+.rm-list button + button { border-top: 1px solid var(--line); }
+.rm-list button span { width: 28px; text-align: center; font-size: 18px; }
+.rm-list button:active { background: var(--soft); }
+.rm-label { margin: 16px 4px 8px; font-size: 13.5px; font-weight: 800; color: var(--muted); }
+.rm-meals { display: flex; flex-wrap: wrap; gap: 8px; }
+.rm-meals .chip { height: 40px; }

@@ -8,6 +8,8 @@ import { matchFoods } from '../foods'
 import { IconCamera, IconClose } from '../icons'
 import { useEscape } from '../motion'
 import { useSheetDrag } from '../motion'
+import { HoldButton, useRepeat } from '../Hold'
+import { firstTime } from '../keyboard'
 
 // Online answers are kept on this phone for two months, so a food looked up once comes back instantly,
 // and every food found online also shows up in the instant suggestions from then on.
@@ -285,6 +287,14 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
   }
 
   const bump = (d) => setKcal(String(Math.max(0, n + d)))
+  const less50 = useRepeat(() => bump(-50), n <= 0)
+  const more50 = useRepeat(() => bump(50), n >= 5000)
+  // hold a saved or recent food to log it straight away, without opening it
+  const [holdTip, setHoldTip] = useState(() => { try { return !localStorage.getItem('bankcal:hint:hold-food') } catch { return false } })
+  const quick = peek || editing ? null : (f) => {
+    if (holdTip) { firstTime('hold-food'); setHoldTip(false) }
+    onSave({ name: f.name, kcal: Math.round(f.kcal), meal, cat: catOf(f, cats), serving: (f.serving || realPortion(f.portion)).trim().slice(0, 30) })
+  }
 
   function save() {
     if (!valid) return
@@ -385,6 +395,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
         {myFoods.length > 0 && !name && myFoods.some(fits) && (
           <div className="myfoods">
             <div className="mf-head"><b>⭐ My foods</b><button className="link-btn" onClick={() => { setEditMine((x) => !x); setFixing(null) }}>{editMine ? 'Done' : 'Edit'}</button></div>
+            {holdTip && quick && !editMine && !fixCats && <p className="cat-hint">Tip: hold a food to log it straight away.</p>}
             {editMine && <p className="cat-hint">Tap a food to rename it, change its kcal or remove it.</p>}
             <div className="mf-list">
               {(() => {
@@ -401,10 +412,10 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
                       </div>
                     </div>
                   ) : (
-                  <button key={f.id} className={`mf-row ${editMine ? 'edit' : ''}`} onClick={() => (editMine ? setFixing({ id: f.id, name: f.name, kcal: String(f.kcal), serving: f.serving ?? '' }) : choose(f))} aria-label={editMine ? `Edit ${f.name}` : `${f.name}, ${fmt(f.kcal)} kcal`}>
+                  <HoldButton key={f.id} onHold={quick && !editMine && !fixCats ? () => quick(f) : undefined} className={`mf-row ${editMine ? 'edit' : ''}`} onClick={() => (editMine ? setFixing({ id: f.id, name: f.name, kcal: String(f.kcal), serving: f.serving ?? '' }) : choose(f))} aria-label={editMine ? `Edit ${f.name}` : `${f.name}, ${fmt(f.kcal)} kcal`}>
                     <Badge f={f} /><span className="mf-name">{f.name}{f.serving ? <small className="mf-serving"> · {f.serving}</small> : null}</span>
                     {editMine ? <span className="mf-x">✏️ {fmt(f.kcal)}</span> : <span className="mf-kcal">{fmt(f.kcal)}</span>}
-                  </button>
+                  </HoldButton>
                   )
                 )
                 // a filter or Edit shows a plain list; otherwise grouped by type
@@ -420,10 +431,10 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
             <div className="mf-list">
               {(() => {
                 const row = (f) => (
-                  <button key={f.id} className="mf-row" onClick={() => choose(f)} aria-label={`${f.name}, ${fmt(f.kcal)} kcal, from ${f.from}`}>
+                  <HoldButton key={f.id} onHold={quick && !fixCats ? () => quick(f) : undefined} className="mf-row" onClick={() => choose(f)} aria-label={`${f.name}, ${fmt(f.kcal)} kcal, from ${f.from}`}>
                     <Badge f={f} /><span className="mf-name">{f.name}</span>
                     <span className="mf-kcal">{fmt(f.kcal)}</span>
-                  </button>
+                  </HoldButton>
                 )
                 return filter || fixCats ? theirs.filter(fits).map(row) : groups(theirs, 'theirs', row)
               })()}
@@ -434,9 +445,9 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
         {recent.length > 0 && !name && recent.some(fits) && (
           <div className="recent">
             {recent.filter(fits).map((r) => (
-              <button key={r.id} className="chip" onClick={() => choose(r)}>
+              <HoldButton key={r.id} onHold={quick && !fixCats ? () => quick(r) : undefined} className="chip" onClick={() => choose(r)}>
                 <Badge f={r} />{r.name} <span>{fmt(r.kcal)}</span>
-              </button>
+              </HoldButton>
             ))}
           </div>
         )}
@@ -493,12 +504,12 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
         )}
 
         <div className="kcal-row">
-          <button className="step" onClick={() => bump(-50)}>−50</button>
+          <button className="step holdable" {...less50} disabled={n <= 0}>−50</button>
           <label className="kcal-input">
             <input inputMode="numeric" pattern="[0-9]*" value={kcal} onChange={(e) => setKcal(e.target.value.replace(/\D/g, ''))} placeholder="0" aria-label="Calories" />
             <span>kcal</span>
           </label>
-          <button className="step" onClick={() => bump(50)}>+50</button>
+          <button className="step holdable" {...more50}>+50</button>
         </div>
 
         {after != null && (

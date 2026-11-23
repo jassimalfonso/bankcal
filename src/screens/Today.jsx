@@ -1,6 +1,9 @@
 import { useMemo, useRef, useState } from 'react'
 import { VacationBanner, JoinVacation } from './Breaks'
-import { useCountUp, useSwipe, useStickyFit } from '../motion'
+import { createPortal } from 'react-dom'
+import { useCountUp, useSwipe, useStickyFit, useEscape } from '../motion'
+import { useHold, HoldConfirm } from '../Hold'
+import { firstTime } from '../keyboard'
 import { breakdown, fmt, KCAL_PER_KG, mealFor, usualFor } from '../calc'
 import { CATS, catOf, foodEmoji } from '../foodCats'
 import Character, { moodFor } from '../Character'
@@ -67,6 +70,14 @@ export default function Today(props) {
   const showWeek = new Date(props.today + 'T12:00').getDay() === 0 && !weekHidden
   const hideWeek = () => { try { localStorage.setItem(weekKey, '1') } catch { /* ignore */ } setWeekHidden(true) }
   const [arranging, setArranging] = useState(false)
+  // hold a food for a small menu; swipe it right to log it again
+  const [menu, setMenu] = useState(null)
+  const [rowTip, setRowTip] = useState(() => { try { return !localStorage.getItem('bankcal:hint:row-gestures') } catch { return false } })
+  const usedRowTip = () => { if (rowTip) { firstTime('row-gestures'); setRowTip(false) } }
+  const again = (e) => {
+    const one = oneServing(e)
+    props.logFood?.({ name: one.name, kcal: one.kcal, meal: mealFor(), ...(e.cat ? { cat: e.cat } : {}), ...(e.serving ? { serving: e.serving } : {}) })
+  }
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const left = budget != null ? budget - spent : null
   const over = left != null && left < 0
@@ -132,7 +143,7 @@ export default function Today(props) {
             {props.focus && <button className="focus-chip" onClick={() => props.focus.go === 'train' ? props.goTab('train') : props.focus.go === 'habits' ? goSetup('habits') : null}><span>One thing today</span>{props.focus.emoji} {props.focus.text}</button>}
             {todays.length > 0 && (props.closed
               ? <p className="day-closed">🌙 Day closed <button className="link-btn" onClick={props.reopenDay}>Reopen</button></p>
-              : <button className={`${windDown ? 'btn-soft' : 'link-btn'} close-day`} onClick={closeDay}>🌙 Close my day</button>)}
+              : <HoldConfirm className={`${windDown ? 'btn-soft' : 'link-btn'} close-day`} onConfirm={closeDay} onTap={() => notify('Keep holding the button to close your day')} aria-label="Close my day. Press and hold.">🌙 Hold to close my day</HoldConfirm>)}
             <div className="hero-stats three">
               <div><b>{fmt(shownSpent)}</b><span>Eaten</span></div>
               <div><b className="pos">+{fmt(shownEarn)}</b><span>Burned</span></div>
@@ -197,7 +208,7 @@ export default function Today(props) {
               </div>
             ) : (
               (() => {
-                const row = (e) => <Row key={e.id} e={e} cats={profile?.foodCats} fresh={props.fresh === e.id} onEdit={() => props.editEntry?.(e)} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo, cat: e.cat })) }} />
+                const row = (e) => <Row key={e.id} e={e} cats={profile?.foodCats} fresh={props.fresh === e.id} onEdit={() => props.editEntry?.(e)} onAgain={props.logFood ? () => { again(e); usedRowTip() } : undefined} onHold={() => { setMenu(e); usedRowTip() }} onDelete={() => { removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo, cat: e.cat })) }} />
                 if (mealView === 'all' || todays.length < 2) return <ul className="card list">{todays.map(row)}</ul>
                 // grouped: by meal (Breakfast, Lunch…) or by food type (Meals, Drinks…)
                 const groups = mealView === 'meal'
@@ -211,30 +222,68 @@ export default function Today(props) {
                 ))
               })()
             )}
+            {rowTip && todays.length > 0 && <p className="fine row-tip">Hold a food for more options. Swipe it right to log it again.</p>}
           </section>
         )
         return null
       }} />
+      {menu && <RowMenu e={todays.find((x) => x.id === menu.id) ?? menu} onClose={() => setMenu(null)}
+        onAgain={props.logFood ? () => { again(menu); setMenu(null) } : null}
+        onEdit={() => { setMenu(null); props.editEntry?.(menu) }}
+        onMeal={(m) => { const was = menu.meal; props.updateEntry?.(menu.id, { meal: m }); notify(`Moved ${menu.name} to ${m}`, () => props.updateEntry?.(menu.id, { meal: was })); setMenu(null) }}
+        onRemove={() => { const e = menu; removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo, cat: e.cat, serving: e.serving })); setMenu(null) }} />}
       {!arranging && <p className="arrange-tip">Hold a card’s title (⠿) and drag it to move it. <button className="arrange-link" onClick={() => setArranging(true)}>Or arrange as a list</button></p>}
 
     </>
   )
 }
 
-export function Row({ e, onDelete, onEdit, fresh, cats }) {
+// "Kiwi ×2, 90 kcal" → one Kiwi, 45 kcal
+export function oneServing(e) {
+  const m = String(e.name).match(/\s×(1½|½|\d+)$/)
+  const q = m ? ({ '½': 0.5, '1½': 1.5 }[m[1]] ?? +m[1]) : 1
+  return { name: m ? e.name.slice(0, m.index) : e.name, kcal: Math.round(e.kcal / (q || 1)) }
+}
+
+const MEALS = ['Breakfast', 'Lunch', 'Dinner', 'Snack']
+// The small menu you get by holding a food
+function RowMenu({ e, onClose, onAgain, onEdit, onMeal, onRemove }) {
+  useEscape(onClose)
+  return createPortal(
+    <div className="sheet-wrap" onClick={onClose}>
+      <div className="sheet row-menu" onClick={(ev) => ev.stopPropagation()} role="dialog" aria-label={`${e.name} options`}>
+        <div className="rm-head"><b>{e.name}</b><small>{fmt(e.kcal)} kcal{e.serving ? ` · ${e.serving}` : ''}</small></div>
+        <div className="rm-list">
+          {onAgain && <button onClick={onAgain}><span>➕</span>Log it again</button>}
+          <button onClick={onEdit}><span>✏️</span>Edit name, kcal or portion</button>
+        </div>
+        <p className="rm-label">Move to</p>
+        <div className="rm-meals" role="radiogroup" aria-label="Meal">
+          {MEALS.map((m) => <button key={m} role="radio" aria-checked={e.meal === m} className={`chip ${e.meal === m ? 'on' : ''}`} onClick={() => (e.meal === m ? onClose() : onMeal(m))}>{m}</button>)}
+        </div>
+        <button className="remove-entry" onClick={onRemove}>Remove this food</button>
+      </div>
+    </div>
+  , document.body)
+}
+
+export function Row({ e, onDelete, onEdit, onAgain, onHold, fresh, cats }) {
   const [open, setOpen] = useState(false)
-  const { dx, setDx, handlers } = useSwipe(() => onDelete?.())
+  const { dx, setDx, handlers } = useSwipe(() => onDelete?.(), onAgain)
+  const hold = useHold(onHold)
   const time = new Date(e.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   const shift = onDelete ? (dx || (open ? -84 : 0)) : 0
   return (
     <li className={`row-wrap ${fresh ? 'fresh' : ''}`}>
-      {onDelete && <button className="row-del-bg" onClick={() => onDelete()} aria-label={`Remove ${e.name}`}>Remove</button>}
+      {onDelete && dx <= 0 && <button className="row-del-bg" onClick={() => onDelete()} aria-label={`Remove ${e.name}`}>Remove</button>}
+      {onAgain && dx > 0 && <span className={`row-again-bg ${dx > 84 ? 'go' : ''}`} aria-hidden="true">＋ Again</span>}
       <div
-        className="row"
+        className={`row ${onHold ? 'holdable' : ''}`}
         style={{ transform: `translateX(${shift}px)`, transition: dx ? 'none' : undefined }}
         onClick={() => { if (open || dx) { setDx(0); setOpen(false); return } if (onEdit) onEdit(); else if (onDelete) setOpen(true) }}
         role={onEdit ? 'button' : undefined} aria-label={onEdit ? `Edit ${e.name}` : undefined}
         {...(onDelete ? handlers : {})}
+        {...hold}
       >
         {e.photo ? <img className="row-img" src={e.photo} alt="" /> : <span className="row-img ph emo" aria-hidden="true">{foodEmoji(e, cats)}</span>}
         <div className="row-text">

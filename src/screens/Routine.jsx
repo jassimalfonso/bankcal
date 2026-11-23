@@ -3,19 +3,23 @@ import { useState } from 'react'
 import { fmt, workoutKcal } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
+import { useRepeat } from '../Hold'
 import { EFFORTS, routineWorkout } from '../training'
 
 const uid = () => crypto.randomUUID?.() ?? String(Math.random())
 
 export function Stepper({ label, value, unit, step = 1, min = 0, max = 999, onChange }) {
   const set = (v) => onChange(Math.max(min, Math.min(max, Math.round(v * 2) / 2)))
+  // keep − or + pressed and it keeps counting
+  const less = useRepeat(() => set(value - step), value <= min)
+  const more = useRepeat(() => set(value + step), value >= max)
   return (
     <div className="stepper">
       <span>{label}</span>
       <div>
-        <button onClick={() => set(value - step)} disabled={value <= min} aria-label={`Less ${label.toLowerCase()}`}>−</button>
+        <button className="holdable" {...less} disabled={value <= min} aria-label={`Less ${label.toLowerCase()}`}>−</button>
         <b aria-live="polite">{value}{unit ? <small> {unit}</small> : null}</b>
-        <button onClick={() => set(value + step)} disabled={value >= max} aria-label={`More ${label.toLowerCase()}`}>+</button>
+        <button className="holdable" {...more} disabled={value >= max} aria-label={`More ${label.toLowerCase()}`}>+</button>
       </div>
     </div>
   )

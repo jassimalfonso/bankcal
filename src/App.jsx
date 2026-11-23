@@ -5,6 +5,8 @@ import { useStore } from './store'
 import { useDemoStore, demoPartner } from './demoStore'
 import { BUDDIES, Buddy } from './buddies'
 import { setBackHandlers } from './motion'
+import { useHold } from './Hold'
+import { firstTime } from './keyboard'
 import ShareSheet from './screens/ShareSheet'
 import WorkoutSheet from './screens/WorkoutSheet'
 import Swipeable from './Swipeable'
@@ -119,6 +121,9 @@ function Bank({ user }) {
   // The morning welcome: first open of the day (unless switched off in Settings), or on request
   const [replay, setReplay] = useState(false)
   const [plus, setPlus] = useState(false) // the + menu
+  const [heldPlus, setHeldPlus] = useState(() => { try { return !!localStorage.getItem('bankcal:hint:held-plus') } catch { return true } })
+  // hold the + to skip the menu and go straight to Log food
+  const fabHold = useHold(() => { setPlus(false); setAdding(true); firstTime('held-plus'); setHeldPlus(true) })
   const [newVersion, setNewVersion] = useState(false)
   useEffect(() => onUpdateReady(setNewVersion), [])
   const [working, setWorking] = useState(false) // Log a workout, from +
@@ -332,12 +337,13 @@ function Bank({ user }) {
       {plus && <div className="plus-veil" onClick={() => setPlus(false)} />}
       {plus && (
         <div className="plus-menu" role="menu">
+          {!heldPlus && <p className="plus-tip">Tip: hold + to go straight to Log food</p>}
           <button role="menuitem" onClick={() => { setPlus(false); setWorking(true) }}><span>💪</span><b>Log a workout</b><small>Deposit calories</small></button>
           <button role="menuitem" onClick={() => { setPlus(false); setAdding({ peek: true }) }}><span>🔍</span><b>Check a food</b><small>See its calories, nothing logged</small></button>
           <button role="menuitem" onClick={() => { setPlus(false); setAdding(true) }}><span>🍽️</span><b>Log food</b><small>Spend calories</small></button>
         </div>
       )}
-      <button className={`fab ${plus ? 'open' : ''}`} onClick={() => setPlus((x) => !x)} aria-label={plus ? 'Close menu' : 'Log food or a workout'} aria-expanded={plus}>
+      <button className={`fab holdable ${plus ? 'open' : ''}`} {...fabHold} onClick={() => setPlus((x) => !x)} aria-label={plus ? 'Close menu' : 'Log food or a workout'} aria-expanded={plus}>
         <IconPlus size={30} />
       </button>
       {working && (
