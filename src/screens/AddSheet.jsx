@@ -38,7 +38,7 @@ function seenOnline(q, limit = 4) {
   return [...out.values()]
 }
 
-export default function AddSheet({ notify, partner, mine, todays, budget, onClose, onSave, onRemove, editing, forDay, today, profile, updateProfile }) {
+export default function AddSheet({ notify, partner, mine, todays, budget, onClose, onSave, onRemove, editing, peek, forDay, today, profile, updateProfile }) {
   const myFoods = profile?.myFoods ?? []
   const [keep, setKeep] = useState(false)
   const [editMine, setEditMine] = useState(false)
@@ -309,8 +309,8 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
         <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
         <div className="sheet-head">
           <div>
-            <p className="muted">{editing ? `${meal}, ${new Date(editing.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : forDay && forDay !== today ? new Date(forDay + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : meal}</p>
-            <h2>{editing ? 'Edit this food' : forDay && forDay !== today ? 'What did you eat?' : 'What are you about to eat?'}</h2>
+            <p className="muted">{peek ? 'Just looking, nothing is logged' : editing ? `${meal}, ${new Date(editing.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : forDay && forDay !== today ? new Date(forDay + 'T12:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : meal}</p>
+            <h2>{peek ? 'How many calories?' : editing ? 'Edit this food' : forDay && forDay !== today ? 'What did you eat?' : 'What are you about to eat?'}</h2>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
         </div>
@@ -503,20 +503,22 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
 
         {after != null && (
           <p className={`after ${after < 0 ? 'neg' : ''}`}>
-            {after < 0 ? `This takes you ${fmt(-after)} kcal over` : `${fmt(after)} kcal left after this`}
+            {peek ? (after < 0 ? `Eating this would take you ${fmt(-after)} kcal over today` : `You’d have ${fmt(after)} kcal left if you ate this`) : after < 0 ? `This takes you ${fmt(-after)} kcal over` : `${fmt(after)} kcal left after this`}
           </p>
         )}
 
-        {valid && !myFoods.some((f) => f.name.toLowerCase() === name.trim().toLowerCase()) && (
+        {!peek && valid && !myFoods.some((f) => f.name.toLowerCase() === name.trim().toLowerCase()) && (
           <label className="keep-food">
             <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
             <span>Save to <b>My foods</b> for next time</span>
           </label>
         )}
 
-        <button className="btn-primary" disabled={!valid} onClick={save}>
+        {peek && <button className="btn-primary" onClick={onClose}>Done</button>}
+        {peek && valid && <button className="remove-entry peek-log" onClick={save}>Ate it? Log it · {fmt(n)} kcal</button>}
+        {!peek && <button className="btn-primary" disabled={!valid} onClick={save}>
           {editing ? 'Save changes' : otherDay ? (valid ? `Add ${fmt(n)} kcal to this day` : 'Add to this day') : valid ? `Spend ${fmt(n)} kcal` : 'Spend'}
-        </button>
+        </button>}
         {editing && <button className="remove-entry" onClick={() => onRemove?.(editing)}>Remove this food</button>}
       </div>
     </div>

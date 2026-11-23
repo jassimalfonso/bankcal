@@ -333,6 +333,7 @@ function Bank({ user }) {
       {plus && (
         <div className="plus-menu" role="menu">
           <button role="menuitem" onClick={() => { setPlus(false); setWorking(true) }}><span>💪</span><b>Log a workout</b><small>Deposit calories</small></button>
+          <button role="menuitem" onClick={() => { setPlus(false); setAdding({ peek: true }) }}><span>🔍</span><b>Check a food</b><small>See its calories, nothing logged</small></button>
           <button role="menuitem" onClick={() => { setPlus(false); setAdding(true) }}><span>🍽️</span><b>Log food</b><small>Spend calories</small></button>
         </div>
       )}
@@ -417,7 +418,8 @@ function Bank({ user }) {
         <ErrorBoundary onError={() => { setAdding(false); notify('That screen hit a problem and was closed. Please try again.') }}>
         <AddSheet
           {...ctx}
-          editing={adding === true || adding?.newOn ? null : adding}
+          editing={adding === true || adding?.newOn || adding?.peek ? null : adding}
+          peek={!!adding?.peek}
           forDay={adding?.newOn ?? null}
           onClose={() => setAdding(false)}
           onRemove={(old) => {
@@ -434,7 +436,7 @@ function Bank({ user }) {
               setAdding(false)
               return
             }
-            if (adding !== true) {
+            if (adding !== true && !adding?.peek) {
               const old = adding
               store.updateEntry(old.id, e)
               receipt({ kind: 'edit', what: e.name, kcal: 0, id: old.id, undo: () => store.updateEntry(old.id, { name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo ?? null, serving: old.serving ?? '' }) })
