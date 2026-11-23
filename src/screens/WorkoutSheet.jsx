@@ -1,9 +1,10 @@
 import { createPortal } from 'react-dom'
-import { Children, cloneElement, isValidElement, useState } from 'react'
+import { Children, cloneElement, isValidElement, useEffect, useState } from 'react'
+import { askFood, cleanExercises } from '../ai'
 import { WORKOUTS, earned, fmt, workoutKcal, workoutMinutes } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
-import { exerciseIndex, routineWorkout, searchExercises } from '../training'
+import { doseOf, exerciseIndex, routineWorkout, searchExercises } from '../training'
 import { useMemo } from 'react'
 import { Stepper } from './Routine'
 
@@ -22,7 +23,34 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
   const [keep, setKeep] = useState(false) // save a library exercise to My routine
   const index = useMemo(() => exerciseIndex(profile, mine, WORKOUTS, theirs), [profile, mine, theirs])
   const found = q.trim() ? searchExercises(q, index) : []
-  const pick = (r) => { if (r.kind === 'act') setType(r.type); else pickOwn(r) }
+  // not in the app's list? look it up online, like the food search
+  const [ai, setAi] = useState({ busy: false, results: null, q: '' })
+  const [aiAct, setAiAct] = useState(null) // an online activity being logged by minutes: { name, met }
+  const term = q.trim()
+  const thin = found.filter((r) => r.score >= 40).length < 2
+  useEffect(() => {
+    if (term.length < 3 || !thin) { setAi({ busy: false, results: null, q: '' }); return }
+    const key = term.toLowerCase()
+    if (onlineSeen.has(key)) { setAi({ busy: false, results: onlineSeen.get(key), q: key }); return }
+    setAi((a) => ({ ...a, busy: true }))
+    let live = true
+    const t = setTimeout(async () => {
+      try {
+        const j = await askFood({ mode: 'exercise', q: term })
+        const have = new Set(index.map((e) => e.item.name.toLowerCase()))
+        const list = cleanExercises(j.results).filter((x) => !have.has(x.name.toLowerCase())).map((x) => {
+          if (x.kind === 'minutes') return { key: 'ai-' + x.name, kind: 'aimin', item: { name: x.name, emoji: x.emoji }, met: x.met, dose: 'by minutes' }
+          const item = { name: x.name, emoji: x.emoji, kind: x.kind, sets: 3, ...(x.kind === 'time' ? { sec: 30 } : { reps: 10 }), ...(x.weighted ? { kg: 5 } : {}), ...(x.each ? { each: true } : {}), rest: 60, met: x.met }
+          return { key: 'ai-' + x.name, kind: 'lib', ai: true, item, dose: doseOf(item) }
+        })
+        onlineSeen.set(key, list)
+        if (live) setAi({ busy: false, results: list, q: key })
+      } catch { if (live) setAi({ busy: false, results: [], q: key }) }
+    }, 600)
+    return () => { live = false; clearTimeout(t) }
+  }, [term, thin]) // eslint-disable-line react-hooks/exhaustive-deps
+  const online = ai.results ?? []
+  const pick = (r) => { if (r.kind === 'aimin') { setAiAct({ name: r.item.name, met: r.met }); setType('custom') } else if (r.kind === 'act') { setAiAct(null); setType(r.type) } else pickOwn(r) }
   const deposit = (w) => {
     if (keep && own?.kind === 'lib' && onKeep) {
       const id = `r${Date.now().toString(36)}`
@@ -38,7 +66,7 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
   useEscape(() => { if (own && !start) setOwn(null); else if (type) setType(null); else onClose() })
   const [f, setF] = useState({ min: '', sec: '', sets: '1', reps: '', kg: '' })
   const def = WORKOUTS.find((w) => w.id === type)
-  const entry = def ? { type, min: +f.min, sec: +f.sec, sets: +f.sets || 1, reps: +f.reps, kg: +f.kg } : null
+  const entry = def ? { type, min: +f.min, sec: +f.sec, sets: +f.sets || 1, reps: +f.reps, kg: +f.kg, ...(type === 'custom' && aiAct ? { met: aiAct.met } : {}) } : null
   const kcal = entry ? workoutKcal(entry, profile.weight) : 0
   const mins = entry ? workoutMinutes(entry) : 0
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value.replace(/[^\d.]/g, '') }))
@@ -50,7 +78,7 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
         <div className="sheet-head">
           <div>
             <p className="muted">Workouts earn calories</p>
-            <h2>{own ? `${it.emoji} ${it.name}` : def ? `${def.emoji} ${def.label}` : 'What did you do?'}</h2>
+            <h2>{own ? `${it.emoji} ${it.name}` : def ? `${def.emoji} ${type === 'custom' && aiAct ? aiAct.name : def.label}` : 'What did you do?'}</h2>
           </div>
           <button className="icon-btn" onClick={own && !start ? () => setOwn(null) : def ? () => setType(null) : onClose} aria-label={(own && !start) || def ? 'Back' : 'Close'}><IconClose /></button>
         </div>
@@ -80,7 +108,8 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
             {q && <button type="button" className="field-clear" aria-label="Clear search" onClick={(e) => { e.preventDefault(); setQ('') }}><IconClose size={18} /></button>}
           </label>
           {q.trim() ? (
-            found.length ? (
+            <>
+            {found.length > 0 && (
               <div className="card mine-list ws-results">
                 {found.map((r) => (
                   <button key={r.key} className={`mine-row ${r.done ? 'done' : ''}`} onClick={() => pick(r)}>
@@ -90,12 +119,31 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
                   </button>
                 ))}
               </div>
-            ) : (
+            )}
+            {(ai.busy || online.length > 0) && (
+              <>
+                <p className="sg-h ws-online">Online · AI estimate</p>
+                {ai.busy && !online.length && <div className="sg-skel" aria-label="Checking online"><i /><i /></div>}
+                {online.length > 0 && (
+                  <div className="card mine-list ws-results">
+                    {online.map((r) => (
+                      <button key={r.key} className="mine-row" onClick={() => pick(r)}>
+                        <span className="w-emoji small">{r.item.emoji}</span>
+                        <span className="ex-main"><b>{r.item.name}</b><small>{r.kind === 'aimin' ? 'Log by minutes' : `Sets × reps · ${r.dose}`}</small></span>
+                        {r.kind === 'lib' ? <span className="pos">+{fmt(workoutKcal(routineWorkout(r.item), profile.weight))}</span> : <span className="ws-go">›</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            {!found.length && !ai.busy && !online.length && (
               <div className="ws-none">
                 <p>No match for “{q.trim()}”.</p>
-                <button className="btn-soft" onClick={() => setType('custom')}>Log “{q.trim()}” by minutes</button>
+                <button className="btn-soft" onClick={() => { setAiAct(null); setType('custom') }}>Log “{q.trim()}” by minutes</button>
               </div>
-            )
+            )}
+            </>
           ) : (<>
           {onSteps && (
             <div className="card ws-steps">
@@ -141,7 +189,7 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
           <h3 className="ex-h">Everything else</h3>
           <div className="workout-grid">
             {WORKOUTS.map((w) => (
-              <button key={w.id} className="workout-choice" onClick={() => setType(w.id)}>
+              <button key={w.id} className="workout-choice" onClick={() => { setAiAct(null); setType(w.id) }}>
                 <span className="w-emoji">{w.emoji}</span>
                 <span>{w.label}</span>
               </button>
@@ -162,7 +210,7 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
               <b className="pos">+{fmt(kcal)} kcal</b> earned
               {mins > 0 && <span> · about {mins < 1 ? `${Math.round(mins * 60)} s` : `${Math.round(mins)} min`} of effort</span>}
             </p>
-            <button className="btn-primary" disabled={kcal <= 0 && mins <= 0} onClick={() => onSave({ ...entry, kcal, ...(type === 'custom' && q.trim() ? { label: q.trim().replace(/^./, (c) => c.toUpperCase()) } : {}) })}>
+            <button className="btn-primary" disabled={kcal <= 0 && mins <= 0} onClick={() => onSave({ ...entry, kcal, ...(type === 'custom' && (aiAct || q.trim()) ? { label: aiAct?.name ?? q.trim().replace(/^./, (c) => c.toUpperCase()) } : {}) })}>
               {kcal > 0 ? `Deposit ${fmt(kcal)} kcal` : 'Log it'}
             </button>
             <p className="fine">Estimates use your weight ({profile.weight || '—'} kg) and standard exercise intensity values.</p>
@@ -173,6 +221,8 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
   , document.body
   )
 }
+
+const onlineSeen = new Map() // exercises already looked up online this session
 
 function Line({ label, children }) {
   const kids = Children.map(children, (c) => (isValidElement(c) && c.type === In && !c.props['aria-label'] ? cloneElement(c, { 'aria-label': label }) : c))

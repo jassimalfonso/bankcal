@@ -339,7 +339,7 @@ export function routineWorkout(item) {
 }
 
 // ---------- Your workouts + exercise search (used by "Log a workout") ----------
-const doseOf = (it) => (it.kind === 'time' ? `${it.sets} × ${it.sec} s` : `${it.sets} × ${it.reps}${it.each ? ' each side' : ''}`) + (it.kg ? ` · ${it.kg} kg` : '')
+export const doseOf = (it) => (it.kind === 'time' ? `${it.sets} × ${it.sec} s` : `${it.sets} × ${it.reps}${it.each ? ' each side' : ''}`) + (it.kg ? ` · ${it.kg} kg` : '')
 
 // Your routine first, then your own exercises that aren't in it
 export function myWorkouts(profile, todaysWorkouts = []) {

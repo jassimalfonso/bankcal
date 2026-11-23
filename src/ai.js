@@ -4,6 +4,7 @@ import { auth } from './firebase'
 export async function askFood(body) {
   if (import.meta.env.MODE === 'demo') {
     await new Promise((ok) => setTimeout(ok, 600))
+    if (body.mode === 'exercise') return { results: [{ name: `${body.q} (demo online)`, emoji: '🏋️', kind: 'reps', met: 5, weighted: true, each: false }, { name: `${body.q} class`, emoji: '🤸', kind: 'minutes', met: 4.5 }] }
     return body.mode === 'photo'
       ? { name: 'Demo plate', kcal: 480, items: [{ name: 'Rice', portion: '1 cup', kcal: 205 }], confidence: 'medium' }
       : { results: [{ name: `${body.q} (demo online result)`, portion: '1 serving', kcal: 321 }, { name: `${body.q}, large`, portion: { amount: 1, unit: 'large bag' }, kcal: '640 kcal' }] }
@@ -62,4 +63,13 @@ export function cleanFoods(list) {
     .map((x) => ({ ...(['meal', 'fruit', 'snack', 'drink', 'side'].includes(x?.cat) ? { cat: x.cat } : {}), name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: x?.kcal == null || x.kcal === '' ? NaN : Math.round(Number(String(x.kcal).replace(/[^\d.]/g, '') || NaN)) }))
     .filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000)
     .slice(0, 6)
+}
+
+// Exercises found online: keep only clean ones the app can log
+export function cleanExercises(list) {
+  if (!Array.isArray(list)) return []
+  return list
+    .map((x) => ({ name: txt(x?.name).slice(0, 60), emoji: txt(x?.emoji).slice(0, 8) || '💪', kind: ['reps', 'time', 'minutes'].includes(x?.kind) ? x.kind : 'minutes', met: Math.round(Number(x?.met) * 10) / 10, weighted: x?.weighted === true, each: x?.each === true }))
+    .filter((x) => x.name && x.met >= 1.5 && x.met <= 16)
+    .slice(0, 4)
 }

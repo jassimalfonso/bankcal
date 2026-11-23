@@ -41,6 +41,7 @@ const CONTEXT = 'You are a nutrition assistant for people living in the UAE / GC
 const PROMPTS = {
   photo: `${CONTEXT} Look at this photo. It may be a plate of food, a drink, or a packet / product. If a nutrition label or calorie number is printed on the packaging (in any language, e.g. Japanese, Arabic), read it and use the calories for the whole pack (or one serving if that is all that's shown), and name the product in English. Otherwise identify each food, estimate its portion and calories. Return JSON exactly like {"name": "short name for the whole plate", "kcal": 0, "items": [{"name": "", "portion": "", "kcal": 0}], "confidence": "low|medium|high"}. If there is no food, return {"name": "", "kcal": 0, "items": [], "confidence": "low"}.`,
   search: (q) => `${CONTEXT} The user typed "${q}" to log something they ate or drank. It may be a brand or chain item (Starbucks, Costa, Tim Hortons, McDonald's, KFC, Jollibee, supermarket products): for those, use the brand's published calories for that exact item, size and options (cup size, milk type, syrups, cream). List the best match first, then up to 3 close alternatives (other sizes, milk options or similar items). Names must include the brand, size and options. Portion: the serving, with ml for drinks. If unclear, assume the most common UAE version. Also give each a type, cat: "meal" (a main dish or combo), "fruit" (fruit, vegetables, salads), "snack" (snacks, sweets, desserts, pastries), "drink" (any drink) or "side" (rice, bread, sauces, extras). Reply with JSON only, no explanation: {"results": [{"name": "", "portion": "", "kcal": 0, "cat": "meal"}]}.`,
+  exercise: (q) => `You are a fitness assistant. The user typed "${q}" to log an exercise or physical activity they did. Return JSON exactly like {"results": [{"name": "", "emoji": "", "kind": "reps|time|minutes", "met": 0, "weighted": false, "each": false, "kcal": 0}]}. Best match first, then up to 3 close variations. name: short, in English, capitalised. emoji: one fitting emoji. kind: "reps" for strength moves counted in repetitions, "time" for holds counted in seconds (plank, wall sit), "minutes" for continuous activities (sports, cardio, classes, dancing, housework). met: the MET value while doing it, from the Compendium of Physical Activities. weighted: true if it normally uses dumbbells, a barbell, a kettlebell or a machine load. each: true if it is done one side at a time. kcal: calories a 70 kg person burns doing it for 10 minutes. If it is not a physical activity, return {"results": []}.`,
 }
 
 async function ask(key, model, parts, extra, signal) {
@@ -165,6 +166,18 @@ export default async function handler(req, res) {
       const out = { results: (Array.isArray(raw?.results) ? raw.results : [])
         .map((x) => ({ name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: Math.round(Number(x?.kcal)), ...(['meal', 'fruit', 'snack', 'drink', 'side'].includes(x?.cat) ? { cat: x.cat } : {}) }))
         .filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000).slice(0, 6), via: via('search') }
+      res.setHeader('Cache-Control', 'private, max-age=3600')
+      return res.status(200).json(out)
+    }
+    // look up an exercise or activity that isn't in the app's own list
+    if (body.mode === 'exercise') {
+      const q = String(body.q || '').replace(/["\\\n\r]/g, ' ').slice(0, 60).trim()
+      if (q.length < 3) return res.status(400).json({ error: 'Type a little more.' })
+      const raw = await callGemini(key, [{ text: PROMPTS.exercise(q) }], 'search', body.hint)
+      const txt = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v) : '').trim()
+      const out = { results: (Array.isArray(raw?.results) ? raw.results : [])
+        .map((x) => ({ name: txt(x?.name).slice(0, 60), emoji: txt(x?.emoji).slice(0, 8), kind: ['reps', 'time', 'minutes'].includes(x?.kind) ? x.kind : 'minutes', met: Math.round(Number(x?.met) * 10) / 10, weighted: x?.weighted === true, each: x?.each === true }))
+        .filter((x) => x.name && x.met >= 1.5 && x.met <= 16).slice(0, 4), via: via('search') }
       res.setHeader('Cache-Control', 'private, max-age=3600')
       return res.status(200).json(out)
     }

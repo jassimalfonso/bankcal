@@ -291,6 +291,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
   const more50 = useRepeat(() => bump(50), n >= 5000)
   // hold a saved or recent food to log it straight away, without opening it
   const [holdTip, setHoldTip] = useState(() => { try { return !localStorage.getItem('bankcal:hint:hold-food') } catch { return false } })
+  const logNow = (f) => onSave({ name: f.name, kcal: Math.round(f.kcal), meal, cat: catOf(f, cats), serving: (f.serving || realPortion(f.portion)).trim().slice(0, 30) })
   const quick = peek || editing ? null : (f) => {
     if (holdTip) { firstTime('hold-food'); setHoldTip(false) }
     onSave({ name: f.name, kcal: Math.round(f.kcal), meal, cat: catOf(f, cats), serving: (f.serving || realPortion(f.portion)).trim().slice(0, 30) })
@@ -339,6 +340,8 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
             <button key={key} className="suggest-row" onClick={() => choose(f)}>
               <span><b><Hl text={f.name} q={name} /></b><small>{f.serving ? `${f.serving} · ` : ''}{note ? `${f.portion} · ${note}` : f.portion}</small></span>
               <span className="suggest-kcal">{fmt(f.kcal)}<i>kcal</i></span>
+              {peek && <span role="button" tabIndex={0} className="sg-add" aria-label={`Log ${f.name}, ${fmt(f.kcal)} kcal`}
+                onClick={(ev) => { ev.stopPropagation(); logNow(f) }} onKeyDown={(ev) => { if (ev.key === 'Enter') { ev.stopPropagation(); logNow(f) } }}>+</span>}
             </button>
           )
           const own = suggestions.filter((f) => f.portion === 'my food' || f.portion === 'your usual' || f.from || (f.seen && !ai.results?.some((r) => r.name === f.name)))
