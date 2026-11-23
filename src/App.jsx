@@ -264,6 +264,7 @@ function Bank({ user }) {
     store.setDay(today, { closed: true })
     if (under) play('win')
     setResult(true)
+    notify('Day closed 🌙', () => { store.setDay(today, { closed: false }); setResult(false) })
   }
   const reopenDay = () => { store.setDay(today, { closed: false }); notify('Day reopened. Log away.') }
   const livePartner = usePartners({
@@ -333,7 +334,6 @@ function Bank({ user }) {
         <div className="plus-menu" role="menu">
           <button role="menuitem" onClick={() => { setPlus(false); setWorking(true) }}><span>💪</span><b>Log a workout</b><small>Deposit calories</small></button>
           <button role="menuitem" onClick={() => { setPlus(false); setAdding(true) }}><span>🍽️</span><b>Log food</b><small>Spend calories</small></button>
-          {todays.length > 0 && !closed && <button role="menuitem" onClick={() => { setPlus(false); closeDay() }}><span>🌙</span><b>Close my day</b><small>See how today went</small></button>}
         </div>
       )}
       <button className={`fab ${plus ? 'open' : ''}`} onClick={() => setPlus((x) => !x)} aria-label={plus ? 'Close menu' : 'Log food or a workout'} aria-expanded={plus}>
