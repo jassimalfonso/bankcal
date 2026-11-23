@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from 'react'
 import { VacationBanner, JoinVacation } from './Breaks'
 import { createPortal } from 'react-dom'
-import { useCountUp, useSwipe, useSideFit, useEscape } from '../motion'
+import { useCountUp, useSwipe, useSideFit, useEscape, useSheetDrag } from '../motion'
+import { IconClose } from '../icons'
 import { useHold, HoldConfirm } from '../Hold'
 import { firstTime } from '../keyboard'
 import { breakdown, fmt, KCAL_PER_KG, mealFor, usualFor } from '../calc'
@@ -252,10 +253,15 @@ const MEALS = ['Breakfast', 'Lunch', 'Dinner', 'Snack']
 // The small menu you get by holding a food
 function RowMenu({ e, onClose, onAgain, onEdit, onMeal, onRemove }) {
   useEscape(onClose)
+  const drag = useSheetDrag(onClose)
   return createPortal(
     <div className="sheet-wrap" onClick={onClose}>
-      <div className="sheet row-menu" onClick={(ev) => ev.stopPropagation()} role="dialog" aria-label={`${e.name} options`}>
-        <div className="rm-head"><b>{e.name}</b><small>{fmt(e.kcal)} kcal{e.serving ? ` · ${e.serving}` : ''}</small></div>
+      <div className="sheet row-menu" style={drag.style} onClick={(ev) => ev.stopPropagation()} role="dialog" aria-label={`${e.name} options`}>
+        <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
+        <div className="sheet-head">
+          <div><p className="muted">{fmt(e.kcal)} kcal{e.serving ? ` · ${e.serving}` : ''}</p><h2>{e.name}</h2></div>
+          <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
+        </div>
         <div className="rm-list">
           {onAgain && <button onClick={onAgain}><span>➕</span>Log it again</button>}
           <button onClick={onEdit}><span>✏️</span>Edit name, kcal or portion</button>

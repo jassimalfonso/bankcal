@@ -147,30 +147,36 @@ export function useStickyFit(ref, key) {
   }, [ref, key])
 }
 
-// Wide screens (Fold unfolded): the greeting and the balance panel form a left column that never
-// moves while the right column scrolls. If the column is taller than the screen, the balance
-// panel is scaled down just enough to fit above the tab bar, so nothing has to slide.
-export function useSideFit(sideRef, panelRef) {
+// Wide screens (Fold unfolded): each tab has a left column (its title and main panel) that never
+// moves while the right column scrolls. If the column is taller than the screen, its panel is
+// scaled down just enough to fit above the tab bar. If even that isn't enough (a long routine),
+// the column simply scrolls with the page instead of being pinned and cut off.
+export function useSideFit(sideRef, panelRef, key) {
   useEffect(() => {
-    const side = sideRef.current, panel = panelRef.current
-    if (!side || !panel || typeof ResizeObserver === 'undefined') return
+    const side = sideRef.current, panel = panelRef?.current ?? null
+    if (!side || typeof ResizeObserver === 'undefined') return
     let k = 1
+    const zoom = (v) => { k = v; if (panel) panel.style.zoom = v === 1 ? '' : String(Math.round(v * 1000) / 1000) }
     const fit = () => {
       const cs = getComputedStyle(side)
-      if (cs.position !== 'sticky') { if (k !== 1) { k = 1; panel.style.zoom = '' } return }
-      const room = (window.visualViewport?.height ?? window.innerHeight) - (parseFloat(cs.top) || 0) - 134 // the tab bar and the space kept clear under the page
-      const shown = panel.getBoundingClientRect().height
+      if (cs.display === 'contents') { zoom(1); delete side.dataset.loose; return } // phones: no side column
+      const room = (window.visualViewport?.height ?? window.innerHeight) - (parseFloat(cs.top) || 14) - 134 // the tab bar and the space kept clear under the page
+      const total = side.getBoundingClientRect().height
+      const shown = panel ? panel.getBoundingClientRect().height : 0
       const natural = shown / k
-      const rest = side.getBoundingClientRect().height - shown
-      const next = Math.max(0.72, Math.min(1, (room - rest) / natural))
-      if (Math.abs(next - k) < 0.01) return
-      k = next > 0.99 ? 1 : next
-      panel.style.zoom = k === 1 ? '' : String(Math.round(k * 1000) / 1000)
+      const need = total - shown + natural
+      let next = 1, loose = false
+      if (need > room + 1) {
+        next = panel && natural > 0 ? (room - (total - shown)) / natural : 0
+        if (next < 0.72) { next = 1; loose = true }
+      }
+      if (loose) side.dataset.loose = '1'; else delete side.dataset.loose
+      if (Math.abs(next - k) >= 0.01) zoom(next > 0.99 ? 1 : next)
     }
     const ro = new ResizeObserver(fit)
-    ro.observe(side); ro.observe(panel)
+    ro.observe(side); if (panel) ro.observe(panel)
     window.addEventListener('resize', fit)
     fit()
-    return () => { ro.disconnect(); window.removeEventListener('resize', fit); panel.style.zoom = '' }
-  }, [sideRef, panelRef])
+    return () => { ro.disconnect(); window.removeEventListener('resize', fit); if (panel) panel.style.zoom = ''; delete side.dataset.loose }
+  }, [sideRef, panelRef, key])
 }

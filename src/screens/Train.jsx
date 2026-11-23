@@ -1,8 +1,8 @@
 import { createPortal } from 'react-dom'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { fmt, workoutKcal } from '../calc'
 import { IconClose } from '../icons'
-import { useEscape, useSheetDrag } from '../motion'
+import { useEscape, useSheetDrag, useSideFit } from '../motion'
 import { EXERCISES, GROUPS, LEVELS, PLANS, exerciseById, routineFromCustom, routineFromExercise, routineWorkout, toSession, toWorkout, weightRange } from '../training'
 import { CustomSheet, RoutineCard } from './Routine'
 
@@ -57,8 +57,11 @@ export default function Train(props) {
   const list = EXERCISES.filter((e) => (group === 'all' || e.group === group) && match(e))
   const mine = group === 'all' || group === 'mine' ? customs.filter(match) : []
 
+  const sideRef = useRef(null)
+  useSideFit(sideRef)
   return (
     <>
+      <div className="side-col" ref={sideRef}>
       <header className="large-title">
         <div>
           <p className="date">Workouts with good form</p>
@@ -74,6 +77,7 @@ export default function Train(props) {
       <p className="fine level-hint">{LEVELS.find((l) => l.id === level).hint}. Sets, reps and weights below match this level.</p>
 
       <RoutineCard {...props} onCreate={() => setCustom('new')} />
+      </div>
 
       <h2 className="group-title">Your plan</h2>
       {active && !browse ? (

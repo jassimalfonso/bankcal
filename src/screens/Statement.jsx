@@ -1,7 +1,7 @@
 import Calendar from './Calendar'
 import { MILESTONES } from '../milestones'
 import { useRef, useState } from 'react'
-import { useStickyFit } from '../motion'
+import { useSideFit } from '../motion'
 import { dayKey, deficitDays, earned, sleepInsights, weightCheck, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
 import { Row } from './Today'
 import BodyCard from './BodyCard'
@@ -24,13 +24,15 @@ export default function Statement(props) {
   const [pick, setPick] = useState(days[6].key)
   const [view, setView] = useState('week')
   const recapRef = useRef(null)
-  useStickyFit(recapRef, view)
+  const sideRef = useRef(null)
+  useSideFit(sideRef, recapRef, view)
   const sel = days.find((d) => d.key === pick)
   const logged = days.filter((d) => d.net != null)
   const top = Math.max(budget ?? 0, ...days.map((d) => d.spent), 1) * 1.1
 
   return (
     <>
+      <div className={`side-col ${view === 'month' ? 'solo' : ''}`} ref={sideRef}>
       <header className="large-title">
         <div>
           <p className="date">{view === 'week' ? 'Last 7 days' : 'Day by day'}</p>
@@ -41,8 +43,9 @@ export default function Statement(props) {
         <button className={view === 'week' ? 'on' : ''} onClick={() => setView('week')}>Week</button>
         <button className={view === 'month' ? 'on' : ''} onClick={() => setView('month')}>Calendar</button>
       </div>
+      {view !== 'month' && <div id="recap" ref={recapRef}><WeeklyCard {...props} /></div>}
+      </div>
       {view === 'month' ? <Calendar {...props} /> : <>
-      <div id="recap" ref={recapRef}><WeeklyCard {...props} /></div>
 
       <section className="card chart">
         <div className="bars">

@@ -323,7 +323,7 @@ h1, h2, p { margin: 0; }
 .plan-note { margin-top: 10px; padding: 14px 16px; font-size: 14px; font-weight: 600; color: var(--muted); background: var(--soft); box-shadow: none; }
 .plan-note b { color: var(--ink); }
 .plan-note.warn { background: color-mix(in srgb, var(--neg) 12%, var(--card)); }
-.link-btn { display: block; margin-top: 8px; color: var(--accent); font-weight: 850; }
+.link-btn { display: block; margin-top: 8px; color: var(--accent); font-weight: 850; font-size: 16px; }
 
 /* ───────── Food search + AI ───────── */
 .photo { position: relative; }
@@ -932,7 +932,7 @@ button.hello-back, .hello-back { animation: fade 0.5s var(--ease) both; }
 
 /* ───────── Habits and journal ───────── */
 .block-head { display: flex; justify-content: space-between; align-items: baseline; }
-.block-head .link-btn { padding: 0 4px; font-size: 14.5px; }
+.block-head .link-btn { padding: 0 4px; }
 .habit-empty { padding: 18px; }
 .habit-empty p { margin: 0 0 12px; line-height: 1.5; color: color-mix(in srgb, var(--ink) 75%, var(--muted)); }
 .habit-sugs { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -971,7 +971,7 @@ button.hello-back, .hello-back { animation: fade 0.5s var(--ease) both; }
 .myfoods { margin-top: 14px; }
 .mf-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 2px 6px; }
 .mf-head b { font-size: 14px; font-weight: 850; }
-.mf-head .link-btn { font-size: 13.5px; padding: 0; }
+.mf-head .link-btn { padding: 0; }
 .myfoods .recent { margin-top: 0; }
 .chip.mine { background: var(--soft); box-shadow: none; color: var(--ink); }
 .chip.mine.edit { color: var(--neg); }
@@ -1073,7 +1073,7 @@ html, body { max-width: 100%; overflow-x: clip; }
 .weigh-txt { flex: 1; min-width: 0; }
 .weigh-txt b { display: block; font-weight: 850; font-size: 16px; }
 .weigh-txt small { display: block; color: var(--muted); font-weight: 650; font-size: 13.5px; line-height: 1.35; }
-.weigh.done .link-btn { padding: 10px 6px; font-size: 14px; }
+.weigh.done .link-btn { padding: 10px 6px; }
 .weigh-sheet { max-height: 92dvh; overflow-y: auto; }
 .weigh-sheet h2 { font-size: 34px; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .ws-msg { margin-top: 6px; padding: 16px; border-radius: 18px; background: var(--soft); }
@@ -1375,7 +1375,7 @@ body:has(.app)::after, body[data-bg]:not([data-bg='plain']):has(.app)::after { b
 .switch:checked::after { transform: translateX(20px); }
 .switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .link-line { color: var(--accent); font-weight: 800; text-align: left; }
-.words-replay { display: block; margin: 10px auto 0; font-size: 14px; }
+.words-replay { display: block; margin: 10px auto 0; }
 
 /* Share my morning */
 .dawn-share { position: absolute; top: calc(env(safe-area-inset-top) + 14px); left: 16px; z-index: 3; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 16px; border-radius: 99px; background: color-mix(in srgb, var(--card) 85%, transparent); box-shadow: var(--shadow); font-size: 15px; font-weight: 800; color: var(--accent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
@@ -1426,7 +1426,7 @@ button.ms:active { transform: scale(0.96); }
 @media (min-width: 1024px) {
   .app { max-width: 1180px; padding-left: 132px; }
   .screen { padding: 36px 32px 64px; }
-  .screen > * { max-width: 720px; margin-left: auto; margin-right: auto; }
+  .screen > *, .screen > .side-col > * { max-width: 720px; margin-left: auto; margin-right: auto; }
 
   /* rail */
   .tabbar {
@@ -1961,20 +1961,24 @@ body[data-bg='paper'] { background: linear-gradient(180deg, #ffffff 0%, #f5f5f3 
   @keyframes chip-in { from { opacity: 0; transform: scale(0.6); } }
 }
 
-/* ───── Fold and tablets (700–1023px): two columns on Today ───── */
+/* ───── Fold and tablets (700–1023px): every tab uses the full width; a tab's title and main
+   panel form a left column that stays put while the right column scrolls ───── */
 @media (min-width: 700px) and (max-width: 1023.98px) {
   .app { max-width: 920px; }
   .screen { padding-left: 24px; padding-right: 24px; }
-  .screen > * { max-width: 620px; margin-left: auto; margin-right: auto; }
-  .screen.tab-today { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 20px; align-items: start; }
-  .screen.tab-today > * { grid-column: 2; max-width: none; margin-left: 0; margin-right: 0; min-width: 0; }
-  /* the greeting and the balance panel are one left column that stays exactly where it is */
-  .screen.tab-today > .side-col { display: block; grid-column: 1; grid-row: 1 / span 60; position: sticky; top: calc(var(--safe-t) + 14px); align-self: start; }
-  .screen.tab-today > .side-col > * { max-width: none; margin-left: 0; margin-right: 0; }
-  .screen.tab-today .large-title { padding-bottom: 14px; }
-  .screen.tab-today .large-title h1 { font-size: 30px; }
+  .screen > *, .screen > .side-col > * { max-width: none; margin-left: 0; margin-right: 0; }
+  .screen > .group-title, .screen > .side-col > .group-title, .screen > .recs-title { margin-left: 4px; margin-right: 4px; }
+  .screen > .fine, .screen > .side-col > .fine { margin-left: 6px; margin-right: 6px; }
+  .screen > .side-col > .jump-row { margin: 0 0 14px; padding-left: 0; padding-right: 0; }
+  .large-title { padding-bottom: 14px; }
+  .large-title h1 { font-size: 30px; }
+  .screen:has(> .side-col:not(.solo)) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 20px; align-items: start; }
+  .screen:has(> .side-col:not(.solo)) > * { grid-column: 2; min-width: 0; }
+  .screen > .side-col:not(.solo) { display: block; grid-column: 1; grid-row: 1 / span 200; position: sticky; top: calc(var(--safe-t) + 14px); align-self: start; min-width: 0; }
+  .screen > .side-col[data-loose] { position: static; }
+  .screen > .side-col:not(.solo) + * { margin-top: 0; }
+  .screen > .side-col:not(.solo) + .group-title, .screen > .side-col:not(.solo) + .block > .group-title:first-child { margin-top: 12px; }
   .screen.tab-today .hero { margin-top: 0; }
-  .screen.tab-today > .side-col ~ *:nth-child(2) { margin-top: 0; }
 }
 .rc-stats div:last-child:nth-child(odd) { grid-column: span 2; }
 .dawn-skip { display: block; margin: 10px auto 0; color: inherit; opacity: 0.75; font-size: 14px; }
@@ -1984,11 +1988,6 @@ body[data-bg='paper'] { background: linear-gradient(180deg, #ffffff 0%, #f5f5f3 
 .recap-teaser > span:nth-child(2) { flex: 1; } .rt-go { font-size: 26px; color: var(--muted); }
 #recap { scroll-margin-top: 12px; } #recap .block { margin-top: 0; }
 @media (min-width: 700px) and (max-width: 1023.98px) {
-  /* Progress: your week recap on the left, charts and details on the right */
-  .screen.tab-week { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 20px; align-items: start; }
-  .screen.tab-week > * { grid-column: 2; max-width: none; margin-left: 0; margin-right: 0; min-width: 0; }
-  .screen.tab-week > .large-title, .screen.tab-week > .view-seg { grid-column: 1 / -1; }
-  .screen.tab-week > #recap { grid-column: 1; grid-row: 3 / span 60; position: sticky; top: var(--stick-top, 16px); align-self: start; }
   /* sheets: a centred panel instead of edge to edge */
   .sheet { max-width: 620px; margin-left: auto; margin-right: auto; }
   .tabbar { max-width: 520px; }
@@ -2039,8 +2038,7 @@ body:has(.sheet-wrap) .tabbar, body:has(.sheet-wrap) .fab { opacity: 0; pointer-
 body:has(.sheet-wrap) .fab { transform: scale(0.4); }
 .tabbar, .fab { transition: transform 0.25s var(--ease), opacity 0.2s; }
 /* partner sheet: name and ✕ stay pinned at the top while you scroll it */
-.partner-sheet .sheet-head { position: sticky; top: -8px; z-index: 3; margin: 0 -16px; padding: 8px 16px 10px; background: var(--bg); }
-.partner-sheet .sheet-head h2 { font-size: 22px; }
+.partner-sheet .sheet-head { position: sticky; top: -8px; z-index: 3; margin: 0 -16px; padding: 8px 20px 10px; background: var(--bg); }
 .sn-from { display: flex; align-items: center; gap: 6px; } .sn-from .character { flex: none; }
 /* Meals grouped by meal or by type */
 .meal-view { display: inline-flex; margin-left: auto; padding: 3px; border-radius: 99px; background: var(--card); box-shadow: var(--shadow); }
@@ -2069,8 +2067,8 @@ body:has(.sheet-wrap) .fab { transform: scale(0.4); }
 .rcd-sub b, .rcd-goal b { color: var(--ink); font-weight: 850; }
 .rcd-goal { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 /* Day closed · Reopen on one line, same size */
-.day-closed { gap: 8px; font-size: 15px; line-height: 1.3; }
-.day-closed .link-btn { padding: 4px 8px; margin: 0; font-size: 15px; line-height: 1.3; min-height: 0; }
+.day-closed { gap: 8px; font-size: 16px; line-height: 1.3; }
+.day-closed .link-btn { padding: 4px 8px; margin: 0; line-height: 1.3; min-height: 0; }
 /* Fold unfolded: a slightly tighter balance panel, so it fits whole on screen and can stay pinned
    while the right column scrolls (no cut-off ring at the top). */
 @media (min-width: 700px) and (max-width: 1023.98px) {
@@ -2151,3 +2149,12 @@ body:has(.sheet-wrap) .fab { transform: scale(0.4); }
 .plus-menu button.plus-check span { grid-row: auto; width: 26px; height: 26px; font-size: 15px; background: none; }
 .plus-menu button.plus-check b { font-size: 14.5px; font-weight: 800; color: var(--muted); }
 .plus-menu button.plus-check small { display: none; }
+
+/* in-card headings: one weight and size */
+.screen .card h3:not(.more-h):not(.ex-h) { font-weight: 850; }
+.screen .wcheck h3 { font-size: 21px; }
+/* soft buttons share the body size, and wrap instead of shrinking when the label is long */
+.screen .btn-soft { font-size: 16px; }
+.plan-btns .btn-soft, .plan-btns .btn-primary { height: auto; min-height: 50px; padding-top: 10px; padding-bottom: 10px; }
+/* the menu from holding a food follows the same sheet pattern */
+.row-menu .sheet-head h2 { overflow-wrap: anywhere; }

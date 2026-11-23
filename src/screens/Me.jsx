@@ -1,4 +1,5 @@
-import { useEffect, useState, Children, cloneElement, isValidElement } from 'react'
+import { useEffect, useRef, useState, Children, cloneElement, isValidElement } from 'react'
+import { useSideFit } from '../motion'
 import { maintainStatus, targetCheck, KCAL_PER_KG, ageOf, DEFAULT_BED, DEFAULT_WAKE, breakdown, dailyBudget, dayKey, fmt, prettyDate, recommendDates } from '../calc'
 import Character, { ACCESSORIES } from '../Character'
 import { HabitPicker } from './Habits'
@@ -33,6 +34,8 @@ export const toCm = (ft, inch) => (+ft > 0 ? Math.round(((+ft || 0) * 12 + (+inc
 
 export default function Me({ user, profile: p, updateProfile, resetProgress, partner, openWords, today, celebrate, notify }) {
   const [confirmReset, setConfirmReset] = useState(false)
+  const sideRef = useRef(null)
+  useSideFit(sideRef)
   const set = updateProfile
   const num = (k) => (e) => set({ [k]: e.target.value.replace(/[^\d.]/g, '') })
   // Target weight: saved with clear feedback, then point to "How fast?"
@@ -69,6 +72,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
 
   return (
     <>
+      <div className="side-col" ref={sideRef}>
       <header className="large-title">
         <div>
           <p className="date">{user.email}</p>
@@ -99,6 +103,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
             : 'Fill in About you below to work out your budget.'}
         </p>
       </section>
+      </div>
 
       <h2 className="group-title" id="goal">Your goal</h2>
       <div className="seg goal-seg">
