@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { VacationBanner, JoinVacation } from './Breaks'
-import { useCountUp, useSwipe } from '../motion'
+import { useCountUp, useSwipe, useStickyFit } from '../motion'
 import { breakdown, fmt, KCAL_PER_KG, mealFor, usualFor } from '../calc'
 import { CATS, catOf, foodEmoji } from '../foodCats'
 import Character, { moodFor } from '../Character'
@@ -57,6 +57,8 @@ function MealView({ value, onChange }) {
 }
 
 export default function Today(props) {
+  const heroRef = useRef(null)
+  useStickyFit(heroRef)
   const [mealView, setMealView] = useMealView()
   const { profile, mine, todays, budget, base, earn, addEntry, removeEntry, goSetup, words, streakDays, closeDay, openWords, windDown, notify } = props
   // Weekly check-in appears on Sundays until hidden
@@ -105,7 +107,7 @@ export default function Today(props) {
       <ShieldNote {...props} />
       <VacationBanner {...props} spentOver={(() => { const b = breakdown(profile); return b ? Math.round(spent - b.tdee - earn.total) : 0 })()} />
       <JoinVacation {...props} />
-      <section className={`card hero ${over ? 'is-over' : ''}`}>
+      <section ref={heroRef} className={`card hero ${over ? 'is-over' : ''}`}>
         <Ring value={budget ? (over ? 1 : left / budget) : 0}>
           <span className="munch" key={todays.length}><Character kind={profile.character} mood={mood} size={112} className="bob" acc={profile.accessory} /></span>
         </Ring>

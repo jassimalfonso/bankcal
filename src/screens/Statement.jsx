@@ -1,6 +1,7 @@
 import Calendar from './Calendar'
 import { MILESTONES } from '../milestones'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useStickyFit } from '../motion'
 import { dayKey, deficitDays, earned, sleepInsights, weightCheck, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
 import { Row } from './Today'
 import BodyCard from './BodyCard'
@@ -22,6 +23,8 @@ export default function Statement(props) {
   })
   const [pick, setPick] = useState(days[6].key)
   const [view, setView] = useState('week')
+  const recapRef = useRef(null)
+  useStickyFit(recapRef, view)
   const sel = days.find((d) => d.key === pick)
   const logged = days.filter((d) => d.net != null)
   const top = Math.max(budget ?? 0, ...days.map((d) => d.spent), 1) * 1.1
@@ -39,7 +42,7 @@ export default function Statement(props) {
         <button className={view === 'month' ? 'on' : ''} onClick={() => setView('month')}>Calendar</button>
       </div>
       {view === 'month' ? <Calendar {...props} /> : <>
-      <div id="recap"><WeeklyCard {...props} /></div>
+      <div id="recap" ref={recapRef}><WeeklyCard {...props} /></div>
 
       <section className="card chart">
         <div className="bars">

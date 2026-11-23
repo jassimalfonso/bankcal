@@ -126,3 +126,22 @@ export function useEscape(onClose) {
     }
   }, [])
 }
+
+// Side column on a wide screen (Fold unfolded): keeps the panel in view while the other
+// column scrolls. If the panel is taller than the screen, it scrolls up just far enough
+// to show its bottom above the tab bar, then holds there.
+export function useStickyFit(ref, key) {
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const fit = () => {
+      const room = (window.visualViewport?.height ?? window.innerHeight) - 104 // tab bar + breathing room
+      el.style.setProperty('--stick-top', `${Math.min(16, Math.round(room - el.offsetHeight))}px`)
+    }
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
+    window.addEventListener('resize', fit)
+    fit()
+    return () => { ro.disconnect(); window.removeEventListener('resize', fit) }
+  }, [ref, key])
+}
