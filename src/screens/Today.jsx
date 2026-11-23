@@ -110,9 +110,16 @@ export default function Today(props) {
           <p className="date">{date}{streakDays > 0 && <span className="streak-chip">🔥 {streakDays}</span>}</p>
           <h1>{(() => { const h = new Date().getHours(); return h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 17 ? 'Good afternoon' : h >= 17 ? 'Good evening' : 'Hi' })()}, {profile.name}</h1>
         </div>
-        <button className="char-btn" onClick={goSetup} aria-label="Settings">
-          <Character kind={profile.character} mood={mood} size={44} acc={profile.accessory} />
-        </button>
+        <div className="head-actions">
+          {props.checkFood && (
+            <button className="check-btn" onClick={props.checkFood} aria-label="Check a food’s calories without logging it">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" /><path d="m16 16 4.5 4.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
+            </button>
+          )}
+          <button className="char-btn" onClick={goSetup} aria-label="Settings">
+            <Character kind={profile.character} mood={mood} size={44} acc={profile.accessory} />
+          </button>
+        </div>
       </header>
 
       <ShieldNote {...props} />

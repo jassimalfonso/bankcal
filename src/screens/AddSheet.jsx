@@ -330,7 +330,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
           {/* tapping a food that's already chosen selects the whole name, so typing replaces it */}
           {/* grows onto more lines so a long name is fully visible while editing */}
           <textarea ref={inputRef} rows={1} className="food-name" value={name} onKeyDown={onEnter} onFocus={(e) => { if (picked) e.target.select() }}
-            onChange={(e) => { setName(e.target.value.replace(/\n/g, ' ')); setPicked(false) }} placeholder="Search or type, e.g. adobo…" aria-label="Food name" autoComplete="off" enterKeyHint="search" spellCheck={false} />
+            onChange={(e) => { setName(e.target.value.replace(/\n/g, ' ')); setPicked(false) }} placeholder={peek ? 'Type a food, e.g. kiwi…' : 'Search or type, e.g. adobo…'} autoFocus={peek} aria-label="Food name" autoComplete="off" enterKeyHint="search" spellCheck={false} />
           {name && <button type="button" className="field-clear" aria-label="Clear food" onClick={(e) => { e.preventDefault(); setName(''); setPicked(false); setAi((a) => ({ ...a, results: null, err: null })); inputRef.current?.focus() }}><IconClose size={18} /></button>}
         </label>
 

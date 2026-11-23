@@ -2121,3 +2121,8 @@ body:has(.sheet-wrap) .fab { transform: scale(0.4); }
 .rm-label { margin: 16px 4px 8px; font-size: 13.5px; font-weight: 800; color: var(--muted); }
 .rm-meals { display: flex; flex-wrap: wrap; gap: 8px; }
 .rm-meals .chip { height: 40px; }
+/* Today header: check a food's calories (magnifier) sits above your buddy */
+.head-actions { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: none; }
+.check-btn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--card); color: var(--accent); box-shadow: var(--shadow); transition: transform 0.2s var(--spring); }
+.check-btn:active { transform: scale(0.9); }
+@media (min-width: 700px) { .head-actions { flex-direction: row; gap: 10px; } }

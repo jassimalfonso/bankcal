@@ -319,7 +319,7 @@ function Bank({ user }) {
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const ctx = { ...store, sInfo, logFood, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, reopenDay, closed, openWords: () => setReplay(true), goSetup: (section) => {
+  const ctx = { ...store, sInfo, logFood, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), checkFood: () => setAdding({ peek: true }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, reopenDay, closed, openWords: () => setReplay(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }
@@ -339,7 +339,6 @@ function Bank({ user }) {
         <div className="plus-menu" role="menu">
           {!heldPlus && <p className="plus-tip">Tip: hold + to go straight to Log food</p>}
           <button role="menuitem" onClick={() => { setPlus(false); setWorking(true) }}><span>💪</span><b>Log a workout</b><small>Deposit calories</small></button>
-          <button role="menuitem" onClick={() => { setPlus(false); setAdding({ peek: true }) }}><span>🔍</span><b>Check a food</b><small>See its calories, nothing logged</small></button>
           <button role="menuitem" onClick={() => { setPlus(false); setAdding(true) }}><span>🍽️</span><b>Log food</b><small>Spend calories</small></button>
         </div>
       )}
