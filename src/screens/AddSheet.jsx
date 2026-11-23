@@ -87,7 +87,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
   const saveMine = () => {
     const nm = fixing.name.trim(), kc = Math.max(0, parseInt(fixing.kcal, 10) || 0)
     if (!nm) return
-    updateProfile({ myFoods: myFoods.map((x) => (x.id === fixing.id ? { ...x, name: nm.slice(0, 120), kcal: kc } : x)) })
+    updateProfile({ myFoods: myFoods.map((x) => { if (x.id !== fixing.id) return x; const { serving: _old, ...rest } = x; const sv = (fixing.serving ?? '').trim().slice(0, 30); return { ...rest, name: nm.slice(0, 120), kcal: kc, ...(sv ? { serving: sv } : {}) } }) })
     setFixing(null)
     notify?.(`Saved ${nm}`)
   }
@@ -101,7 +101,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
       for (const f of sh?.foods ?? []) {
         const k = key(f.name)
         if (!f.name || have.has(k) || !(f.kcal >= 0)) continue
-        have.add(k); out.push({ id: `p-${id}-${k}`, name: f.name, kcal: f.kcal, cat: f.cat, portion: `${sh.name}’s food`, from: sh.name })
+        have.add(k); out.push({ id: `p-${id}-${k}`, name: f.name, kcal: f.kcal, cat: f.cat, serving: f.serving, portion: `${sh.name}’s food`, from: sh.name })
       }
     }
     return out
@@ -109,6 +109,9 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
   const [photo, setPhoto] = useState(editing?.photo ?? null)
   const [name, setName] = useState(editing?.name ?? '')
   const [kcal, setKcal] = useState(editing ? String(editing.kcal) : '')
+  // the portion this is for, in your own words: "1 pc", "1 cup", "100 g"
+  const [serving, setServing] = useState(editing?.serving ?? '')
+  const realPortion = (x) => (x && !['my food', 'your usual', 'found online'].includes(x) && !/’s food$/.test(x) ? String(x).slice(0, 30) : '')
   const [picked, setPicked] = useState(!!editing)
   // Quantity of an item already logged ("Black coffee ×2"): changing it scales the calories
   const qtyOf = (nm) => +(String(nm).match(/\s×(\d+)$/)?.[1] ?? 1)
@@ -169,7 +172,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
   const suggestions = useMemo(() => {
     const t = name.trim().toLowerCase()
     if (picked || t.length < 2) return []
-    const saved = myFoods.filter((f) => f.name.toLowerCase().includes(t)).map((f) => ({ name: f.name, kcal: f.kcal, portion: f.portion || 'my food' }))
+    const saved = myFoods.filter((f) => f.name.toLowerCase().includes(t)).map((f) => ({ name: f.name, kcal: f.kcal, portion: f.portion || 'my food', serving: f.serving }))
     const past = recent.filter((r) => r.name.toLowerCase().includes(t) && !saved.some((s) => s.name.toLowerCase() === r.name.toLowerCase())).map((r) => ({ name: r.name, kcal: r.kcal, portion: 'your usual' }))
     const qw = words(t)
     const shared = theirs.filter((f) => { const fw = words(f.name); return qw.every((w) => fw.some((x) => x.startsWith(w))) && !saved.some((o) => o.name.toLowerCase() === f.name.toLowerCase()) })
@@ -194,6 +197,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
     setKcal(String(f.kcal))
     setPicked(true)
     setBase({ kcal: f.kcal, portion: f.portion, cat: f.cat })
+    setServing(f.serving || realPortion(f.portion))
     setMult(1)
     setAi((a) => ({ ...a, results: null }))
     inputRef.current?.blur() // put the keyboard away so the amount and Spend are in view
@@ -286,16 +290,17 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
     if (!valid) return
     const nm = name.trim()
     const cat = catOf({ name: nm, cat: picked ? base?.cat : undefined }, cats)
+    const sv = serving.trim().slice(0, 30)
     const one = baseName(nm) // My foods keeps a single serving, not "×3"
     const had = myFoods.find((f) => f.name.toLowerCase() === one.toLowerCase())
     if (keep && !had) {
-      updateProfile({ myFoods: [{ id: String(Date.now()), name: one, kcal: Math.round(n / qty), portion: 'my food', cat }, ...myFoods].slice(0, 60) })
+      updateProfile({ myFoods: [{ id: String(Date.now()), name: one, kcal: Math.round(n / qty), portion: 'my food', cat, ...(sv ? { serving: sv } : {}) }, ...myFoods].slice(0, 60) })
     } else if (had && myFoods[0] !== had && !editing) {
       // the ones you use most float to the top
       updateProfile({ myFoods: [had, ...myFoods.filter((f) => f !== had)] })
     }
     const label = { 0.5: '½', 1.5: '1½', 2: '2', 3: '3' }[mult]
-    onSave({ name: picked && label ? `${nm} ×${label}` : nm, kcal: n, meal, photo, cat })
+    onSave({ name: picked && label ? `${nm} ×${label}` : nm, kcal: n, meal, photo, cat, serving: sv })
   }
 
   return (
@@ -322,7 +327,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
         {(suggestions.length > 0 || (name.trim().length >= 2 && !picked)) && (() => {
           const row = (f, key, note) => (
             <button key={key} className="suggest-row" onClick={() => choose(f)}>
-              <span><b><Hl text={f.name} q={name} /></b><small>{note ? `${f.portion} · ${note}` : f.portion}</small></span>
+              <span><b><Hl text={f.name} q={name} /></b><small>{f.serving ? `${f.serving} · ` : ''}{note ? `${f.portion} · ${note}` : f.portion}</small></span>
               <span className="suggest-kcal">{fmt(f.kcal)}<i>kcal</i></span>
             </button>
           )
@@ -387,6 +392,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
                   fixing?.id === f.id ? (
                     <div key={f.id} className="mf-fix">
                       <textarea rows={1} className="mf-fix-name" value={fixing.name} autoFocus onChange={(e) => setFixing({ ...fixing, name: e.target.value.replace(/\n/g, ' ') })} aria-label="Food name" />
+                      <input className="mf-fix-serving" value={fixing.serving ?? ''} onChange={(e) => setFixing({ ...fixing, serving: e.target.value.slice(0, 30) })} placeholder="Portion, e.g. 1 pc (optional)" aria-label="Portion" autoComplete="off" />
                       <div className="mf-fix-row">
                         <label className="num-in"><input inputMode="numeric" value={fixing.kcal} onChange={(e) => setFixing({ ...fixing, kcal: e.target.value.replace(/\D/g, '') })} aria-label="Calories" onFocus={(e) => e.target.select()} /><span>kcal</span></label>
                         <button className="link-btn mf-del" onClick={() => removeMine(f.id)}>Remove</button>
@@ -395,8 +401,8 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
                       </div>
                     </div>
                   ) : (
-                  <button key={f.id} className={`mf-row ${editMine ? 'edit' : ''}`} onClick={() => (editMine ? setFixing({ id: f.id, name: f.name, kcal: String(f.kcal) }) : choose(f))} aria-label={editMine ? `Edit ${f.name}` : `${f.name}, ${fmt(f.kcal)} kcal`}>
-                    <Badge f={f} /><span className="mf-name">{f.name}</span>
+                  <button key={f.id} className={`mf-row ${editMine ? 'edit' : ''}`} onClick={() => (editMine ? setFixing({ id: f.id, name: f.name, kcal: String(f.kcal), serving: f.serving ?? '' }) : choose(f))} aria-label={editMine ? `Edit ${f.name}` : `${f.name}, ${fmt(f.kcal)} kcal`}>
+                    <Badge f={f} /><span className="mf-name">{f.name}{f.serving ? <small className="mf-serving"> · {f.serving}</small> : null}</span>
                     {editMine ? <span className="mf-x">✏️ {fmt(f.kcal)}</span> : <span className="mf-kcal">{fmt(f.kcal)}</span>}
                   </button>
                   )
@@ -472,6 +478,17 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
             {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((m) => (
               <button key={m} role="radio" aria-checked={meal === m} className={`chip ${meal === m ? 'on' : ''}`} onClick={() => setMeal(m)}>{m}</button>
             ))}
+          </div>
+        )}
+
+        {(name.trim() || editing) && (
+          <div className="serving-row">
+            <label><span>Portion</span>
+              <input value={serving} onChange={(e) => setServing(e.target.value.slice(0, 30))} placeholder="optional, e.g. 1 pc" aria-label="Portion" autoComplete="off" enterKeyHint="done" onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur() }} />
+            </label>
+            <div className="serving-chips">
+              {['1 pc', '2 pcs', '1 cup', '1 bowl', '1 plate', '100 g'].map((x) => <button key={x} className={serving === x ? 'on' : ''} onClick={() => setServing(serving === x ? '' : x)}>{x}</button>)}
+            </div>
           </div>
         )}
 

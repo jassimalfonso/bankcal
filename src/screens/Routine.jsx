@@ -109,7 +109,8 @@ export function CustomSheet({ initial: given, weight, inRoutine, existing = [], 
   const [toRoutine, setToRoutine] = useState(!initial)
   const twin = !initial && existing.find((x) => x.name.trim().toLowerCase() === c.name.trim().toLowerCase())
   const valid = c.name.trim().length > 1 && !twin
-  const sample = { id: 'x', name: c.name, kind: c.kind, sets: 3, reps: 10, sec: 30, rest: 60, met: c.met }
+  const sets = +c.sets || 3, reps = +c.reps || 10, sec = +c.sec || 30, kg = c.kg != null ? +c.kg : 5
+  const sample = { id: 'x', name: c.name, kind: c.kind, sets, reps, sec, rest: 60, met: c.met }
   const saved = () => { const out = { ...c, name: c.name.trim(), id: c.id ?? `c${Date.now().toString(36)}` }; onSave(out); return out }
   return createPortal(
     <div className="sheet-wrap" onClick={onClose}>
@@ -136,6 +137,16 @@ export function CustomSheet({ initial: given, weight, inRoutine, existing = [], 
           <label className="keep-food"><input type="checkbox" checked={!!c.weighted} onChange={(e) => set({ weighted: e.target.checked })} /><span>Uses weights (track kg)</span></label>
         )}
 
+        <h3 className="ex-h">Your usual amount</h3>
+        <div className="card rt-adjust own-adjust">
+          <Stepper label="Sets" value={sets} min={1} max={20} onChange={(v) => set({ sets: v })} />
+          {c.kind === 'time'
+            ? <Stepper label="Seconds" value={sec} step={5} min={5} max={600} onChange={(v) => set({ sec: v })} />
+            : <Stepper label="Reps" value={reps} min={1} max={100} onChange={(v) => set({ reps: v })} />}
+          {c.kind === 'reps' && c.weighted && <Stepper label="Weight" unit="kg" value={kg} step={0.5} min={0} max={200} onChange={(v) => set({ kg: v })} />}
+        </div>
+        <p className="fine">This is what gets logged when you tap it. Did more? Tap <b>+1 set</b> on it in Deposits, or log it again and the sets add up.</p>
+
         <h3 className="ex-h">How hard is it?</h3>
         <div className="effort-list">
           {EFFORTS.map((e) => (
@@ -145,7 +156,7 @@ export function CustomSheet({ initial: given, weight, inRoutine, existing = [], 
             </button>
           ))}
         </div>
-        <p className="fine">At this effort, 3 sets of {c.kind === 'time' ? '30 seconds' : '10 reps'} with 1-minute rests burns about <b>{fmt(workoutKcal(routineWorkout(sample), weight))} kcal</b> for you, above what you’d burn resting.</p>
+        <p className="fine">At this effort, {sets} set{sets === 1 ? '' : 's'} of {c.kind === 'time' ? `${sec} seconds` : `${reps} reps`} with 1-minute rests burns about <b>{fmt(workoutKcal(routineWorkout(sample), weight))} kcal</b> for you, above what you’d burn resting.</p>
 
         {twin && (
           <p className="dup-note">You already have <b>{twin.name}</b>. <button className="link-btn" onClick={() => onOpen?.(twin)}>Open it</button></p>

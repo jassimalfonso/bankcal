@@ -42,7 +42,13 @@ export default function Train(props) {
   const [custom, setCustom] = useState(null) // 'new' or an exercise being edited
   const saveCustom = (c) => updateProfile({
     customEx: customs.some((x) => x.id === c.id) ? customs.map((x) => (x.id === c.id ? c : x)) : [...customs, c],
-    routine: routine.map((it) => (it.ex === c.id ? { ...it, name: c.name, emoji: c.emoji, met: c.met } : it)),
+    // the routine copy follows the name, icon and effort, and any amount that was just changed here
+    routine: routine.map((it) => {
+      if (it.ex !== c.id) return it
+      const was = customs.find((x) => x.id === c.id) ?? {}
+      const amounts = Object.fromEntries(['sets', 'reps', 'sec', 'kg'].filter((k) => c[k] != null && c[k] !== was[k] && (k !== 'kg' || c.weighted) && (k !== 'reps' || c.kind === 'reps') && (k !== 'sec' || c.kind === 'time')).map((k) => [k, +c[k]]))
+      return { ...it, name: c.name, emoji: c.emoji, met: c.met, ...amounts }
+    }),
   })
   const addRoutine = (item, quiet) => { updateProfile({ routine: [...(profile.routine ?? []), item] }); if (!quiet) props.notify(`${item.name} added to your routine`) }
   const inRoutine = (id) => routine.some((it) => it.ex === id)

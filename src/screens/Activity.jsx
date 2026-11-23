@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { BASE_STEPS, earned, DEFAULT_BED, DEFAULT_WAKE, describeWorkout, fmt, fmtSleep, sleepHours, SLEEP_TARGET, WORKOUTS, workoutKcal } from '../calc'
 import WorkoutSheet from './WorkoutSheet'
-import EditWorkout from './EditWorkout'
-import { myWorkouts, routineWorkout } from '../training'
+import EditWorkout, { fromNote } from './EditWorkout'
+import { myWorkouts, routineWorkout, sameDose, withMoreSets } from '../training'
 import { workoutKcal as kcalOf } from '../calc'
 
 // Today's "deposits": steps and treadmill time earn calories back into the budget.
@@ -31,7 +31,20 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
     else receipt({ kind: 'steps', what: patch.steps != null && patch.steps > 0 && patch.steps < BASE_STEPS ? `${label} · earning starts after ${fmt(BASE_STEPS)}` : label, kcal: 0, undo })
   }
   const toggle = () => setOpen((o) => { if (!pastDay) { try { localStorage.setItem('bankcal:deposits', o ? 'closed' : 'open') } catch { /* ignore */ } } return !o })
+  // sets × reps of a logged workout, when it has them
+  const itemOf = (w) => w.item ?? fromNote(w, profile)
+  const addSets = (w, n) => {
+    const it = itemOf(w)
+    if (!it) return
+    const next = withMoreSets(w, it, n)
+    const gain = Math.round(workoutKcal(next, profile.weight) - workoutKcal(w, profile.weight))
+    setDay(today, { workouts: workouts.map((x) => (x.id === w.id ? next : x)) })
+    receipt?.({ kind: 'deposit', what: `${w.label}: now ${next.note}`, kcal: Math.max(0, gain), id: w.id, undo: () => setDay(today, { workouts }) })
+  }
   const saveWorkout = (w) => {
+    // the same exercise at the same reps and weight, done again today: its sets add up on one line
+    const twin = w.item && !w.rid && workouts.find((x) => sameDose(itemOf(x), { ...w.item, name: w.item.name ?? w.label }))
+    if (twin && (+itemOf(twin).sets || 1) + (+w.item.sets || 1) <= 20) { addSets(twin, +w.item.sets || 1); setAdding(false); return }
     const id = Date.now().toString(36)
     setDay(today, { workouts: [...workouts, { id, ...w }] })
     if (receipt) receipt({ kind: 'deposit', what: w.label || WORKOUTS.find((x) => x.id === w.type)?.label || 'Workout', kcal: Math.round(workoutKcal(w, profile.weight)), id, undo: () => setDay(today, { workouts }) })
@@ -91,6 +104,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
             <div className={`act-row ${fresh === w.id ? 'fresh' : ''}`} key={w.id}>
               <span className="w-emoji small">{w.item?.emoji ?? def?.emoji}</span>
               <button className="act-head act-edit" onClick={() => setEditing(w)} aria-label={`Edit ${w.label ?? def?.label}`}><b>{w.label ?? def?.label}</b><small>{describeWorkout(w)} · <span className="act-tap">Edit</span></small></button>
+              {itemOf(w) && (+itemOf(w).sets || 1) < 20 && <button className="w-more" onClick={() => addSets(w, 1)} aria-label={`Add one more set of ${w.label ?? def?.label}`}>+1 set</button>}
               <button className="w-del" onClick={() => removeWorkout(w.id)} aria-label={`Remove ${def?.label}`}>×</button>
               <span className="act-kcal">+{fmt(workoutKcal(w, profile.weight))}</span>
             </div>

@@ -320,7 +320,7 @@ export function routineFromExercise(ex, level, kg) {
   }
 }
 export function routineFromCustom(c) {
-  return { id: `r${Date.now().toString(36)}`, ex: c.id, name: c.name, emoji: c.emoji ?? '✅', kind: c.kind, sets: 3, reps: c.kind === 'reps' ? 10 : undefined, sec: c.kind === 'time' ? 30 : undefined, kg: c.weighted ? 5 : undefined, rest: 60, met: c.met }
+  return { id: `r${Date.now().toString(36)}`, ex: c.id, name: c.name, emoji: c.emoji ?? '✅', kind: c.kind, sets: +c.sets || 3, reps: c.kind === 'reps' ? (+c.reps || 10) : undefined, sec: c.kind === 'time' ? (+c.sec || 30) : undefined, kg: c.weighted ? (c.kg != null ? +c.kg : 5) : undefined, rest: 60, met: c.met }
 }
 
 // Minutes and effort for a routine item. Up to moderate effort the whole time counts at that
@@ -410,4 +410,10 @@ export function searchExercises(q, index) {
     .filter(Boolean)
     .sort((a, b) => b.score - a.score)
     .slice(0, 12)
+}
+
+// Doing the same exercise again (same reps, seconds and weight): its sets add up on one line.
+export const sameDose = (a, b) => !!a && !!b && a.kind === b.kind && (a.name ?? '').toLowerCase() === (b.name ?? '').toLowerCase() && (+a.reps || 0) === (+b.reps || 0) && (+a.sec || 0) === (+b.sec || 0) && (+a.kg || 0) === (+b.kg || 0) && !!a.each === !!b.each
+export function withMoreSets(w, it, n) {
+  return { ...routineWorkout({ ...it, name: it.name ?? w.label, sets: Math.min(20, (+it.sets || 1) + n) }), id: w.id, rid: w.rid }
 }

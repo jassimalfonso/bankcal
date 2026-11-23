@@ -239,7 +239,7 @@ export function Row({ e, onDelete, onEdit, fresh, cats }) {
         {e.photo ? <img className="row-img" src={e.photo} alt="" /> : <span className="row-img ph emo" aria-hidden="true">{foodEmoji(e, cats)}</span>}
         <div className="row-text">
           <b>{e.name}</b>
-          <small>{e.meal} at {time}</small>
+          <small>{e.serving ? `${e.serving} · ` : ''}{e.meal} at {time}</small>
         </div>
         <span className="row-kcal">{fmt(e.kcal)}<small> kcal</small></span>
       </div>

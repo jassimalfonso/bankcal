@@ -69,7 +69,7 @@ export default function EditWorkout({ w, profile, onSave, onRemove, onClose }) {
 // Workouts logged before sets/reps were saved still have a note like "2 × 15 @ 5 kg".
 // Read it back, and take the effort level and rest time from the matching exercise
 // in your routine or saved exercises.
-function fromNote(w, profile) {
+export function fromNote(w, profile) {
   if (w.type !== 'custom' || !w.note) return null
   const m = w.note.match(/^(\d+)\s*×\s*(\d+)(\s*s)?(\s*each side)?(?:\s*@\s*([\d.]+)\s*kg)?/)
   if (!m) return null

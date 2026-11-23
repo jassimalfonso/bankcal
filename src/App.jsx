@@ -10,7 +10,7 @@ import WorkoutSheet from './screens/WorkoutSheet'
 import Swipeable from './Swipeable'
 import ErrorBoundary from './ErrorBoundary'
 import { applyUpdate, onUpdateReady } from './update'
-import { myWorkouts, partnerWorkouts } from './training'
+import { myWorkouts, partnerWorkouts, sameDose, withMoreSets } from './training'
 
 const DEMO = import.meta.env.MODE === 'demo'
 import { vacationOn, partnerProgress, dailyBudget, dayKey, earned, fmt, isBedtime, isBirthday, isWindDown, logicalDayKey, streak, streakInfo, describeWorkout, DEFAULT_BED, workoutKcal, WORKOUTS } from './calc'
@@ -353,6 +353,15 @@ function Bank({ user }) {
           onSave={(w) => {
             const id = Date.now().toString(36)
             const before = dayLog.workouts ?? []
+            // the same exercise at the same reps and weight, done again today: its sets add up on one line
+            const twin = w.item && !w.rid && before.find((x) => x.item && sameDose(x.item, { ...w.item, name: w.item.name ?? w.label }) && (+x.item.sets || 1) + (+w.item.sets || 1) <= 20)
+            if (twin) {
+              const next = withMoreSets(twin, twin.item, +w.item.sets || 1)
+              store.setDay(today, { workouts: before.map((x) => (x.id === twin.id ? next : x)) })
+              receipt({ kind: 'deposit', what: `${twin.label}: now ${next.note}`, kcal: Math.max(0, Math.round(workoutKcal(next, profile.weight) - workoutKcal(twin, profile.weight))), id: twin.id, undo: () => store.setDay(today, { workouts: before }) })
+              setWorking(false); setTab('today')
+              return
+            }
             store.setDay(today, { workouts: [...before, { id, ...w }] })
             receipt({ kind: 'deposit', what: w.label || WORKOUTS.find((x) => x.id === w.type)?.label || 'Workout', kcal: Math.round(workoutKcal(w, profile.weight)), id, undo: () => store.setDay(today, { workouts: before }) })
             setWorking(false)
@@ -413,7 +422,7 @@ function Bank({ user }) {
           onClose={() => setAdding(false)}
           onRemove={(old) => {
             store.removeEntry(old.id)
-            notify(`Removed ${old.name}`, () => store.addEntry({ name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo, day: old.day }))
+            notify(`Removed ${old.name}`, () => store.addEntry({ name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo, day: old.day, cat: old.cat, serving: old.serving }))
             setAdding(false)
           }}
           onSave={(e) => {
@@ -428,7 +437,7 @@ function Bank({ user }) {
             if (adding !== true) {
               const old = adding
               store.updateEntry(old.id, e)
-              receipt({ kind: 'edit', what: e.name, kcal: 0, id: old.id, undo: () => store.updateEntry(old.id, { name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo ?? null }) })
+              receipt({ kind: 'edit', what: e.name, kcal: 0, id: old.id, undo: () => store.updateEntry(old.id, { name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo ?? null, serving: old.serving ?? '' }) })
               setAdding(false)
               return
             }
