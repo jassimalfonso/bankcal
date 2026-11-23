@@ -294,11 +294,19 @@ function Bank({ user }) {
   // Milestones: save newly reached ones and let the buddy announce them
   const reachedIds = profile?.onboarded ? reached({ entries, profile: pf, streakDays }) : []
   const newIds = reachedIds.filter((id) => !pf.badges?.[id])
+  // Each milestone is announced once per device, even if the save is slow, the app is open
+  // twice, or the cloud copy lags behind: the ids already shown are kept on the phone.
+  const msSeen = useRef(null)
+  if (!msSeen.current) { try { msSeen.current = new Set(JSON.parse(localStorage.getItem('bankcal:ms-seen') || '[]')) } catch { msSeen.current = new Set() } }
   useEffect(() => {
     if (!newIds.length || showM || helloOn) return // wait until the welcome screen is out of the way
     store.updateProfile({ badges: { ...(pf.badges ?? {}), ...Object.fromEntries(newIds.map((id) => [id, today])) } })
-    const m = MILESTONES.find((x) => x.id === newIds[0])
-    celebrate(newIds.length > 1 ? `${newIds.length} milestones reached! ${m.emoji}` : `Milestone: ${m.label} ${m.emoji}`, m)
+    const fresh = newIds.filter((id) => !msSeen.current.has(id))
+    fresh.forEach((id) => msSeen.current.add(id))
+    try { localStorage.setItem('bankcal:ms-seen', JSON.stringify([...msSeen.current])) } catch { /* ignore */ }
+    if (!fresh.length) return
+    const m = MILESTONES.find((x) => x.id === fresh[0])
+    celebrate(fresh.length > 1 ? `${fresh.length} milestones reached! ${m.emoji}` : `Milestone: ${m.label} ${m.emoji}`, m)
   }, [newIds.join(','), showM, helloOn]) // eslint-disable-line react-hooks/exhaustive-deps
   const focus = profile?.onboarded ? oneThing({ profile: pf, todayKey: today, yesterday, plans: PLANS }) : null
 

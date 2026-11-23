@@ -299,7 +299,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
             <p><b>Delete all your logged progress?</b> This can’t be undone.</p>
             <div className="rc-btns">
               <button className="btn-plain" onClick={() => setConfirmReset(false)}>Keep it</button>
-              <button className="btn-plain danger solid" onClick={async () => { await resetProgress(); setConfirmReset(false) }}>Yes, start fresh</button>
+              <button className="btn-plain danger solid" onClick={async () => { await resetProgress(); try { localStorage.removeItem('bankcal:ms-seen') } catch { /* ignore */ } setConfirmReset(false) }}>Yes, start fresh</button>
             </div>
           </div>
         )}
