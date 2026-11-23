@@ -146,3 +146,31 @@ export function useStickyFit(ref, key) {
     return () => { ro.disconnect(); window.removeEventListener('resize', fit) }
   }, [ref, key])
 }
+
+// Wide screens (Fold unfolded): the greeting and the balance panel form a left column that never
+// moves while the right column scrolls. If the column is taller than the screen, the balance
+// panel is scaled down just enough to fit above the tab bar, so nothing has to slide.
+export function useSideFit(sideRef, panelRef) {
+  useEffect(() => {
+    const side = sideRef.current, panel = panelRef.current
+    if (!side || !panel || typeof ResizeObserver === 'undefined') return
+    let k = 1
+    const fit = () => {
+      const cs = getComputedStyle(side)
+      if (cs.position !== 'sticky') { if (k !== 1) { k = 1; panel.style.zoom = '' } return }
+      const room = (window.visualViewport?.height ?? window.innerHeight) - (parseFloat(cs.top) || 0) - 134 // the tab bar and the space kept clear under the page
+      const shown = panel.getBoundingClientRect().height
+      const natural = shown / k
+      const rest = side.getBoundingClientRect().height - shown
+      const next = Math.max(0.72, Math.min(1, (room - rest) / natural))
+      if (Math.abs(next - k) < 0.01) return
+      k = next > 0.99 ? 1 : next
+      panel.style.zoom = k === 1 ? '' : String(Math.round(k * 1000) / 1000)
+    }
+    const ro = new ResizeObserver(fit)
+    ro.observe(side); ro.observe(panel)
+    window.addEventListener('resize', fit)
+    fit()
+    return () => { ro.disconnect(); window.removeEventListener('resize', fit); panel.style.zoom = '' }
+  }, [sideRef, panelRef])
+}

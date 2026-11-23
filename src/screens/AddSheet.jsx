@@ -540,7 +540,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
 }
 
 // Bold the parts of a name that match what was typed
-function Hl({ text, q }) {
+export function Hl({ text, q }) {
   const words = q.toLowerCase().split(/[^a-z0-9]+/i).filter((w) => w.length > 1)
   if (!words.length) return text
   const re = new RegExp(`(${words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'ig')

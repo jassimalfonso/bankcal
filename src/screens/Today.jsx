@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { VacationBanner, JoinVacation } from './Breaks'
 import { createPortal } from 'react-dom'
-import { useCountUp, useSwipe, useStickyFit, useEscape } from '../motion'
+import { useCountUp, useSwipe, useSideFit, useEscape } from '../motion'
 import { useHold, HoldConfirm } from '../Hold'
 import { firstTime } from '../keyboard'
 import { breakdown, fmt, KCAL_PER_KG, mealFor, usualFor } from '../calc'
@@ -61,7 +61,8 @@ function MealView({ value, onChange }) {
 
 export default function Today(props) {
   const heroRef = useRef(null)
-  useStickyFit(heroRef)
+  const sideRef = useRef(null)
+  useSideFit(sideRef, heroRef)
   const [mealView, setMealView] = useMealView()
   const { profile, mine, todays, budget, base, earn, addEntry, removeEntry, goSetup, words, streakDays, closeDay, openWords, windDown, notify } = props
   // Weekly check-in appears on Sundays until hidden
@@ -105,6 +106,7 @@ export default function Today(props) {
 
   return (
     <>
+      <div className="side-col" ref={sideRef}>
       <header className="large-title">
         <div>
           <p className="date">{date}{streakDays > 0 && <span className="streak-chip">🔥 {streakDays}</span>}</p>
@@ -113,12 +115,6 @@ export default function Today(props) {
         <button className="char-btn" onClick={goSetup} aria-label="Settings">
           <Character kind={profile.character} mood={mood} size={44} acc={profile.accessory} />
         </button>
-        {props.checkFood && (
-          <button className="check-bar" onClick={props.checkFood}>
-            <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" /><path d="m16 16 4.5 4.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
-            Check a food’s calories
-          </button>
-        )}
       </header>
 
       <ShieldNote {...props} />
@@ -174,6 +170,7 @@ export default function Today(props) {
           </>
         )}
       </section>
+      </div>
 
 
       {showWeek && (

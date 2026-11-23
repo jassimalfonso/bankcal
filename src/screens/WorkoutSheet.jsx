@@ -7,6 +7,7 @@ import { useEscape, useSheetDrag } from '../motion'
 import { doseOf, exerciseIndex, routineWorkout, searchExercises } from '../training'
 import { useMemo } from 'react'
 import { Stepper } from './Routine'
+import { Hl } from './AddSheet'
 
 // Pick an exercise, enter amounts, see the calories it earns, deposit.
 // `mine` = your routine and your own exercises, shown first since they're what you usually do.
@@ -27,7 +28,8 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
   const [ai, setAi] = useState({ busy: false, results: null, q: '' })
   const [aiAct, setAiAct] = useState(null) // an online activity being logged by minutes: { name, met }
   const term = q.trim()
-  const thin = found.filter((r) => r.score >= 40).length < 2
+  const [force, setForce] = useState('') // "Not it? Search online" was tapped for this search
+  const thin = found.filter((r) => r.score >= 40).length < 2 || force === term.toLowerCase()
   useEffect(() => {
     if (term.length < 3 || !thin) { setAi({ busy: false, results: null, q: '' }); return }
     const key = term.toLowerCase()
@@ -107,44 +109,37 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
             <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search, e.g. squats, cycling, curls…" aria-label="Search exercises" autoComplete="off" enterKeyHint="search" />
             {q && <button type="button" className="field-clear" aria-label="Clear search" onClick={(e) => { e.preventDefault(); setQ('') }}><IconClose size={18} /></button>}
           </label>
-          {q.trim() ? (
-            <>
-            {found.length > 0 && (
-              <div className="card mine-list ws-results">
-                {found.map((r) => (
-                  <button key={r.key} className={`mine-row ${r.done ? 'done' : ''}`} onClick={() => pick(r)}>
-                    <span className="w-emoji small">{r.item.emoji}</span>
-                    <span className="ex-main"><b>{r.item.name}</b><small>{r.kind === 'mine' ? (r.done ? 'Yours · done today ✓' : `Yours · ${r.dose}`) : r.from ? `${r.from}’s · ${r.dose}` : r.kind === 'lib' ? `Sets × reps · ${r.dose}` : `Log ${r.dose}`}</small></span>
-                    {r.kind !== 'act' ? <span className="pos">+{fmt(workoutKcal(routineWorkout(r.item), profile.weight))}</span> : <span className="ws-go">›</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-            {(ai.busy || online.length > 0) && (
-              <>
-                <p className="sg-h ws-online">Online · AI estimate</p>
+          {q.trim() ? (() => {
+            // one list, laid out like the food search: yours, the app's own, then online
+            const row = (r) => (
+              <button key={r.key} className={`suggest-row ws-row ${r.done ? 'done' : ''}`} onClick={() => pick(r)}>
+                <span className="w-emoji small" aria-hidden="true">{r.item.emoji}</span>
+                <span><b><Hl text={r.item.name} q={q} /></b><small>{r.kind === 'mine' ? (r.done ? 'Done today ✓' : r.dose) : r.from ? `${r.from}’s · ${r.dose}` : r.kind === 'lib' ? r.dose : r.kind === 'aimin' ? 'by minutes' : `by ${r.dose}`}</small></span>
+                {r.kind === 'act' || r.kind === 'aimin' ? <span className="ws-go">›</span> : <span className="suggest-kcal pos">+{fmt(workoutKcal(routineWorkout(r.item), profile.weight))}<i>kcal</i></span>}
+              </button>
+            )
+            const yours = found.filter((r) => r.kind === 'mine' || r.from)
+            const rest = found.filter((r) => !yours.includes(r))
+            const asked = ai.busy || ai.results != null
+            return (
+              <div className="card suggest ws-suggest">
+                {yours.length > 0 && <p className="sg-h">Yours</p>}
+                {yours.map(row)}
+                {rest.length > 0 && yours.length > 0 && <p className="sg-h">More</p>}
+                {rest.map(row)}
+                {(ai.busy || online.length > 0) && <p className="sg-h">Online · AI estimate</p>}
                 {ai.busy && !online.length && <div className="sg-skel" aria-label="Checking online"><i /><i /></div>}
-                {online.length > 0 && (
-                  <div className="card mine-list ws-results">
-                    {online.map((r) => (
-                      <button key={r.key} className="mine-row" onClick={() => pick(r)}>
-                        <span className="w-emoji small">{r.item.emoji}</span>
-                        <span className="ex-main"><b>{r.item.name}</b><small>{r.kind === 'aimin' ? 'Log by minutes' : `Sets × reps · ${r.dose}`}</small></span>
-                        {r.kind === 'lib' ? <span className="pos">+{fmt(workoutKcal(routineWorkout(r.item), profile.weight))}</span> : <span className="ws-go">›</span>}
-                      </button>
-                    ))}
-                  </div>
+                {online.map(row)}
+                {asked && !ai.busy && !online.length && !found.length && <p className="sg-h">No match for “{term}”</p>}
+                {!asked && term.length >= 3 && (
+                  <button className="suggest-ai" onClick={() => setForce(term.toLowerCase())}>{found.length ? `Not it? Search online for “${term}”` : `Search online for “${term}”`}</button>
                 )}
-              </>
-            )}
-            {!found.length && !ai.busy && !online.length && (
-              <div className="ws-none">
-                <p>No match for “{q.trim()}”.</p>
-                <button className="btn-soft" onClick={() => { setAiAct(null); setType('custom') }}>Log “{q.trim()}” by minutes</button>
+                {(!found.length || asked) && !ai.busy && (
+                  <button className="suggest-ai" onClick={() => { setAiAct(null); setType('custom') }}>Log “{term}” by minutes instead</button>
+                )}
               </div>
-            )}
-            </>
-          ) : (<>
+            )
+          })() : (<>
           {onSteps && (
             <div className="card ws-steps">
               <span className="w-emoji small">👣</span>
