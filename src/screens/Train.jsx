@@ -4,7 +4,7 @@ import { fmt, workoutKcal } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag, useSideFit } from '../motion'
 import Move, { WatchHow, hasMove } from '../Moves'
-import { EXERCISES, GROUPS, LEVELS, PLANS, exerciseById, routineFromCustom, routineFromExercise, routineWorkout, toSession, toWorkout, weightRange } from '../training'
+import { EXERCISES, GROUPS, LEVELS, PLANS, myWorkouts, partnerExercises, exerciseById, routineFromCustom, routineFromExercise, routineWorkout, toSession, toWorkout, weightRange } from '../training'
 import { CustomSheet, RoutineCard } from './Routine'
 
 const range = (r) => (r ? `${r[0]}–${r[1]} kg` : null)
@@ -79,6 +79,32 @@ export default function Train(props) {
 
       <RoutineCard {...props} onCreate={() => setCustom('new')} />
       </div>
+
+      {partnerExercises(props.partner, myWorkouts(profile), today).map((pt) => (
+        <section key={pt.id} className="block">
+          <div className="block-head">
+            <h2 className="group-title">🤝 {pt.name}’s exercises</h2>
+            {pt.list.some((m) => m.today) || pt.extra.length ? <span className="rt-sum">{pt.list.filter((m) => m.today).length + pt.extra.length} done today</span> : null}
+          </div>
+          <div className="card mine-list pt-list">
+            {pt.list.map((m) => (
+              <div key={m.key} className={`pt-row ${m.today ? 'done' : ''}`}>
+                <button className="mine-row" onClick={() => props.doWorkout?.(m)} aria-label={`Do ${m.item.name} yourself: ${m.dose}`}>
+                  <span className="w-emoji small">{m.item.emoji}</span>
+                  <span className="ex-main"><b>{m.item.name}</b><small>{m.today ? `✓ Today${m.today !== 'done' ? ` · ${m.today}` : ''}` : m.dose}</small></span>
+                </button>
+                {m.mine
+                  ? <span className="pt-have">In yours</span>
+                  : <button className="pt-add" onClick={() => { updateProfile({ routine: [...(profile.routine ?? []), { ...m.item, id: `r${Date.now().toString(36)}` }] }); props.notify?.(`${m.item.name} added to your routine`) }} aria-label={`Add ${m.item.name} to my routine`}>+ Mine</button>}
+              </div>
+            ))}
+            {pt.extra.map((x) => (
+              <div key={x.name} className="pt-row done"><div className="mine-row"><span className="w-emoji small">✓</span><span className="ex-main"><b>{x.name}</b><small>Today{x.d ? ` · ${x.d}` : ''}</small></span></div></div>
+            ))}
+          </div>
+          <p className="fine">Tap one to do it yourself. <b>+ Mine</b> adds it to your routine at {pt.name}’s amounts, which you can then adjust.</p>
+        </section>
+      ))}
 
       <h2 className="group-title">Your plan</h2>
       {active && !browse ? (

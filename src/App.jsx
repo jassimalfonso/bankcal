@@ -289,6 +289,8 @@ function Bank({ user }) {
         loggedDay: todays.length ? today : null, closed: dayLog.closed ? today : null,
       } : { meal: false, close: false },
       // today's wins for your partner to react to: names only, never food or weight
+      // what I trained today, by name, so my partner can see it next to my exercises
+      did: (dayLog.workouts ?? []).map((w) => ({ n: String(w.label || WORKOUTS.find((x) => x.id === w.type)?.label || '').slice(0, 60), d: describeWorkout(w) || '' })).filter((x) => x.n).slice(0, 20),
       wins: [
         // all of today's workouts as one win, so the list stays short
         ...((dayLog.workouts ?? []).length ? [(() => {
@@ -328,7 +330,7 @@ function Bank({ user }) {
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const ctx = { ...store, sInfo, logFood, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, reopenDay, closed, openWords: () => setReplay(true), goSetup: (section) => {
+  const ctx = { ...store, sInfo, logFood, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), doWorkout: (m) => setWorking({ start: m }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, reopenDay, closed, openWords: () => setReplay(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }
@@ -357,7 +359,7 @@ function Bank({ user }) {
       </button>
       {working && (
         <ErrorBoundary onError={() => { setWorking(false); notify('That screen hit a problem and was closed. Please try again.') }}>
-        <WorkoutSheet profile={profile} mine={myWorkouts(profile, dayLog.workouts ?? [])} theirs={partnerWorkouts(partner, myWorkouts(profile))} onClose={() => setWorking(false)}
+        <WorkoutSheet profile={profile} start={working?.start ?? null} mine={myWorkouts(profile, dayLog.workouts ?? [])} theirs={partnerWorkouts(partner, myWorkouts(profile))} onClose={() => setWorking(false)}
           steps={dayLog.steps} onSteps={(v) => {
             const goal = +profile.stepsGoal || 8000
             store.setDay(today, { steps: v })

@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { BASE_STEPS, earned, DEFAULT_BED, DEFAULT_WAKE, describeWorkout, fmt, fmtSleep, sleepHours, SLEEP_TARGET, WORKOUTS, workoutKcal } from '../calc'
 import WorkoutSheet from './WorkoutSheet'
 import EditWorkout, { fromNote } from './EditWorkout'
-import { myWorkouts, routineWorkout, sameDose, withMoreSets } from '../training'
+import { myWorkouts, partnerWorkouts, routineWorkout, sameDose, withMoreSets } from '../training'
 import { workoutKcal as kcalOf } from '../calc'
 
 // Today's "deposits": steps and treadmill time earn calories back into the budget.
 // Values are typed in (a web app can't read the phone's step counter) and saved on blur.
-export default function Activity({ profile, dayLog, earn, today, setDay, updateProfile, celebrate, receipt, fresh, pastDay }) {
+export default function Activity({ profile, dayLog, earn, today, setDay, updateProfile, celebrate, receipt, fresh, pastDay, partner }) {
   const stepsGoal = +profile.stepsGoal || 8000
   const treadGoal = +profile.treadGoalMin || 0
   const steps = +dayLog.steps || 0
@@ -136,7 +136,7 @@ export default function Activity({ profile, dayLog, earn, today, setDay, updateP
       </>}
       {editing && <EditWorkout w={editing} profile={profile} onClose={() => setEditing(null)} onSave={(next) => updateWorkout(editing, next)}
         onRemove={() => { const before = workouts; removeWorkout(editing.id); setEditing(null); receipt?.({ kind: 'edit', what: `${editing.label ?? 'Workout'} removed`, kcal: 0, undo: () => setDay(today, { workouts: before }) }) }} />}
-      {adding && <WorkoutSheet profile={profile} mine={mine} start={adding === true ? null : adding} onClose={() => setAdding(false)} onSave={saveWorkout} onKeep={(item) => updateProfile({ routine: [...(profile.routine ?? []), item] })} />}
+      {adding && <WorkoutSheet profile={profile} mine={mine} theirs={partnerWorkouts(partner, myWorkouts(profile))} start={adding === true ? null : adding} onClose={() => setAdding(false)} onSave={saveWorkout} onKeep={(item) => updateProfile({ routine: [...(profile.routine ?? []), item] })} />}
     </>
   )
 }

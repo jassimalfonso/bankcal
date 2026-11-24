@@ -2236,3 +2236,12 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 .sp-next { text-align: center; }
 /* a shortcut card's list of foods stays to two lines */
 .usual-card .uc-t small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+
+/* a partner's exercises on Train */
+.pt-row { display: flex; align-items: center; gap: 8px; padding-right: 10px; }
+.pt-row + .pt-row { border-top: 1px solid var(--line); }
+.pt-row > .mine-row { flex: 1; min-width: 0; border: 0; text-align: left; }
+.pt-row.done small { color: var(--accent); font-weight: 800; }
+.pt-add { flex: none; height: 34px; padding: 0 12px; border-radius: 99px; background: var(--soft); color: var(--accent); font-size: 14px; font-weight: 850; white-space: nowrap; }
+.pt-add:active { transform: scale(0.95); }
+.pt-have { flex: none; padding: 0 4px; font-size: 12px; font-weight: 750; color: var(--muted); white-space: nowrap; }

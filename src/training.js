@@ -417,3 +417,31 @@ export const sameDose = (a, b) => !!a && !!b && a.kind === b.kind && (a.name ?? 
 export function withMoreSets(w, it, n) {
   return { ...routineWorkout({ ...it, name: it.name ?? w.label, sets: Math.min(20, (+it.sets || 1) + n) }), id: w.id, rid: w.rid }
 }
+
+// Everything a partner has shared: their routine and own exercises, whether I have it too,
+// and whether they did it today.
+export function partnerExercises(partner, mine, today) {
+  const have = new Set(mine.map((m) => m.item.name?.toLowerCase()))
+  const out = []
+  for (const id of partner?.partners ?? []) {
+    const sh = partner.shares?.[id]
+    if (!sh) continue
+    const fresh = sh.day === today
+    const did = fresh ? (sh.did ?? []) : []
+    const wins = fresh ? (sh.wins ?? []).filter((w) => String(w.id).startsWith('w-')).map((w) => String(w.t ?? '').toLowerCase()) : []
+    const list = []
+    const seen = new Set()
+    for (const w of sh.workouts ?? []) {
+      const k = String(w.name ?? '').toLowerCase()
+      if (!k || seen.has(k) || !(+w.met > 0) || !(+w.sets > 0)) continue
+      seen.add(k)
+      const item = { ...w, sets: +w.sets, emoji: w.emoji || '💪' }
+      const d = did.find((x) => String(x.n).toLowerCase() === k)
+      list.push({ key: `p-${id}-${k}`, kind: 'lib', from: sh.name, item, dose: doseOf(item), mine: have.has(k), today: d ? d.d || 'done' : wins.some((t) => t.includes(k)) ? 'done' : '' })
+    }
+    // things they did today that aren't in their saved list (a run, a class)
+    const extra = did.filter((x) => !seen.has(String(x.n).toLowerCase())).map((x) => ({ name: x.n, d: x.d }))
+    if (list.length || extra.length) out.push({ id, name: sh.name, list, extra, fresh })
+  }
+  return out
+}
