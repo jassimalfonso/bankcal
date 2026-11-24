@@ -192,6 +192,8 @@ export const WORKOUTS = [
   { id: 'bridge', label: 'Glute bridges', emoji: '🍑', kind: 'reps', met: 3.8, secPerRep: 3 },
   { id: 'lunges', label: 'Lunges', emoji: '🚶', kind: 'reps', met: 3.8, secPerRep: 3 },
   { id: 'burpees', label: 'Burpees', emoji: '🔥', kind: 'reps', met: 8.0, secPerRep: 5 },
+  { id: 'climbers', label: 'Mountain climbers', emoji: '⛰️', kind: 'reps', met: 8.0, secPerRep: 1 },
+  { id: 'highknees', label: 'High knees', emoji: '🏃', kind: 'reps', met: 8.0, secPerRep: 0.7 },
   { id: 'dumbbells', label: 'Dumbbells', emoji: '🏋️', kind: 'weights', met: 3.5, secPerRep: 3 },
   { id: 'hang', label: 'Dead hang', emoji: '🙌', kind: 'sec', met: 2.8 },
   { id: 'plank', label: 'Plank', emoji: '📏', kind: 'sec', met: 3.8 },

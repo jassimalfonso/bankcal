@@ -2245,3 +2245,25 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 .pt-add { flex: none; height: 34px; padding: 0 12px; border-radius: 99px; background: var(--soft); color: var(--accent); font-size: 14px; font-weight: 850; white-space: nowrap; }
 .pt-add:active { transform: scale(0.95); }
 .pt-have { flex: none; padding: 0 4px; font-size: 12px; font-weight: 750; color: var(--muted); white-space: nowrap; }
+
+/* ───── Recommended plan, and how things help ───── */
+.rec-card { padding: 16px; display: grid; gap: 12px; border: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+.rec-kicker { font-size: 14px; font-weight: 850; color: var(--accent); }
+.rec-q { display: grid; gap: 6px; }
+.rec-q > span { font-size: 14px; font-weight: 800; color: var(--muted); }
+.rec-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.rec-chips .chip { height: 36px; }
+.rec-plan { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; background: var(--soft); }
+.rec-plan b { display: block; font-size: 18px; font-weight: 850; }
+.rec-plan small { color: var(--muted); font-weight: 700; font-size: 14px; }
+.rec-why, .pc-why, .ex-why { font-size: 14px; line-height: 1.5; color: var(--muted); font-weight: 600; }
+.rec-why b, .pc-why b, .ex-why b { color: var(--ink); font-weight: 850; }
+.rec-card .btn-primary { margin-top: 2px; }
+.plans-all { margin: 6px 4px 0; }
+.ex-why { margin: 0 4px 14px; }
+.pc-week { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 12px 0 4px; font-size: 14px; font-weight: 800; }
+.pc-week i { width: 22px; height: 10px; border-radius: 99px; background: var(--line); }
+.pc-week i.on { background: var(--accent); }
+.pc-week small { flex-basis: 100%; color: var(--muted); font-weight: 700; font-size: 12px; }
+.pc-why { margin: 10px 0 4px; }
+.pc-nextup { margin: 10px 0 0; text-align: center; }

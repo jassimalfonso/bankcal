@@ -224,7 +224,259 @@ export const EXERCISES = [
     mistakes: ['Hips dropping in the plank', 'Landing with straight legs'],
     breathing: 'Out on the effort, then recover before the next rep.',
   },
+  // ───── More to choose from ─────
+  {
+    id: 'stepup', name: 'Step-up', emoji: '🪜', group: 'legs', muscles: 'Thighs, glutes, balance', equipment: 'A sturdy step, bench or stair',
+    log: { type: 'strength' },
+    levels: {
+      beginner: { variant: 'Low step, one hand on a wall', sets: 2, reps: '8 each leg', rest: '60 s' },
+      intermediate: { variant: 'Knee-height step', sets: 3, reps: '10 each leg', rest: '60 s' },
+      advanced: { variant: 'Holding dumbbells, slow lowering', sets: 3, reps: '10–12 each leg', rest: '90 s' },
+    },
+    steps: ['Stand facing the step and place one whole foot on it.', 'Push through that heel to stand up tall on the step.', 'Bring the other foot up to tap the step.', 'Lower back down slowly with the same leg in control.'],
+    cues: ['Whole foot on the step', 'Knee tracks over your toes', 'Stand fully tall at the top'],
+    mistakes: ['Pushing off the back foot', 'Dropping down fast', 'Knee caving inward'],
+    breathing: 'Breathe out as you step up, in as you lower.',
+  },
+  {
+    id: 'calf', name: 'Calf raise', emoji: '🦶', group: 'legs', muscles: 'Calves, ankles', equipment: 'None, or a step',
+    log: { type: 'strength' },
+    levels: {
+      beginner: { variant: 'Two legs, holding a wall', sets: 2, reps: '12–15', rest: '45 s' },
+      intermediate: { variant: 'On a step, full stretch at the bottom', sets: 3, reps: '15', rest: '45 s' },
+      advanced: { variant: 'Single leg on a step', sets: 3, reps: '10–12 each leg', rest: '60 s' },
+    },
+    steps: ['Stand tall with feet hip-width apart, holding something for balance.', 'Rise onto the balls of your feet as high as you can.', 'Pause for a second at the top.', 'Lower your heels slowly.'],
+    cues: ['Straight up and down, not rocking forward', 'Pause at the top', 'Slow on the way down'],
+    mistakes: ['Bouncing', 'Rolling onto the outside of the feet', 'Tiny half reps'],
+    breathing: 'Breathe out as you rise, in as you lower.',
+  },
+  {
+    id: 'wallsit', name: 'Wall sit', emoji: '🧱', group: 'legs', muscles: 'Thighs, glutes', equipment: 'A wall',
+    log: { type: 'plank', sec: true },
+    levels: {
+      beginner: { variant: 'Higher sit, knees only slightly bent', sets: 3, reps: '15–20 s', rest: '45 s' },
+      intermediate: { variant: 'Thighs parallel to the floor', sets: 3, reps: '30–45 s', rest: '60 s' },
+      advanced: { variant: 'Parallel, holding a dumbbell', sets: 3, reps: '45–60 s', rest: '60 s' },
+    },
+    steps: ['Stand with your back flat against a wall, feet about two foot-lengths forward.', 'Slide down until your knees are bent, as if sitting on a chair.', 'Hold, with your weight in your heels.', 'Push up through your heels to finish.'],
+    cues: ['Whole back on the wall', 'Knees above ankles', 'Keep breathing'],
+    mistakes: ['Hands pushing on the thighs', 'Knees drifting past the toes', 'Holding your breath'],
+    breathing: 'Slow, steady breaths. Don’t hold your breath.',
+  },
+  {
+    id: 'sumo', name: 'Sumo squat', emoji: '🏋️', group: 'legs', muscles: 'Inner thighs, glutes, thighs', equipment: '1 dumbbell',
+    log: { type: 'dumbbells' }, one: true,
+    kg: { f: { beginner: [0, 0], intermediate: [8, 12], advanced: [14, 22] }, m: { beginner: [0, 0], intermediate: [14, 20], advanced: [22, 30] } },
+    levels: {
+      beginner: { variant: 'Bodyweight, wide stance', sets: 2, reps: '10', rest: '60 s' },
+      intermediate: { variant: 'One dumbbell held low with both hands', sets: 3, reps: '10–12', rest: '90 s' },
+      advanced: { variant: 'Heavier, 2 s pause at the bottom', sets: 4, reps: '8–10', rest: '90 s' },
+    },
+    steps: ['Stand with feet wider than your shoulders, toes turned out.', 'Hold the dumbbell with both hands, hanging between your legs.', 'Bend your knees out over your toes and lower your hips straight down.', 'Push through your heels to stand, squeezing your glutes.'],
+    cues: ['Knees push out over the toes', 'Chest up, back flat', 'Hips go straight down'],
+    mistakes: ['Knees caving in', 'Leaning far forward', 'Heels lifting'],
+    breathing: 'Breathe in on the way down, out as you stand.',
+  },
+  {
+    id: 'dip', name: 'Chair dip', emoji: '🪑', group: 'push', muscles: 'Triceps, shoulders, chest', equipment: 'A sturdy chair or bench',
+    log: { type: 'strength' },
+    levels: {
+      beginner: { variant: 'Knees bent, feet close', sets: 2, reps: '6–8', rest: '60 s' },
+      intermediate: { variant: 'Legs straighter', sets: 3, reps: '8–12', rest: '60 s' },
+      advanced: { variant: 'Feet raised on a second chair', sets: 3, reps: '10–15', rest: '90 s' },
+    },
+    steps: ['Sit on the edge of the chair, hands gripping the edge beside your hips.', 'Slide your hips just off the front, arms straight.', 'Bend your elbows straight back to lower your hips.', 'Push back up until your arms are straight.'],
+    cues: ['Elbows point back, not out', 'Hips stay close to the chair', 'Shoulders down, away from your ears'],
+    mistakes: ['Going so low the shoulders roll forward', 'Elbows flaring wide', 'Using a chair that can slide'],
+    breathing: 'Breathe in as you lower, out as you push up.',
+    caution: 'Skip this one if it pinches the front of your shoulder.',
+  },
+  {
+    id: 'triceps', name: 'Overhead triceps extension', emoji: '💪', group: 'push', muscles: 'Triceps', equipment: '1 dumbbell',
+    log: { type: 'dumbbells' }, one: true,
+    kg: { f: { beginner: [2, 4], intermediate: [5, 8], advanced: [8, 12] }, m: { beginner: [4, 8], intermediate: [8, 12], advanced: [12, 18] } },
+    levels: {
+      beginner: { variant: 'Seated, light dumbbell', sets: 2, reps: '10–12', rest: '60 s' },
+      intermediate: { variant: 'Standing', sets: 3, reps: '10–12', rest: '60 s' },
+      advanced: { variant: 'Heavier, 3 s lowering', sets: 3, reps: '8–10', rest: '90 s' },
+    },
+    steps: ['Hold one dumbbell with both hands and press it overhead.', 'Keep your upper arms close to your ears.', 'Bend your elbows to lower the dumbbell behind your head.', 'Straighten your arms to lift it back up.'],
+    cues: ['Elbows point forward, not out', 'Only the forearms move', 'Ribs down, no arching'],
+    mistakes: ['Elbows flaring wide', 'Arching the lower back', 'Swinging the weight'],
+    breathing: 'Breathe in as you lower, out as you straighten.',
+  },
+  {
+    id: 'lateral', name: 'Lateral raise', emoji: '🕊️', group: 'push', muscles: 'Shoulders', equipment: '2 light dumbbells',
+    log: { type: 'dumbbells' },
+    kg: { f: { beginner: [1, 2], intermediate: [3, 4], advanced: [5, 7] }, m: { beginner: [2, 4], intermediate: [5, 7], advanced: [8, 10] } },
+    levels: {
+      beginner: { variant: 'Very light, to just below shoulder height', sets: 2, reps: '10–12', rest: '60 s' },
+      intermediate: { variant: 'To shoulder height, 1 s pause', sets: 3, reps: '12–15', rest: '60 s' },
+      advanced: { variant: '3 s lowering', sets: 4, reps: '12–15', rest: '60 s' },
+    },
+    steps: ['Stand tall, dumbbells at your sides, elbows slightly bent.', 'Lift your arms out to the sides until they reach shoulder height.', 'Pause for a moment.', 'Lower slowly.'],
+    cues: ['Lead with your elbows', 'Stop at shoulder height', 'Shoulders stay down'],
+    mistakes: ['Swinging the body', 'Shrugging', 'Going too heavy'],
+    breathing: 'Breathe out as you lift, in as you lower.',
+  },
+  {
+    id: 'bentrow', name: 'Bent-over row', emoji: '🚣', group: 'pull', muscles: 'Upper back, lats, biceps', equipment: '2 dumbbells',
+    log: { type: 'dumbbells' },
+    kg: { f: { beginner: [3, 5], intermediate: [6, 10], advanced: [12, 16] }, m: { beginner: [6, 10], intermediate: [12, 18], advanced: [20, 28] } },
+    levels: {
+      beginner: { variant: 'Light, shallow lean', sets: 2, reps: '8–10', rest: '60–90 s' },
+      intermediate: { variant: 'Back near parallel, 1 s squeeze', sets: 3, reps: '10–12', rest: '90 s' },
+      advanced: { variant: 'Heavier, 3 s lowering', sets: 4, reps: '8–10', rest: '90 s' },
+    },
+    steps: ['Stand holding the dumbbells, soft knees.', 'Push your hips back and lean forward with a flat back.', 'Pull both elbows up and back, squeezing your shoulder blades together.', 'Lower the weights slowly.'],
+    cues: ['Back flat, neck in line', 'Elbows brush your ribs', 'Squeeze at the top'],
+    mistakes: ['Rounding the back', 'Jerking the weights up', 'Standing up with each rep'],
+    breathing: 'Breathe out as you pull, in as you lower.',
+    caution: 'If your lower back complains, use the one-arm row with a hand on a bench instead.',
+  },
+  {
+    id: 'superman', name: 'Superman', emoji: '🦸', group: 'pull', muscles: 'Lower back, glutes, shoulders', equipment: 'None',
+    log: { type: 'strength' },
+    levels: {
+      beginner: { variant: 'Arms and chest only', sets: 2, reps: '8', rest: '45 s' },
+      intermediate: { variant: 'Arms and legs, 2 s hold', sets: 3, reps: '10', rest: '45 s' },
+      advanced: { variant: 'Arms and legs, 5 s hold', sets: 3, reps: '12', rest: '60 s' },
+    },
+    steps: ['Lie face down, arms stretched out in front of you.', 'Lift your arms, chest and legs a few centimetres off the floor.', 'Hold, squeezing your glutes.', 'Lower slowly.'],
+    cues: ['Eyes on the floor, neck long', 'Lift from the glutes and upper back', 'Small, controlled lift'],
+    mistakes: ['Craning the neck up', 'Jerking up high', 'Holding your breath'],
+    breathing: 'Breathe out as you lift, in as you lower.',
+  },
+  {
+    id: 'pullup', name: 'Pull-up', emoji: '🧗', group: 'pull', muscles: 'Lats, upper back, biceps, grip', equipment: 'Pull-up bar',
+    log: { type: 'strength' },
+    levels: {
+      beginner: { variant: 'Negatives: jump up, lower for 5 s', sets: 3, reps: '3–5', rest: '90 s' },
+      intermediate: { variant: 'Chin-up, or band-assisted pull-up', sets: 3, reps: '4–6', rest: '2 min' },
+      advanced: { variant: 'Full pull-up', sets: 4, reps: '6–10', rest: '2 min' },
+    },
+    steps: ['Hang from the bar with hands just wider than your shoulders.', 'Pull your shoulders down, then pull your chest toward the bar.', 'Bring your chin over the bar.', 'Lower all the way down slowly.'],
+    cues: ['Shoulders down first', 'Elbows drive toward your hips', 'Full hang at the bottom'],
+    mistakes: ['Kicking or swinging', 'Half reps', 'Dropping down fast'],
+    breathing: 'Breathe out as you pull up, in as you lower.',
+  },
+  {
+    id: 'crunch', name: 'Crunch', emoji: '🔄', group: 'core', muscles: 'Abs', equipment: 'None',
+    log: { type: 'situps' },
+    levels: {
+      beginner: { variant: 'Hands sliding up the thighs', sets: 2, reps: '10', rest: '45 s' },
+      intermediate: { variant: 'Fingertips by your temples', sets: 3, reps: '15', rest: '45 s' },
+      advanced: { variant: 'Legs raised, 3 s lowering', sets: 3, reps: '15–20', rest: '60 s' },
+    },
+    steps: ['Lie on your back, knees bent, feet flat.', 'Tighten your abs and curl your shoulders off the floor.', 'Pause at the top.', 'Lower slowly.'],
+    cues: ['Lower back stays on the floor', 'Chin off your chest', 'Slow and small'],
+    mistakes: ['Pulling on the neck', 'Sitting all the way up with momentum', 'Rushing'],
+    breathing: 'Breathe out as you curl up, in as you lower.',
+  },
+  {
+    id: 'sideplank', name: 'Side plank', emoji: '📐', group: 'core', muscles: 'Side abs, hips, shoulders', equipment: 'None',
+    log: { type: 'plank', sec: true },
+    levels: {
+      beginner: { variant: 'From the knees', sets: 2, reps: '10–15 s each side', rest: '45 s' },
+      intermediate: { variant: 'Legs straight', sets: 3, reps: '20–30 s each side', rest: '45 s' },
+      advanced: { variant: 'Top leg raised', sets: 3, reps: '30–45 s each side', rest: '60 s' },
+    },
+    steps: ['Lie on your side, elbow under your shoulder.', 'Lift your hips so your body is a straight line.', 'Hold, top hand on your hip.', 'Lower, then switch sides.'],
+    cues: ['Hips high and stacked', 'Body in one line', 'Elbow under shoulder'],
+    mistakes: ['Hips sagging', 'Rolling forward', 'Holding your breath'],
+    breathing: 'Slow, steady breaths.',
+  },
+  {
+    id: 'legraise', name: 'Lying leg raise', emoji: '🦵', group: 'core', muscles: 'Lower abs, hip flexors', equipment: 'None',
+    log: { type: 'situps' },
+    levels: {
+      beginner: { variant: 'Knees bent', sets: 2, reps: '8', rest: '45 s' },
+      intermediate: { variant: 'Legs straight', sets: 3, reps: '10–12', rest: '45 s' },
+      advanced: { variant: 'Slow lowering, hips lift at the top', sets: 3, reps: '12–15', rest: '60 s' },
+    },
+    steps: ['Lie on your back, legs straight, hands by your hips.', 'Press your lower back into the floor.', 'Lift your legs until they point at the ceiling.', 'Lower them slowly, stopping just above the floor.'],
+    cues: ['Lower back stays down', 'Slow on the way down', 'Head rests on the floor'],
+    mistakes: ['Back arching off the floor', 'Dropping the legs', 'Swinging'],
+    breathing: 'Breathe out as you lift, in as you lower.',
+    caution: 'If your back arches, bend your knees or don’t lower as far.',
+  },
+  {
+    id: 'birddog', name: 'Bird dog', emoji: '🐕', group: 'core', muscles: 'Lower back, core, balance', equipment: 'None',
+    log: { type: 'situps' },
+    levels: {
+      beginner: { variant: 'One arm or one leg at a time', sets: 2, reps: '6 each side', rest: '45 s' },
+      intermediate: { variant: 'Opposite arm and leg', sets: 3, reps: '8 each side', rest: '45 s' },
+      advanced: { variant: '3 s hold, then elbow to knee', sets: 3, reps: '10 each side', rest: '60 s' },
+    },
+    steps: ['Start on hands and knees, hands under shoulders, knees under hips.', 'Reach one arm forward and the opposite leg back.', 'Hold with your hips level.', 'Return slowly and switch sides.'],
+    cues: ['Hips stay level', 'Back flat like a table', 'Reach long, not high'],
+    mistakes: ['Hips twisting open', 'Arching the back', 'Rushing'],
+    breathing: 'Breathe out as you reach, in as you return.',
+  },
+  {
+    id: 'climbers', name: 'Mountain climbers', emoji: '⛰️', group: 'cardio', muscles: 'Core, shoulders, heart and lungs', equipment: 'None',
+    log: { type: 'climbers' },
+    levels: {
+      beginner: { variant: 'Slow step-ins', sets: 2, reps: '16', rest: '45 s' },
+      intermediate: { variant: 'Steady run', sets: 3, reps: '24', rest: '30 s' },
+      advanced: { variant: 'Fast', sets: 4, reps: '30', rest: '20 s' },
+    },
+    steps: ['Start in a push-up position, hands under shoulders.', 'Drive one knee toward your chest.', 'Switch legs quickly, as if running.', 'Keep your hips low and level.'],
+    cues: ['Hips level with shoulders', 'Hands under shoulders', 'Core tight'],
+    mistakes: ['Hips bouncing up', 'Hands creeping forward', 'Short, shuffling steps'],
+    breathing: 'Quick, steady breaths in time with your legs.',
+  },
+  {
+    id: 'highknees', name: 'High knees', emoji: '🏃', group: 'cardio', muscles: 'Legs, core, heart and lungs', equipment: 'None',
+    log: { type: 'highknees' },
+    levels: {
+      beginner: { variant: 'Marching high knees', sets: 2, reps: '20', rest: '30 s' },
+      intermediate: { variant: 'Jogging high knees', sets: 3, reps: '30', rest: '30 s' },
+      advanced: { variant: 'Sprint high knees', sets: 4, reps: '40', rest: '20 s' },
+    },
+    steps: ['Stand tall, feet hip-width apart.', 'Lift one knee to hip height.', 'Switch legs quickly, landing on the balls of your feet.', 'Pump your arms as if running.'],
+    cues: ['Knees to hip height', 'Stand tall, don’t lean back', 'Light, quick feet'],
+    mistakes: ['Leaning back', 'Heavy, flat landings', 'Knees barely lifting'],
+    breathing: 'Breathe steadily. Don’t hold your breath.',
+  },
 ]
+
+// How each exercise helps, in plain words
+const WHY = {
+  squat: 'Builds the legs and glutes you use to stand, climb and carry. Big muscles, so it burns more than most moves.',
+  goblet: 'A squat with load: stronger legs and core, and it teaches you to stay upright.',
+  lunge: 'Works one leg at a time, which evens out strength and improves balance.',
+  rdl: 'Strengthens hamstrings, glutes and lower back, the muscles that protect your back when you lift things.',
+  bridge: 'Wakes up the glutes after long sitting and takes pressure off the lower back.',
+  pushup: 'Chest, shoulders, arms and core in one move.',
+  press: 'Builds chest and arm strength with more load than a push-up allows.',
+  shoulder: 'Stronger shoulders for anything overhead, from shelves to luggage.',
+  row: 'Balances out pushing and desk time: a stronger upper back and better posture.',
+  curl: 'Stronger arms for carrying and pulling.',
+  hang: 'Builds grip, opens up the shoulders and gently stretches the spine.',
+  plank: 'Teaches your core to hold your spine steady, which protects your back in every other lift.',
+  deadbug: 'Trains the deep core without straining your neck or back.',
+  jacks: 'Raises your heart rate fast. A simple warm-up or calorie burner.',
+  burpee: 'Whole body and heart in one move: the most calories per minute here.',
+  stepup: 'Stair-climbing strength for each leg, and kind on the knees when you control the way down.',
+  calf: 'Stronger calves and ankles for walking, running and balance.',
+  wallsit: 'Builds leg endurance with no movement at the knee, so it suits sore or stiff knees.',
+  sumo: 'A wide squat that adds the inner thighs and glutes.',
+  dip: 'Works the back of the arms using only a chair.',
+  triceps: 'Firms and strengthens the back of the upper arm.',
+  lateral: 'Builds the side of the shoulder, which broadens the shoulders and helps posture.',
+  bentrow: 'A strong upper back to balance pushing work and sitting.',
+  superman: 'Strengthens the muscles along your spine, good after long hours sitting.',
+  pullup: 'The biggest upper-body pull there is: back, arms and grip together.',
+  crunch: 'Targets the front abs directly.',
+  sideplank: 'Strengthens the sides of your waist and hips, which steadies the spine.',
+  legraise: 'Works the lower abs and teaches you to keep your back flat.',
+  birddog: 'Builds balance and a steady lower back. A staple for back care.',
+  climbers: 'Cardio and core together, with no jumping.',
+  highknees: 'Running on the spot: raises your heart rate quickly in very little space.',
+}
+for (const e of EXERCISES) e.why = WHY[e.id]
 
 export const exerciseById = Object.fromEntries(EXERCISES.map((e) => [e.id, e]))
 
@@ -237,35 +489,108 @@ export function weightRange(ex, sex, level) {
 // Ready-made plans. Each session uses the user's level for sets and reps.
 export const PLANS = [
   {
-    id: 'start', name: 'Start here', emoji: '🌱', days: 3, mins: 25, level: 'Beginner friendly',
+    id: 'start', name: 'Start here', emoji: '🌱', days: 3, mins: 25, level: 'Beginner friendly', kit: 'none', focus: 'general',
     blurb: 'Full body, three days a week. Learn the basic moves with bodyweight before adding weight.',
+    why: 'Learning the moves first makes every later workout safer and more effective. Three short sessions a week are enough to start building strength.',
+    next: 'After 4 to 6 weeks, move to No equipment or Full body dumbbell.',
     sessions: [
       { name: 'Session A', items: ['squat', 'pushup', 'bridge', 'plank'] },
-      { name: 'Session B', items: ['lunge', 'deadbug', 'jacks', 'hang'] },
+      { name: 'Session B', items: ['lunge', 'deadbug', 'jacks', 'birddog'] },
     ],
   },
   {
-    id: 'home', name: 'No equipment', emoji: '🏠', days: 3, mins: 30, level: 'All levels',
+    id: 'home', name: 'No equipment', emoji: '🏠', days: 3, mins: 30, level: 'All levels', kit: 'none', focus: 'general',
     blurb: 'Everything at home, no gym needed. Your level decides the version of each move.',
+    why: 'Trains the whole body with no kit, so nothing stops you starting. Keeping your muscles working while you eat less means more of the weight you lose is fat.',
+    next: 'When the advanced versions feel easy, add dumbbells with Full body dumbbell.',
     sessions: [
-      { name: 'Legs and core', items: ['squat', 'lunge', 'bridge', 'deadbug', 'plank'] },
-      { name: 'Upper body and cardio', items: ['pushup', 'burpee', 'jacks', 'plank'] },
+      { name: 'Legs and core', items: ['squat', 'lunge', 'stepup', 'deadbug', 'plank'] },
+      { name: 'Upper body and cardio', items: ['pushup', 'dip', 'superman', 'jacks', 'sideplank'] },
     ],
   },
   {
-    id: 'dumbbell', name: 'Dumbbell strength', emoji: '🏋️', days: 4, mins: 40, level: 'Intermediate',
+    id: 'full', name: 'Full body dumbbell', emoji: '💪', days: 3, mins: 35, level: 'All levels', kit: 'dumbbells', focus: 'strength',
+    blurb: 'Every major muscle, three days a week, with a pair of dumbbells. Three sessions that rotate.',
+    why: 'Working each muscle three times a week is a well-proven way to build strength, and to hold on to muscle while losing weight.',
+    next: 'After 8 to 12 weeks, split it up with Dumbbell strength for more work per muscle.',
+    sessions: [
+      { name: 'Session A', items: ['goblet', 'press', 'bentrow', 'plank'] },
+      { name: 'Session B', items: ['rdl', 'shoulder', 'row', 'deadbug'] },
+      { name: 'Session C', items: ['sumo', 'pushup', 'curl', 'sideplank'] },
+    ],
+  },
+  {
+    id: 'dumbbell', name: 'Dumbbell strength', emoji: '🏋️', days: 4, mins: 40, level: 'Intermediate', kit: 'dumbbells', focus: 'strength',
     blurb: 'Upper and lower days, twice each a week. Build strength with a pair of dumbbells.',
+    why: 'Four sessions with added weight build the most strength here. More muscle slightly raises what you burn at rest and shapes how weight loss looks.',
+    next: 'Keep adding 1–2 kg whenever you reach the top of the rep range on every set.',
     sessions: [
-      { name: 'Lower body', items: ['goblet', 'rdl', 'lunge', 'bridge', 'plank'] },
-      { name: 'Upper body', items: ['press', 'row', 'shoulder', 'curl', 'deadbug'] },
+      { name: 'Lower body', items: ['goblet', 'rdl', 'lunge', 'calf', 'plank'] },
+      { name: 'Upper body', items: ['press', 'row', 'shoulder', 'curl', 'triceps'] },
     ],
   },
   {
-    id: 'burn', name: 'Quick burn', emoji: '⚡', days: 3, mins: 20, level: 'All levels',
+    id: 'burn', name: 'Quick burn', emoji: '⚡', days: 3, mins: 20, level: 'All levels', kit: 'none', focus: 'time', circuit: true,
     blurb: 'A circuit: one move after another, rest 1 minute after each round. 15–25 minutes, good on busy days.',
+    why: 'Short and sweaty. Keeping your heart rate up burns the most calories in the least time.',
+    next: 'Pair it with a strength plan on other days to keep your muscles too.',
     sessions: [{ name: 'Circuit', items: ['jacks', 'squat', 'pushup', 'burpee', 'plank'] }],
   },
+  {
+    id: 'cardio', name: 'Cardio mix', emoji: '🔥', days: 3, mins: 20, level: 'All levels', kit: 'none', focus: 'fatloss', circuit: true,
+    blurb: 'Two circuits that swap cardio moves with strength moves. No kit, little space.',
+    why: 'Alternating cardio and strength keeps your heart rate up the whole time, so each session burns more, while the strength moves look after your muscles.',
+    next: 'Add a round, or shorten the rests, as it gets easier.',
+    sessions: [
+      { name: 'Circuit A', items: ['highknees', 'squat', 'climbers', 'pushup', 'jacks'] },
+      { name: 'Circuit B', items: ['stepup', 'burpee', 'crunch', 'highknees', 'plank'] },
+    ],
+  },
+  {
+    id: 'core', name: 'Core and posture', emoji: '🧘', days: 3, mins: 20, level: 'All levels', kit: 'none', focus: 'core',
+    blurb: 'Short sessions for a stronger middle and back. Good alongside desk work.',
+    why: 'A stronger middle and back support your spine and posture, and make every other exercise feel steadier.',
+    next: 'Use it on its own, or as a 15-minute add-on after another plan.',
+    sessions: [
+      { name: 'Front and sides', items: ['deadbug', 'crunch', 'sideplank', 'plank'] },
+      { name: 'Back and hips', items: ['birddog', 'superman', 'bridge', 'legraise'] },
+    ],
+  },
+  {
+    id: 'arms', name: 'Arms and shoulders', emoji: '🦾', days: 2, mins: 25, level: 'Intermediate', kit: 'dumbbells', focus: 'strength',
+    blurb: 'Two short sessions for arms, shoulders and upper back.',
+    why: 'Extra work for arms, shoulders and upper back. Best added on top of a full-body plan, not instead of one.',
+    next: 'Keep your full-body sessions as the base.',
+    sessions: [
+      { name: 'Push', items: ['shoulder', 'lateral', 'triceps', 'dip'] },
+      { name: 'Pull', items: ['bentrow', 'curl', 'row', 'superman'] },
+    ],
+  },
 ]
+
+// Which days to train, for a number of sessions a week (rest days in between where possible)
+export const TRAIN_DAYS = { 2: ['Mon', 'Thu'], 3: ['Mon', 'Wed', 'Fri'], 4: ['Mon', 'Tue', 'Thu', 'Fri'], 5: ['Mon', 'Tue', 'Wed', 'Fri', 'Sat'] }
+
+// The plan that fits what you have, how often you can train and what you're after.
+// prefs: { kit: 'none' | 'dumbbells', days: 2..5, focus: 'fatloss' | 'strength' | 'core' | 'time' }
+export function recommendPlan(prefs, level, goalMode) {
+  const kit = prefs?.kit ?? 'none', days = +prefs?.days || 3
+  const focus = prefs?.focus ?? (goalMode === 'maintain' ? 'strength' : 'fatloss')
+  let id, reason
+  if (focus === 'core') { id = 'core'; reason = 'You chose core and posture, and it needs no equipment.' }
+  else if (focus === 'time') { id = 'burn'; reason = 'You’re short on time: this is the shortest session here, and it needs no equipment.' }
+  else if (level === 'beginner' && kit === 'none') { id = 'start'; reason = 'You’re starting out with no equipment, so learn the basic moves first.' }
+  else if (kit === 'dumbbells') {
+    if (days >= 4 && level !== 'beginner') { id = 'dumbbell'; reason = `You have dumbbells and ${days} days a week, enough to split upper and lower body.` }
+    else { id = 'full'; reason = `You have dumbbells and ${days} days a week. Full-body sessions make the most of that${level === 'beginner' ? ', starting light' : ''}.` }
+  }
+  else if (focus === 'fatloss') { id = 'cardio'; reason = 'No equipment and a fat-loss goal: circuits burn the most per session, with strength moves mixed in.' }
+  else { id = 'home'; reason = 'No equipment: this builds strength with bodyweight alone.' }
+  const plan = PLANS.find((p) => p.id === id)
+  // a second, lighter plan that pairs well, when there are days to spare
+  const extra = days >= 4 && id !== 'dumbbell' ? PLANS.find((p) => p.id === (id === 'core' ? 'home' : 'core')) : null
+  return { plan, reason, focus, kit, days: Math.max(2, Math.min(5, days)), extra }
+}
 
 const secs = (txt) => { const n = parseInt(txt, 10) || 0; return /min/.test(txt) ? n * 60 : n }
 
@@ -293,8 +618,8 @@ export function toWorkout(ex, level, kg) {
 // Circuits rest only between rounds, so they use fixed lengths per level.
 const CIRCUIT_MIN = { beginner: 15, intermediate: 20, advanced: 25 }
 export function toSession(plan, session, level) {
-  const mins = plan.id === 'burn' ? CIRCUIT_MIN[level] : Math.round(5 + session.items.reduce((a, id) => a + exerciseMinutes(exerciseById[id], level), 0))
-  return { type: plan.id === 'burn' ? 'circuit' : 'strength', min: mins, label: `${plan.name}: ${session.name}`, note: `${session.items.length} exercises · ${mins} min` }
+  const mins = plan.circuit ? CIRCUIT_MIN[level] : Math.round(5 + session.items.reduce((a, id) => a + exerciseMinutes(exerciseById[id], level), 0))
+  return { type: plan.circuit ? 'circuit' : 'strength', min: mins, label: `${plan.name}: ${session.name}`, note: `${session.items.length} exercises · ${mins} min` }
 }
 
 // ───────── Your own exercises and your routine ─────────
@@ -355,6 +680,9 @@ const EX_WORDS = {
   squat: 'squats legs thighs', goblet: 'squat dumbbell legs', lunge: 'lunges legs', rdl: 'deadlift hamstrings', bridge: 'glute hips bum',
   pushup: 'push ups press up chest', press: 'bench chest dumbbell', shoulder: 'overhead press arms', row: 'back dumbbell', curl: 'biceps arms dumbbell bicep',
   hang: 'bar grip', plank: 'core abs', deadbug: 'core abs', jacks: 'jumping cardio', burpee: 'burpees cardio',
+  stepup: 'step ups stairs legs', calf: 'calves raises ankles', wallsit: 'wall squat hold legs', sumo: 'wide squat inner thigh dumbbell', dip: 'dips triceps chair bench arms',
+  triceps: 'tricep extension arms dumbbell', lateral: 'side raise shoulders dumbbell', bentrow: 'row back dumbbell', superman: 'back extension lower back', pullup: 'pull ups chin up bar back',
+  crunch: 'crunches abs sit ups', sideplank: 'obliques core abs', legraise: 'leg raises lower abs', birddog: 'core back balance', climbers: 'mountain climber cardio core', highknees: 'running on the spot cardio',
 }
 const ACT_WORDS = {
   cycling: 'bike spin cycle', swim: 'swimming pool', padel: 'tennis squash badminton', football: 'soccer futsal', stairs: 'steps climb',

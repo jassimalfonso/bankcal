@@ -1,10 +1,10 @@
 import { createPortal } from 'react-dom'
 import { useRef, useState } from 'react'
-import { fmt, workoutKcal } from '../calc'
+import { KCAL_PER_KG, dayKey, fmt, workoutKcal } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag, useSideFit } from '../motion'
 import Move, { WatchHow, hasMove } from '../Moves'
-import { EXERCISES, GROUPS, LEVELS, PLANS, myWorkouts, partnerExercises, exerciseById, routineFromCustom, routineFromExercise, routineWorkout, toSession, toWorkout, weightRange } from '../training'
+import { EXERCISES, GROUPS, LEVELS, PLANS, TRAIN_DAYS, recommendPlan, myWorkouts, partnerExercises, exerciseById, routineFromCustom, routineFromExercise, routineWorkout, toSession, toWorkout, weightRange } from '../training'
 import { CustomSheet, RoutineCard } from './Routine'
 
 const range = (r) => (r ? `${r[0]}–${r[1]} kg` : null)
@@ -33,8 +33,19 @@ export default function Train(props) {
   }
   const finishSession = () => {
     log(null, toSession(active, session, level))
-    updateProfile({ trainPlan: { ...profile.trainPlan, done: done + 1, last: today } })
+    updateProfile({ trainPlan: { ...profile.trainPlan, done: done + 1, last: today, log: [...(profile.trainPlan?.log ?? []), today].slice(-40) } })
   }
+
+  // the plan that fits you: equipment, days a week and what you're after
+  const prefs = profile.trainPrefs ?? {}
+  const setPref = (patch) => updateProfile({ trainPrefs: { ...prefs, ...patch } })
+  const rec = recommendPlan(prefs, level, profile.goal === 'maintain' ? 'maintain' : 'lose')
+  const perWeek = (plan, days) => Math.round(days * workoutKcal(toSession(plan, plan.sessions[0], level), profile.weight))
+  const startPlan = (plan, days) => { updateProfile({ trainPlan: { id: plan.id, done: 0, start: today, days, log: [] } }); setBrowse(false) }
+  // this week (Monday to Sunday): how many sessions are done, out of how many planned
+  const monday = (() => { const d = new Date(today + 'T12:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return dayKey(d) })()
+  const planDays = Math.max(2, Math.min(5, +profile.trainPlan?.days || active?.days || 3))
+  const weekDone = (profile.trainPlan?.log ?? []).filter((k) => k >= monday).length
 
   // your own exercises and routine
   const customs = profile.customEx ?? []
@@ -111,8 +122,14 @@ export default function Train(props) {
         <div className="card plan-card">
           <div className="pc-top">
             <span className="pc-emoji">{active.emoji}</span>
-            <div><b>{active.name}</b><small>{active.days} days a week · about {toSession(active, session, level).min} min · {done} session{done === 1 ? '' : 's'} done</small></div>
+            <div><b>{active.name}</b><small>{planDays} days a week · about {toSession(active, session, level).min} min · {done} session{done === 1 ? '' : 's'} done</small></div>
           </div>
+          <div className="pc-week" role="img" aria-label={`This week: ${Math.min(weekDone, planDays)} of ${planDays} sessions done`}>
+            <span>This week</span>
+            {Array.from({ length: planDays }, (_, i) => <i key={i} className={i < weekDone ? 'on' : ''} />)}
+            <small>{weekDone >= planDays ? 'All done. Rest up.' : `${TRAIN_DAYS[planDays].join(' · ')} works well`}</small>
+          </div>
+          <p className="pc-why"><b>How it helps.</b> {active.why} At {planDays} sessions a week it burns about {fmt(perWeek(active, planDays))} kcal, roughly {(perWeek(active, planDays) * 4.345 / KCAL_PER_KG).toFixed(1)} kg of fat a month if your eating stays the same.</p>
           <p className="pc-next">Next: <b>{session.name}</b>{profile.trainPlan?.last === today ? ' (you’ve already trained today, rest is fine too)' : ''}</p>
           <ul className="pc-list">
             {session.items.map((id) => {
@@ -130,12 +147,34 @@ export default function Train(props) {
           </ul>
           <p className="fine warmup">Warm up first: 5 minutes of brisk walking or jumping jacks, then a few easy reps of the first move.</p>
           <button className="btn-primary" onClick={finishSession}>I did this workout · +{fmt(workoutKcal(toSession(active, session, level), profile.weight))} kcal</button>
+          {active.next && <p className="fine pc-nextup">What’s next: {active.next}</p>}
           <button className="link-btn center" onClick={() => setBrowse(true)}>Change plan</button>
         </div>
       ) : (
         <div className="plans">
+          <div className="card rec-card">
+            <p className="rec-kicker">Recommended for you</p>
+            <div className="rec-q"><span>Equipment</span>
+              <div className="rec-chips" role="radiogroup" aria-label="Equipment">{[['none', 'None'], ['dumbbells', 'Dumbbells']].map(([v, l]) => <button key={v} role="radio" aria-checked={rec.kit === v} className={`chip ${rec.kit === v ? 'on' : ''}`} onClick={() => setPref({ kit: v })}>{l}</button>)}</div>
+            </div>
+            <div className="rec-q"><span>Days a week</span>
+              <div className="rec-chips" role="radiogroup" aria-label="Days a week">{[2, 3, 4, 5].map((v) => <button key={v} role="radio" aria-checked={rec.days === v} className={`chip ${rec.days === v ? 'on' : ''}`} onClick={() => setPref({ days: v })}>{v}</button>)}</div>
+            </div>
+            <div className="rec-q"><span>I want to</span>
+              <div className="rec-chips" role="radiogroup" aria-label="What you want">{[['fatloss', 'Lose fat'], ['strength', 'Get stronger'], ['core', 'Core and posture'], ['time', 'Keep it short']].map(([v, l]) => <button key={v} role="radio" aria-checked={rec.focus === v} className={`chip ${rec.focus === v ? 'on' : ''}`} onClick={() => setPref({ focus: v })}>{l}</button>)}</div>
+            </div>
+            <div className="rec-plan">
+              <span className="pc-emoji">{rec.plan.emoji}</span>
+              <div><b>{rec.plan.name}</b><small>{rec.days} days a week · about {toSession(rec.plan, rec.plan.sessions[0], level).min} min · {TRAIN_DAYS[rec.days].join(' · ')}</small></div>
+            </div>
+            <p className="rec-why"><b>Why this one.</b> {rec.reason}</p>
+            <p className="rec-why"><b>How it helps.</b> {rec.plan.why} At {rec.days} sessions a week it burns about {fmt(perWeek(rec.plan, rec.days))} kcal, roughly {(perWeek(rec.plan, rec.days) * 4.345 / KCAL_PER_KG).toFixed(1)} kg of fat a month if your eating stays the same.</p>
+            {rec.extra && <p className="fine">With {rec.days} days, you could make one of them <b>{rec.extra.name}</b> for variety.</p>}
+            <button className="btn-primary" onClick={() => startPlan(rec.plan, rec.days)}>{active?.id === rec.plan.id ? 'Keep this plan' : 'Start this plan'}</button>
+          </div>
+          <p className="recs-title plans-all">Or pick any plan</p>
           {PLANS.map((p) => (
-            <button key={p.id} className={`card plan-pick ${active?.id === p.id ? 'on' : ''}`} onClick={() => { updateProfile({ trainPlan: { id: p.id, done: 0, start: today } }); setBrowse(false) }}>
+            <button key={p.id} className={`card plan-pick ${active?.id === p.id ? 'on' : ''}`} onClick={() => startPlan(p, p.days)}>
               <span className="pc-emoji">{p.emoji}</span>
               <span><b>{p.name}</b><small>{p.days}×/week · about {toSession(p, p.sessions[0], level).min} min · {p.level}</small><em>{p.blurb}</em></span>
             </button>
@@ -229,6 +268,7 @@ function ExerciseSheet({ ex, level, profile, kg, fav, onFav, onKg, onLog, onClos
           {hasMove(ex.id) && <Move id={ex.id} label={`How a ${ex.name.toLowerCase()} moves`} />}
           <WatchHow name={ex.name} />
         </div>
+        {ex.why && <p className="ex-why"><b>How it helps.</b> {ex.why}</p>}
 
         <div className="ex-dosecard">
           <div><span>Your version</span><b>{L.variant}</b></div>
