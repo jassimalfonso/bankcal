@@ -9,7 +9,7 @@ import BankCard from './BankCard'
 import VersionLine from './VersionLine'
 import { useEscape } from '../motion'
 import { IconHeart, IconShare } from '../icons'
-import { favItems, isFav, toggleFav, shareFav, KIND_LABEL } from '../favorites'
+import { favItems, isFav, toggleFav, shareFav, copyFav, KIND_LABEL } from '../favorites'
 import CollectionSheet from './Collection'
 
 // The verse and its reflection are one card: tap the verse to unfold the reflection.
@@ -24,6 +24,9 @@ function Acts({ it, acts, verse }) {
     <div className="w-acts">
       <button className={on ? 'on' : ''} onClick={() => toggleFav(acts.profile, acts.updateProfile, it, acts.notify)} aria-pressed={on} aria-label={on ? `Remove ${what} from favourites` : `Save ${what} to favourites`}>
         <IconHeart filled={on} size={18} /><span>{on ? 'Saved' : 'Save'}</span>
+      </button>
+      <button onClick={() => copyFav(it, acts.notify)} aria-label={`Copy ${what}`}>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5" /><path d="M15 9V6.5A2.5 2.5 0 0 0 12.500 4h-6A2.500 2.500 0 0 0 4 6.500v6A2.500 2.500 0 0 0 6.500 15H9" /></svg><span>Copy</span>
       </button>
       {/* the verse shares as a picture (with a text option); reflections and quotes as text */}
       <button onClick={() => (verse ? setPic(true) : shareFav(it, acts.notify))} aria-label={`Share ${what}`}><IconShare size={18} /><span>Share</span></button>
