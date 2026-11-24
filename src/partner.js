@@ -8,6 +8,21 @@ import { myWorkouts } from './training'
 import { catOf } from './foodCats'
 export { usualFoods } from './calc'
 
+// Foods either of you has looked up online are shared, so the other gets them instantly.
+// (Just the search text and its results. Nothing about what was eaten.)
+let lookupsTo = null // my uid, once sharing is on
+let lookupsTimer = null
+export function shareLookups(list) {
+  if (!lookupsTo) return
+  clearTimeout(lookupsTimer)
+  const uid = lookupsTo
+  lookupsTimer = setTimeout(() => {
+    // Firestore has no nested arrays, so each lookup is { q, at, r: [...] }
+    const lookups = list.slice(0, 80).map(([q, r, at]) => ({ q: String(q).slice(0, 80), at, r: r.slice(0, 8).map((f) => ({ name: String(f.name).slice(0, 120), kcal: Math.round(+f.kcal) || 0, ...(f.portion ? { portion: String(f.portion).slice(0, 60) } : {}), ...(f.cat ? { cat: f.cat } : {}), ...(f.per100 ? { per100: f.per100 } : {}), ...(f.group ? { group: f.group } : {}) })) }))
+    setDoc(doc(db, 'shares', uid), { lookups }, { merge: true }).catch(() => {})
+  }, 4000)
+}
+
 const code6 = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
 
 export function usePartners({ enabled, uid, profile, updateProfile, summary, notify, celebrate, usual = [] }) {
@@ -18,6 +33,7 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
 
   // publish my summary (only when something changed)
   useEffect(() => {
+    lookupsTo = enabled && profile?.onboarded && profile.shareFoods !== false && partners.length ? uid : null
     if (!enabled || !profile?.onboarded) return
     // saved foods are shared too (name and kcal only), so a partner doesn't have to save them again
     // ⭐ saved foods first, then the foods you've logged (one serving each), up to 100 in all

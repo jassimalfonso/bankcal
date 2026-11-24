@@ -4,6 +4,7 @@ import { compressPhoto } from '../store'
 import { fmt, mealFor } from '../calc'
 import { searchFoods } from '../foods'
 import { askFood, cleanFoods, warmFood } from '../ai'
+import { shareLookups } from '../partner'
 import { matchFoods } from '../foods'
 import { IconCamera, IconClose } from '../icons'
 import { useEscape } from '../motion'
@@ -17,12 +18,28 @@ import { firstTime } from '../keyboard'
 const CACHE_KEY = 'bankcal:online-foods'
 const onlineCache = new Map()
 try {
-  for (const [k, v, at] of JSON.parse(localStorage.getItem(CACHE_KEY) || '[]')) if (Date.now() - at < 60 * 864e5) onlineCache.set(k, Object.assign(v, { at }))
+  for (const [k, v, at, theirs] of JSON.parse(localStorage.getItem(CACHE_KEY) || '[]')) if (Date.now() - at < 60 * 864e5) onlineCache.set(k, Object.assign(v, { at, ...(theirs ? { theirs: true } : {}) }))
 } catch { /* start empty */ }
 function keepOnline(k, found) {
   onlineCache.set(k, Object.assign(found, { at: Date.now() }))
   if (!found.length) return // "nothing found" is only remembered until the app is closed
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify([...onlineCache].filter(([, v]) => v.length).sort((a, b) => b[1].at - a[1].at).slice(0, 200).map(([key, v]) => [key, [...v], v.at]))) } catch { /* full: fine */ }
+  const all = [...onlineCache].filter(([, v]) => v.length).sort((a, b) => b[1].at - a[1].at)
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(all.slice(0, 200).map(([key, v]) => [key, [...v], v.at, v.theirs ? 1 : 0]))) } catch { /* full: fine */ }
+  // my own lookups go to my partner too (theirs aren't sent back)
+  shareLookups(all.filter(([, v]) => !v.theirs).map(([key, v]) => [key, [...v], v.at]))
+}
+// What my partner has looked up online: remembered here as if I had, so it shows instantly
+function takeLookups(list) {
+  let added = false
+  for (const l of Array.isArray(list) ? list : []) {
+    const k = String(l?.q ?? '').toLowerCase()
+    const r = cleanFoods(l?.r, 8)
+    if (!k || !r.length || !(Date.now() - l.at < 60 * 864e5)) continue
+    const mine = onlineCache.get(k)
+    if (mine && (mine.length || 0) > 0 && (mine.at ?? 0) >= l.at) continue
+    onlineCache.set(k, Object.assign(r, { at: l.at, theirs: true })); added = true
+  }
+  if (added) try { localStorage.setItem(CACHE_KEY, JSON.stringify([...onlineCache].filter(([, v]) => v.length).sort((a, b) => b[1].at - a[1].at).slice(0, 200).map(([key, v]) => [key, [...v], v.at, v.theirs ? 1 : 0]))) } catch { /* full: fine */ }
 }
 
 // Foods found online before that match what's being typed (every typed word starts a word in the name)
@@ -34,7 +51,7 @@ function seenOnline(q, limit = 4) {
   for (const [, list] of [...onlineCache].sort((a, b) => b[1].at - a[1].at)) {
     for (const f of list) {
       const ws = words(f.name)
-      if (qs.every((w) => ws.some((x) => x.startsWith(w))) && !out.has(f.name.toLowerCase())) out.set(f.name.toLowerCase(), { name: f.name, kcal: f.kcal, portion: f.portion || 'found online', seen: true })
+      if (qs.every((w) => ws.some((x) => x.startsWith(w))) && !out.has(f.name.toLowerCase())) out.set(f.name.toLowerCase(), { name: f.name, kcal: f.kcal, portion: f.portion || 'found online', seen: true, ...(f.cat ? { cat: f.cat } : {}), ...(f.per100 ? { per100: f.per100 } : {}) })
       if (out.size >= limit) return [...out.values()]
     }
   }
@@ -94,6 +111,8 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
     setFixing(null)
     notify?.(`Saved ${nm}`)
   }
+  // what your partner has looked up online is ready here too
+  useEffect(() => { for (const id of partner?.partners ?? []) takeLookups(partner.shares?.[id]?.lookups) }, [partner?.shares, partner?.partners])
   // Your partner's saved foods (the ones you haven't saved yourself), ready to use
   const builtIn = useMemo(() => new Map(FOODS.map((f) => [words(String(f.name)).join(' '), f])), [])
   const theirs = useMemo(() => {
@@ -207,7 +226,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
     setKcal(String(f.kcal))
     setPicked(true)
     setLook({ busy: false, msg: '' })
-    setBase({ kcal: f.kcal, portion: f.portion, cat: f.cat, ...(f.from ? { from: f.from, own: f.kcal, serving: f.serving || realPortion(f.portion), whole: f.whole } : {}), ...(f.full > 0 && Math.abs(f.full - f.kcal) >= 5 ? { full: f.full, own: f.kcal, from: f.from, fullPortion: f.fullPortion, listed: f.listed, serving: f.serving || realPortion(f.portion) } : {}) })
+    setBase({ kcal: f.kcal, portion: f.portion, cat: f.cat, ...(f.per100 ? { per100: f.per100 } : {}), ...(f.from ? { from: f.from, own: f.kcal, serving: f.serving || realPortion(f.portion), whole: f.whole } : {}), ...(f.full > 0 && Math.abs(f.full - f.kcal) >= 5 ? { full: f.full, own: f.kcal, from: f.from, fullPortion: f.fullPortion, listed: f.listed, serving: f.serving || realPortion(f.portion) } : {}) })
     setServing(f.serving || realPortion(f.portion))
     setMult(1)
     setAi((a) => ({ ...a, results: null }))
@@ -233,6 +252,20 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
   const amount = (k) => { setBase((b) => ({ ...b, kcal: k })); setKcal(String(Math.round(k * mult))); setServing(k === base.full ? (base.fullPortion ?? '') : (base.serving ?? '')) } // their portion note belongs to their amount only
 
   const asked = useRef('')
+  // "More options": other sizes, styles and brand versions, fetched only when asked for
+  const [more, setMore] = useState({ q: '', busy: false, list: null, err: '' })
+  async function moreOptions() {
+    const q = name.trim(), k = q.toLowerCase() + '|more'
+    if (onlineCache.get(k)?.length) { setMore({ q, busy: false, list: onlineCache.get(k), err: '' }); return }
+    setMore({ q, busy: true, list: null, err: '' })
+    try {
+      const j = await askFood({ mode: 'more', q, have: (ai.results ?? []).map((r) => r.name) })
+      const have = new Set((ai.results ?? []).map((r) => r.name.toLowerCase()))
+      const list = cleanFoods(j.results, 8).filter((r) => !have.has(r.name.toLowerCase()))
+      keepOnline(k, list)
+      setMore({ q, busy: false, list, err: list.length ? '' : 'No other versions found.' })
+    } catch (e) { setMore({ q, busy: false, list: null, err: e.message || 'Couldn’t get more options just now.' }) }
+  }
   async function searchAi(auto = false, retry = true) {
     const q = name.trim()
     const k = q.toLowerCase()
@@ -287,10 +320,32 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
       const [thumb, big] = await Promise.all([compressPhoto(f), compressPhoto(f, 1024)])
       setPhoto(thumb)
       lastPhoto.current = big
+      // a barcode in the photo: the product's own label numbers, no estimating (Android reads it on the phone)
+      if (await readBarcode(f)) return
       await readPhoto(big)
     } catch {
       setAi({ busy: false, err: 'Couldn’t open that photo. Try another one, or type the food.', results: null, items: null, confidence: '', photoErr: true })
     }
+  }
+  const showPack = (results) => {
+    const list = cleanFoods(results, 4)
+    if (!list.length) return false
+    setName(list[0].name); setPicked(false)
+    asked.current = list[0].name.toLowerCase() // no extra online search for it
+    setAi({ busy: false, err: '', results: list, items: null, confidence: '', barcode: true })
+    return true
+  }
+  async function readBarcode(file) {
+    if (!('BarcodeDetector' in window)) return false
+    try {
+      const bmp = await createImageBitmap(file)
+      const found = await new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] }).detect(bmp)
+      bmp.close?.()
+      const code = found?.[0]?.rawValue
+      if (!code) return false
+      setAi({ busy: true, err: '', results: null, items: null, confidence: '' })
+      return showPack((await askFood({ mode: 'barcode', code })).results)
+    } catch { return false }
   }
   async function readPhoto(big) {
     setSlow(false)
@@ -298,6 +353,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
     try {
       setAi({ busy: true, err: '', results: null, items: null, confidence: '' })
       const j = await askFood({ mode: 'photo', image: big })
+      if (showPack(j.pack)) return // the AI read a barcode in the photo and the product was found
       const total = Math.round(Number(String(j.kcal ?? '').replace(/[^\d.]/g, '')))
       if (!Number.isFinite(total) || total <= 0) throw new Error('Couldn’t spot food or a calorie label in that photo. Type it in instead.')
       j.kcal = total
@@ -379,11 +435,21 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
           // so it goes first and only a few loose matches follow
           const loose = !picked && name.trim().length >= 3 && !matchFoods(name).some((m) => m.strong)
           const rest = suggestions.filter((f) => !own.includes(f) && !f.seen && !f.from).slice(0, loose ? 4 : 8)
+          const moreNow = more.q === name.trim() ? more : null
+          const GROUPS = [['size', 'Other sizes'], ['style', 'Other styles'], ['brand', 'Restaurants and brands'], [undefined, 'Also']]
           const online = (ai.busy || ai.results?.length > 0) && (
             <>
-              <p className="sg-h">Online · AI estimate</p>
+              <p className="sg-h">{ai.barcode ? 'From the barcode · Open Food Facts' : 'Online · AI estimate'}</p>
               {ai.busy && <div className="sg-skel" aria-label="Checking online"><i /><i /></div>}
-              {ai.results?.map((f) => row(f, 'ai' + f.name))}
+              {ai.results?.map((f) => row(f, 'ai' + f.name + f.portion))}
+              {moreNow?.list && GROUPS.map(([g, label]) => {
+                const items = moreNow.list.filter((f) => f.group === g)
+                return items.length > 0 && <div key={label}><p className="sg-h">{label}</p>{items.map((f) => row(f, 'mo' + f.name + f.portion))}</div>
+              })}
+              {moreNow?.busy && <div className="sg-skel" aria-label="Getting more options"><i /><i /></div>}
+              {ai.results?.length > 0 && !ai.barcode && !moreNow?.list && !moreNow?.busy && (
+                <button className="suggest-ai" onClick={moreOptions}>{moreNow?.err || 'More options: sizes, styles, brands'}</button>
+              )}
             </>
           )
           return (
@@ -402,6 +468,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
             </div>
           )
         })()}
+        {picked && base?.per100 > 0 && !editing && <p className="per100">About {fmt(base.per100)} kcal per 100 {base.cat === 'drink' ? 'ml' : 'g'}</p>}
         {picked && base?.full > 0 && !editing && (
           <div className="whose" role="radiogroup" aria-label="Which amount">
             <button role="radio" aria-checked={base.kcal === base.own} className={base.kcal === base.own ? 'on' : ''} onClick={() => amount(base.own)}>
@@ -510,7 +577,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
           ) : (
             <>
               <IconCamera size={26} />
-              <span>Snap your plate<small>Food, drinks or a packet label</small></span>
+              <span>Snap your plate<small>Food, drinks, a packet label or a barcode</small></span>
             </>
           )}
           {ai.busy && photo && <span className="photo-busy">{slow ? 'Still reading… labels can take a little longer' : 'Reading your photo…'}</span>}

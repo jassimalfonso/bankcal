@@ -5,6 +5,8 @@ export async function askFood(body) {
   if (import.meta.env.MODE === 'demo') {
     await new Promise((ok) => setTimeout(ok, 600))
     if (body.mode === 'exercise') return { results: [{ name: `${body.q} (demo online)`, emoji: '🏋️', kind: 'reps', met: 5, weighted: true, each: false }, { name: `${body.q} class`, emoji: '🤸', kind: 'minutes', met: 4.5 }] }
+    if (body.mode === 'more') return { results: [{ name: `${body.q}, small`, portion: 'small (150 g)', kcal: 180, per100: 120, group: 'size' }, { name: `${body.q}, large`, portion: 'large (400 g)', kcal: 480, per100: 120, group: 'size' }, { name: `Fried ${body.q}`, portion: '1 serving (250 g)', kcal: 520, per100: 208, group: 'style' }, { name: `Demo Chain ${body.q}`, portion: '1 box (300 g)', kcal: 610, per100: 203, group: 'brand' }] }
+    if (body.mode === 'barcode') return { results: [{ name: 'Demo Brand Oat Biscuits', portion: '1 serving (30 g)', kcal: 135, per100: 450, barcode: true }, { name: 'Demo Brand Oat Biscuits', portion: 'whole pack (150 g)', kcal: 675, per100: 450, barcode: true }, { name: 'Demo Brand Oat Biscuits', portion: '100 g', kcal: 450, per100: 450, barcode: true }] }
     return body.mode === 'photo'
       ? { name: 'Demo plate', kcal: 480, items: [{ name: 'Rice', portion: '1 cup', kcal: 205 }], confidence: 'medium' }
       : { results: [{ name: `${body.q} (demo online result)`, portion: '1 serving', kcal: 321 }, { name: `${body.q}, large`, portion: { amount: 1, unit: 'large bag' }, kcal: '640 kcal' }] }
@@ -57,12 +59,12 @@ export async function warmFood() {
 // AI answers can come back in odd shapes (numbers as text, objects instead of text, missing
 // calories). Keep only clean { name, portion, kcal } items so the screen can always show them.
 const txt = (v) => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : v && typeof v === 'object' ? Object.values(v).filter((x) => typeof x === 'string' || typeof x === 'number').join(' ') : '').trim()
-export function cleanFoods(list) {
+export function cleanFoods(list, limit = 6) {
   if (!Array.isArray(list)) return []
   return list
-    .map((x) => ({ ...(['meal', 'fruit', 'snack', 'drink', 'side'].includes(x?.cat) ? { cat: x.cat } : {}), name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: x?.kcal == null || x.kcal === '' ? NaN : Math.round(Number(String(x.kcal).replace(/[^\d.]/g, '') || NaN)) }))
+    .map((x) => ({ ...(Number(x?.per100) > 0 && Number(x.per100) <= 900 ? { per100: Math.round(Number(x.per100)) } : {}), ...(['size', 'style', 'brand'].includes(x?.group) ? { group: x.group } : {}), ...(x?.barcode === true ? { barcode: true } : {}), ...(['meal', 'fruit', 'snack', 'drink', 'side'].includes(x?.cat) ? { cat: x.cat } : {}), name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: x?.kcal == null || x.kcal === '' ? NaN : Math.round(Number(String(x.kcal).replace(/[^\d.]/g, '') || NaN)) }))
     .filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000)
-    .slice(0, 6)
+    .slice(0, limit)
 }
 
 // Exercises found online: keep only clean ones the app can log

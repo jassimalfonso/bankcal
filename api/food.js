@@ -39,8 +39,10 @@ async function discover(key) {
 const CONTEXT = 'You are a nutrition assistant for people living in the UAE / GCC. Use typical portions served in UAE restaurants, cafeterias, supermarkets and homes (Arabic, Indian, Filipino and international food). Calories are kcal, integers.'
 
 const PROMPTS = {
-  photo: `${CONTEXT} Look at this photo. It may be a plate of food, a drink, or a packet / product. If a nutrition label or calorie number is printed on the packaging (in any language, e.g. Japanese, Arabic), read it and use the calories for the whole pack (or one serving if that is all that's shown), and name the product in English. Otherwise identify each food, estimate its portion and calories. Return JSON exactly like {"name": "short name for the whole plate", "kcal": 0, "items": [{"name": "", "portion": "", "kcal": 0}], "confidence": "low|medium|high"}. If there is no food, return {"name": "", "kcal": 0, "items": [], "confidence": "low"}.`,
-  search: (q) => `${CONTEXT} The user typed "${q}" to log something they ate or drank. It may be a brand or chain item (Starbucks, Costa, Tim Hortons, McDonald's, KFC, Jollibee, supermarket products): for those, use the brand's published calories for that exact item, size and options (cup size, milk type, syrups, cream). List the best match first, then up to 3 close alternatives (other sizes, milk options or similar items). Names must include the brand, size and options. Portion: the serving, with ml for drinks. If unclear, assume the most common UAE version. Also give each a type, cat: "meal" (a main dish or combo), "fruit" (fruit, vegetables, salads), "snack" (snacks, sweets, desserts, pastries), "drink" (any drink) or "side" (rice, bread, sauces, extras). Reply with JSON only, no explanation: {"results": [{"name": "", "portion": "", "kcal": 0, "cat": "meal"}]}.`,
+  photo: `${CONTEXT} Look at this photo. It may be a plate of food, a drink, or a packet / product. If a nutrition label or calorie number is printed on the packaging (in any language, e.g. Japanese, Arabic), read it and use the calories for the whole pack (or one serving if that is all that's shown), and name the product in English. Otherwise identify each food, estimate its portion and calories. Return JSON exactly like {"name": "short name for the whole plate", "kcal": 0, "items": [{"name": "", "portion": "", "kcal": 0}], "confidence": "low|medium|high"}. If a barcode is visible and the digits printed under it are readable, also return them as "barcode": "digits only". If there is no food, return {"name": "", "kcal": 0, "items": [], "confidence": "low"}.`,
+  search: (q) => `${CONTEXT} The user typed "${q}" to log something they ate or drank. It may be a brand or chain item (Starbucks, Costa, Tim Hortons, McDonald's, KFC, Jollibee, supermarket products): for those, use the brand's published calories for that exact item, size and options (cup size, milk type, syrups, cream). List the best match first, then up to 3 close alternatives (other sizes, milk options or similar items). Names must include the brand, size and options. Portion: the serving, always with its weight in g (ml for drinks), e.g. "1 bowl (350 g)". Also give g (that weight or volume as a number) and per100 (kcal per 100 g or 100 ml of this food); kcal must equal g × per100 ÷ 100. If unclear, assume the most common UAE version. Also give each a type, cat: "meal" (a main dish or combo), "fruit" (fruit, vegetables, salads), "snack" (snacks, sweets, desserts, pastries), "drink" (any drink) or "side" (rice, bread, sauces, extras). Reply with JSON only, no explanation: {"results": [{"name": "", "portion": "", "g": 0, "per100": 0, "kcal": 0, "cat": "meal"}]}.`,
+  // asked for only when someone taps "More options": the wider set of things they might mean
+  more: (q, have) => `${CONTEXT} The user is logging "${q}" and wants more options than: ${have || 'none yet'}. List 6 to 8 other versions someone in the UAE might mean, none of them repeating that list: other sizes (small, regular, large), how it is cooked or served (fried, grilled, with rice, with sauce), and versions from well-known restaurants, chains or supermarket brands (use their published calories). Names must say what makes each different. Portion: the serving, always with its weight in g (ml for drinks). Also give g (that number), per100 (kcal per 100 g or 100 ml; kcal must equal g × per100 ÷ 100), cat ("meal", "fruit", "snack", "drink" or "side") and group: "size", "style" or "brand". Reply with JSON only: {"results": [{"name": "", "portion": "", "g": 0, "per100": 0, "kcal": 0, "cat": "meal", "group": "size"}]}.`,
   exercise: (q) => `You are a fitness assistant. The user typed "${q}" to log an exercise or physical activity they did. Return JSON exactly like {"results": [{"name": "", "emoji": "", "kind": "reps|time|minutes", "met": 0, "weighted": false, "each": false, "kcal": 0}]}. Best match first, then up to 3 close variations. name: short, in English, capitalised. emoji: one fitting emoji. kind: "reps" for strength moves counted in repetitions, "time" for holds counted in seconds (plank, wall sit), "minutes" for continuous activities (sports, cardio, classes, dancing, housework). met: the MET value while doing it, from the Compendium of Physical Activities. weighted: true if it normally uses dumbbells, a barbell, a kettlebell or a machine load. each: true if it is done one side at a time. kcal: calories a 70 kg person burns doing it for 10 minutes. If it is not a physical activity, return {"results": []}.`,
 }
 
@@ -130,6 +132,57 @@ async function callGemini(key, parts, kind, hint) {
 }
 
 export { callGemini as _callGemini } // for tests
+
+const txt = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v) : '').trim()
+const CATS = ['meal', 'fruit', 'snack', 'drink', 'side']
+// Tidy what the model returned, and check each answer against itself: the weight and the kcal per
+// 100 g are facts models know better than a plate's total, so when weight × per-100 disagrees with
+// the total by a lot, the total is recomputed from them.
+export function tidyFoods(list, limit = 6) {
+  return (Array.isArray(list) ? list : []).map((x) => {
+    let kcal = Math.round(Number(x?.kcal))
+    const g = Number(x?.g), per100 = Number(x?.per100)
+    const checked = g > 0 && g < 3000 && per100 > 0 && per100 <= 900
+    if (checked) {
+      const calc = Math.round(g * per100 / 100)
+      if (!Number.isFinite(kcal) || Math.abs(calc - kcal) > Math.max(40, kcal * 0.25)) kcal = calc
+    }
+    let portion = txt(x?.portion).slice(0, 60)
+    if (checked && !/\d\s*(g|ml|kg|l)\b/i.test(portion)) portion = `${portion || '1 serving'} (${Math.round(g)} ${x?.cat === 'drink' ? 'ml' : 'g'})`.slice(0, 60)
+    return { name: txt(x?.name).slice(0, 120), portion, kcal, ...(CATS.includes(x?.cat) ? { cat: x.cat } : {}), ...(checked ? { per100: Math.round(per100) } : {}), ...(['size', 'style', 'brand'].includes(x?.group) ? { group: x.group } : {}) }
+  }).filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000).slice(0, limit)
+}
+
+// A packaged product by its barcode, from Open Food Facts (free, community-run). Returns the
+// amounts someone might log: one serving, the whole pack, and 100 g.
+export async function barcodeFoods(code, fetcher = fetch) {
+  if (!/^\d{8,14}$/.test(code)) return []
+  const r = await fetcher(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,product_name_en,brands,nutriments,serving_size,serving_quantity,quantity,product_quantity`, {
+    headers: { 'user-agent': 'BankCal/1.0 (https://bankcal.vercel.app)' }, signal: AbortSignal.timeout(6000),
+  })
+  if (!r.ok) return []
+  const j = await r.json().catch(() => null)
+  const p = j?.product
+  if (!p || j.status === 0) return []
+  const n = p.nutriments || {}
+  const kj = (v) => (Number(v) > 0 ? Number(v) / 4.184 : NaN)
+  const per100 = Number(n['energy-kcal_100g']) >= 0 && n['energy-kcal_100g'] !== '' && n['energy-kcal_100g'] != null ? Number(n['energy-kcal_100g']) : kj(n['energy_100g'])
+  const perServing = Number(n['energy-kcal_serving']) > 0 ? Number(n['energy-kcal_serving']) : kj(n['energy_serving'])
+  const brand = txt(p.brands).split(',')[0].trim()
+  const title = txt(p.product_name_en) || txt(p.product_name)
+  if (!title && !brand) return []
+  const name = (brand && !title.toLowerCase().includes(brand.toLowerCase()) ? `${brand} ${title}` : title || brand).slice(0, 110)
+  const drink = /\b(ml|cl|l)\b/i.test(`${p.quantity || ''} ${p.serving_size || ''}`)
+  const unit = drink ? 'ml' : 'g'
+  const out = []
+  const servingQ = Number(p.serving_quantity)
+  const serving = Number.isFinite(perServing) ? perServing : (servingQ > 0 && Number.isFinite(per100) ? per100 * servingQ / 100 : NaN)
+  if (Number.isFinite(serving)) out.push({ name, portion: `1 serving${p.serving_size ? ` (${txt(p.serving_size).slice(0, 30)})` : ''}`, kcal: Math.round(serving) })
+  const packQ = Number(p.product_quantity)
+  if (Number.isFinite(per100) && packQ > 0 && packQ <= 3000 && Math.round(per100 * packQ / 100) !== Math.round(serving)) out.push({ name, portion: `whole pack (${txt(p.quantity).slice(0, 20) || `${packQ} ${unit}`})`, kcal: Math.round(per100 * packQ / 100) })
+  if (Number.isFinite(per100)) out.push({ name, portion: `100 ${unit}`, kcal: Math.round(per100) })
+  return out.filter((x) => x.kcal >= 0 && x.kcal < 6000).map((x) => ({ ...x, ...(Number.isFinite(per100) ? { per100: Math.round(per100) } : {}), ...(drink ? { cat: 'drink' } : {}), barcode: true }))
+}
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST' })
   try {
@@ -156,18 +209,32 @@ export default async function handler(req, res) {
       const m = /^data:(image\/\w+);base64,(.+)$/.exec(body.image || '')
       if (!m) return res.status(400).json({ error: 'No photo received.' })
       const out = await callGemini(key, [{ text: PROMPTS.photo }, { inline_data: { mime_type: m[1], data: m[2] } }], 'photo', body.hint)
-      return res.status(200).json({ ...out, via: via('photo') })
+      // a readable barcode in the photo: the product's own numbers beat an estimate
+      const code = txt(out?.barcode).replace(/\D/g, '')
+      const pack = code ? await barcodeFoods(code).catch(() => []) : []
+      return res.status(200).json({ ...out, ...(pack.length ? { pack } : {}), via: via('photo') })
     }
     if (body.mode === 'search') {
-      const q = String(body.q || '').slice(0, 80).trim()
+      const q = String(body.q || '').replace(/["\\\n\r]/g, ' ').slice(0, 80).trim()
       if (q.length < 2) return res.status(400).json({ error: 'Type a little more.' })
       const raw = await callGemini(key, [{ text: PROMPTS.search(q) }], 'search', body.hint)
-      const txt = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v) : '').trim()
-      const out = { results: (Array.isArray(raw?.results) ? raw.results : [])
-        .map((x) => ({ name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: Math.round(Number(x?.kcal)), ...(['meal', 'fruit', 'snack', 'drink', 'side'].includes(x?.cat) ? { cat: x.cat } : {}) }))
-        .filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000).slice(0, 6), via: via('search') }
+      const out = { results: tidyFoods(raw?.results), via: via('search') }
       res.setHeader('Cache-Control', 'private, max-age=3600')
       return res.status(200).json(out)
+    }
+    // "More options": the wider set, only when asked for
+    if (body.mode === 'more') {
+      const q = String(body.q || '').replace(/["\\\n\r]/g, ' ').slice(0, 80).trim()
+      if (q.length < 2) return res.status(400).json({ error: 'Type a little more.' })
+      const have = (Array.isArray(body.have) ? body.have : []).slice(0, 8).map((x) => txt(x).replace(/["\\\n\r]/g, ' ').slice(0, 60)).filter(Boolean).join('; ')
+      const raw = await callGemini(key, [{ text: PROMPTS.more(q, have) }], 'search', body.hint)
+      res.setHeader('Cache-Control', 'private, max-age=3600')
+      return res.status(200).json({ results: tidyFoods(raw?.results, 8), via: via('search') })
+    }
+    // a packaged product by barcode (Open Food Facts)
+    if (body.mode === 'barcode') {
+      const results = await barcodeFoods(txt(body.code).replace(/\D/g, '')).catch(() => [])
+      return res.status(200).json({ results })
     }
     // look up an exercise or activity that isn't in the app's own list
     if (body.mode === 'exercise') {
