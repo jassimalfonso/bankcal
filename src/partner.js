@@ -11,12 +11,18 @@ export { usualFoods } from './calc'
 // Foods either of you has looked up online are shared, so the other gets them instantly.
 // (Just the search text and its results. Nothing about what was eaten.)
 let lookupsTo = null // my uid, once sharing is on
-let lookupsTimer = null
-export function shareLookups(list) {
+const lookupsTimer = {}
+export function shareLookups(list, field = 'lookups') {
   if (!lookupsTo) return
-  clearTimeout(lookupsTimer)
+  clearTimeout(lookupsTimer[field])
   const uid = lookupsTo
-  lookupsTimer = setTimeout(() => {
+  lookupsTimer[field] = setTimeout(() => {
+    if (field === 'exLookups') {
+      const pick = ['name', 'emoji', 'kind', 'met', 'weighted', 'each']
+      const exLookups = list.slice(0, 60).map(([q, r, at]) => ({ q: String(q).slice(0, 80), at, r: r.slice(0, 10).map((x) => Object.fromEntries(pick.filter((k) => x[k] != null && x[k] !== false).map((k) => [k, x[k]]))) }))
+      setDoc(doc(db, 'shares', uid), { exLookups }, { merge: true }).catch(() => {})
+      return
+    }
     // Firestore has no nested arrays, so each lookup is { q, at, r: [...] }
     const lookups = list.slice(0, 80).map(([q, r, at]) => ({ q: String(q).slice(0, 80), at, r: r.slice(0, 8).map((f) => ({ name: String(f.name).slice(0, 120), kcal: Math.round(+f.kcal) || 0, ...(f.portion ? { portion: String(f.portion).slice(0, 60) } : {}), ...(f.cat ? { cat: f.cat } : {}), ...(f.per100 ? { per100: f.per100 } : {}), ...(f.group ? { group: f.group } : {}) })) }))
     setDoc(doc(db, 'shares', uid), { lookups }, { merge: true }).catch(() => {})

@@ -4,7 +4,7 @@ import { auth } from './firebase'
 export async function askFood(body) {
   if (import.meta.env.MODE === 'demo') {
     await new Promise((ok) => setTimeout(ok, 600))
-    if (body.mode === 'exercise') return { results: [{ name: `${body.q} (demo online)`, emoji: '🏋️', kind: 'reps', met: 5, weighted: true, each: false }, { name: `${body.q} class`, emoji: '🤸', kind: 'minutes', met: 4.5 }] }
+    if (body.mode === 'exercise') return { results: body.have ? [{ name: `${body.q}, single-arm`, emoji: '💪', kind: 'reps', met: 5, weighted: true, each: true }, { name: `${body.q} hold`, emoji: '⏱️', kind: 'time', met: 4 }] : [{ name: `${body.q} (demo online)`, emoji: '🏋️', kind: 'reps', met: 5, weighted: true, each: false }, { name: `${body.q} class`, emoji: '🤸', kind: 'minutes', met: 4.5 }] }
     if (body.mode === 'more') return { results: [{ name: `${body.q}, small`, portion: 'small (150 g)', kcal: 180, per100: 120, group: 'size' }, { name: `${body.q}, large`, portion: 'large (400 g)', kcal: 480, per100: 120, group: 'size' }, { name: `Fried ${body.q}`, portion: '1 serving (250 g)', kcal: 520, per100: 208, group: 'style' }, { name: `Demo Chain ${body.q}`, portion: '1 box (300 g)', kcal: 610, per100: 203, group: 'brand' }] }
     if (body.mode === 'barcode') return { results: [{ name: 'Demo Brand Oat Biscuits', portion: '1 serving (30 g)', kcal: 135, per100: 450, barcode: true }, { name: 'Demo Brand Oat Biscuits', portion: 'whole pack (150 g)', kcal: 675, per100: 450, barcode: true }, { name: 'Demo Brand Oat Biscuits', portion: '100 g', kcal: 450, per100: 450, barcode: true }] }
     return body.mode === 'photo'
@@ -68,10 +68,10 @@ export function cleanFoods(list, limit = 6) {
 }
 
 // Exercises found online: keep only clean ones the app can log
-export function cleanExercises(list) {
+export function cleanExercises(list, limit = 4) {
   if (!Array.isArray(list)) return []
   return list
     .map((x) => ({ name: txt(x?.name).slice(0, 60), emoji: txt(x?.emoji).slice(0, 8) || '💪', kind: ['reps', 'time', 'minutes'].includes(x?.kind) ? x.kind : 'minutes', met: Math.round(Number(x?.met) * 10) / 10, weighted: x?.weighted === true, each: x?.each === true }))
     .filter((x) => x.name && x.met >= 1.5 && x.met <= 16)
-    .slice(0, 4)
+    .slice(0, limit)
 }

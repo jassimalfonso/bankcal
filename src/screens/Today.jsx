@@ -5,7 +5,7 @@ import { useCountUp, useSwipe, useSideFit, useEscape, useSheetDrag } from '../mo
 import { IconClose } from '../icons'
 import { useHold, HoldConfirm } from '../Hold'
 import { firstTime } from '../keyboard'
-import { breakdown, fmt, KCAL_PER_KG, mealFor, usualFor } from '../calc'
+import { breakdown, dayKey, fmt, KCAL_PER_KG, mealFor, usualFor } from '../calc'
 import { CATS, catOf, foodEmoji } from '../foodCats'
 import Character, { moodFor } from '../Character'
 import { missingFor } from '../calc'
@@ -204,7 +204,7 @@ export default function Today(props) {
         if (id === 'meals') return (
           <section key="meals" className="block">
             <h2 className="group-title">Meals{todays.length > 1 && <MealView value={mealView} onChange={setMealView} />}</h2>
-            <UsualCard {...props} />
+            <MealShortcut {...props} />
             {todays.length === 0 ? (
               <div className="card empty">
                 <p>No meals yet today.</p>
@@ -306,6 +306,32 @@ export function Row({ e, onDelete, onEdit, onAgain, onHold, fresh, cats }) {
 }
 
 // "Your usual": the food you log most at this time of day, one tap to add
+// One quiet shortcut above Meals for the meal it's time for: repeat what you had for it yesterday
+// (when that was more than one thing), otherwise your usual.
+function MealShortcut(props) {
+  const { mine, todays, today, addEntry, removeEntry, notify } = props
+  const [done, setDone] = useState('')
+  const meal = mealFor()
+  const yKey = dayKey(new Date(new Date(today + 'T12:00').getTime() - 864e5))
+  const had = (mine ?? []).filter((e) => e.day === yKey && mealKey(e.meal) === mealKey(meal))
+  const nothingYet = !todays.some((e) => mealKey(e.meal) === mealKey(meal))
+  if (had.length < 2 || !nothingYet || !addEntry || done === yKey + meal) return <UsualCard {...props} />
+  const total = had.reduce((a, e) => a + e.kcal, 0)
+  const names = had.map((e) => e.name).join(', ')
+  const add = () => {
+    const ids = had.map((e) => addEntry({ name: e.name, kcal: e.kcal, meal, ...(e.cat ? { cat: e.cat } : {}), ...(e.serving ? { serving: e.serving } : {}), ...(e.full > 0 ? { full: e.full } : {}) }))
+    setDone(yKey + meal)
+    notify?.(`Added yesterday’s ${meal.toLowerCase()} · ${fmt(total)} kcal`, () => { ids.forEach((id) => removeEntry(id)); setDone('') })
+  }
+  return (
+    <div className="card usual-card">
+      <span className="uc-e" aria-hidden="true">↺</span>
+      <span className="uc-t"><b>Same as yesterday?</b><small>{names} · {fmt(total)} kcal</small></span>
+      <button className="uc-add" onClick={add} aria-label={`Add yesterday’s ${meal.toLowerCase()}: ${names}, ${fmt(total)} kcal`}>+ Add</button>
+    </div>
+  )
+}
+
 function UsualCard({ mine, todays, today, logFood, profile }) {
   const [gone, setGone] = useState(null)
   const meal = mealFor()

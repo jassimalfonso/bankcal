@@ -6,6 +6,7 @@ import { useDemoStore, demoPartner } from './demoStore'
 import { BUDDIES, Buddy } from './buddies'
 import { setBackHandlers } from './motion'
 import { useHold } from './Hold'
+import { takeEx } from './exLookups'
 import { firstTime } from './keyboard'
 import ShareSheet from './screens/ShareSheet'
 import WorkoutSheet from './screens/WorkoutSheet'
@@ -302,6 +303,8 @@ function Bank({ user }) {
       ], vacation: vacationOn(pf, today) ? { start: pf.vacation.start, end: pf.vacation.end ?? null, together: !!pf.vacation.together } : null, kgChange: null, goalPct: null, ...partnerProgress({ entries, profile: pf, budgetFor, todayKey: today }) },
   })
   const partner = DEMO && location.search.includes('partner') ? demoPartner(today) : livePartner
+  // exercises my partner has looked up online are ready for me too
+  useEffect(() => { for (const id of partner?.partners ?? []) takeEx(partner.shares?.[id]?.exLookups) }, [partner?.shares, partner?.partners])
 
   // Milestones: save newly reached ones and let the buddy announce them
   const reachedIds = profile?.onboarded ? reached({ entries, profile: pf, streakDays }) : []

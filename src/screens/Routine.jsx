@@ -1,13 +1,87 @@
 import { createPortal } from 'react-dom'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fmt, workoutKcal } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
 import { useRepeat } from '../Hold'
-import { WatchHow } from '../Moves'
+import Move, { WatchHow, hasMove } from '../Moves'
 import { EFFORTS, routineWorkout } from '../training'
 
 const uid = () => crypto.randomUUID?.() ?? String(Math.random())
+
+// Doing an exercise now: one set at a time, with a quiet countdown for each rest (and for holds).
+// Timed from the clock, so it stays right if the phone dims or the app is in the background.
+function SetPlayer({ it, onClose, onDone }) {
+  const drag = useSheetDrag(onClose)
+  useEscape(onClose)
+  const sets = +it.sets || 1, rest = it.rest ?? 60, timed = it.kind === 'time'
+  const [set, setSet] = useState(1)
+  const [phase, setPhase] = useState('work') // work → (hold) → rest → work …
+  const [end, setEnd] = useState(0) // when the running countdown finishes
+  const [left, setLeft] = useState(0)
+  const span = useRef(1)
+  const run = (seconds, next) => { span.current = Math.max(1, seconds); setEnd(Date.now() + seconds * 1000); setLeft(seconds); setPhase(next) }
+  const afterSet = () => {
+    if (set >= sets) { try { navigator.vibrate?.([20, 60, 20]) } catch { /* ignore */ } onDone(); return }
+    if (rest > 0) run(rest, 'rest'); else { setSet(set + 1); setPhase('work') }
+  }
+  useEffect(() => {
+    if (phase === 'work') return
+    const t = setInterval(() => {
+      const s = Math.max(0, Math.ceil((end - Date.now()) / 1000))
+      setLeft(s)
+      if (s > 0) return
+      clearInterval(t)
+      try { navigator.vibrate?.(30) } catch { /* ignore */ }
+      if (phase === 'hold') afterSet(); else { setSet((n) => n + 1); setPhase('work') }
+    }, 200)
+    return () => clearInterval(t)
+  }, [phase, end]) // eslint-disable-line react-hooks/exhaustive-deps
+  // keep the screen awake while training, where the phone allows it
+  useEffect(() => {
+    let lock = null
+    navigator.wakeLock?.request('screen').then((l) => { lock = l }).catch(() => {})
+    return () => { lock?.release?.().catch(() => {}) }
+  }, [])
+  const dose = timed ? `${it.sec} seconds` : `${it.reps} reps${it.each ? ' each side' : ''}`
+  const mm = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`
+  const R = 54, C = 2 * Math.PI * R
+  return createPortal(
+    <div className="sheet-wrap" onClick={onClose}>
+      <div className="sheet set-player" style={drag.style} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`Doing ${it.name}`}>
+        <div className="grabber-zone" {...drag.handle}><div className="grabber" /></div>
+        <div className="sheet-head">
+          <div><p className="muted">Set {Math.min(set, sets)} of {sets}</p><h2>{it.emoji} {it.name}</h2></div>
+          <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
+        </div>
+        <div className="sp-dots" aria-hidden="true">{Array.from({ length: sets }, (_, i) => <i key={i} className={i + 1 < set || (i + 1 === set && phase === 'rest') ? 'done' : i + 1 === set ? 'now' : ''} />)}</div>
+        {phase === 'work' ? (
+          <>
+            {hasMove(it.ex) && <div className="ex-move slim"><Move id={it.ex} label={`How ${it.name} moves`} /></div>}
+            <p className="sp-dose"><b>{dose}</b>{it.kg ? ` · ${it.kg} kg` : ''}</p>
+            {timed
+              ? <button className="btn-primary" onClick={() => run(+it.sec || 30, 'hold')}>Start {it.sec} s</button>
+              : <button className="btn-primary" onClick={afterSet}>{set >= sets ? 'Finish · log it' : rest > 0 ? `Done · rest ${rest} s` : 'Done · next set'}</button>}
+          </>
+        ) : (
+          <>
+            <div className={`sp-ring ${phase}`} role="timer" aria-live="off" aria-label={`${phase === 'rest' ? 'Rest' : 'Hold'}: ${left} seconds left`}>
+              <svg viewBox="0 0 128 128" aria-hidden="true"><circle className="bg" cx="64" cy="64" r={R} /><circle className="fg" cx="64" cy="64" r={R} strokeDasharray={C} strokeDashoffset={C * (1 - Math.min(1, left / span.current))} /></svg>
+              <div><b>{mm}</b><small>{phase === 'rest' ? 'Rest' : 'Hold'}</small></div>
+            </div>
+            {phase === 'rest' ? (
+              <div className="sp-btns">
+                <button className="btn-soft" onClick={() => { span.current += 15; setEnd(end + 15000) }}>+15 s</button>
+                <button className="btn-soft" onClick={() => { setSet(set + 1); setPhase('work') }}>Skip rest</button>
+              </div>
+            ) : <div className="sp-btns"><button className="btn-soft" onClick={afterSet}>Stop early</button></div>}
+            {phase === 'rest' && <p className="fine sp-next">Next: set {set + 1} of {sets} · {dose}</p>}
+          </>
+        )}
+      </div>
+    </div>
+  , document.body)
+}
 
 export function Stepper({ label, value, unit, step = 1, min = 0, max = 999, onChange }) {
   const set = (v) => onChange(Math.max(min, Math.min(max, Math.round(v * 2) / 2)))
@@ -32,6 +106,7 @@ export function RoutineCard({ profile, updateProfile, dayLog, setDay, today, cel
   const items = profile.routine ?? []
   const workouts = dayLog.workouts ?? []
   const [edit, setEdit] = useState(null)
+  const [playing, setPlaying] = useState(null) // a routine exercise being done now, set by set
   const isDone = (it) => workouts.some((w) => w.rid === it.id)
   const kcalOf = (it) => workoutKcal(routineWorkout(it), profile.weight)
   const doneItems = items.filter(isDone)
@@ -73,6 +148,7 @@ export function RoutineCard({ profile, updateProfile, dayLog, setDay, today, cel
                     <b>{it.emoji} {it.name}</b>
                     <small>{dose}{it.kg ? ` · ${it.kg} kg` : ''} · <span className="pos">+{fmt(kcalOf(it))} kcal</span></small>
                   </button>
+                  {!done && <button className="rt-play" onClick={() => setPlaying(it)} aria-label={`Start ${it.name} with a rest timer`}>▶</button>}
                   <button className="rt-edit" onClick={() => setEdit(open ? null : it.id)} aria-label={`${open ? 'Close' : 'Adjust'} ${it.name}`}>{open ? 'Close' : 'Adjust'}</button>
                 </div>
                 {open && (
@@ -96,7 +172,8 @@ export function RoutineCard({ profile, updateProfile, dayLog, setDay, today, cel
           })}
         </div>
       )}
-      {items.length > 0 && <p className="fine">Tick each exercise when you finish it. It’s logged and its calories are added to today’s budget. Calories depend on time and effort; heavier weights change them only slightly.</p>}
+      {playing && <SetPlayer it={items.find((x) => x.id === playing.id) ?? playing} onClose={() => setPlaying(null)} onDone={() => { const it = items.find((x) => x.id === playing.id); if (it && !isDone(it)) toggle(it); setPlaying(null) }} />}
+      {items.length > 0 && <p className="fine">Tap ▶ to go set by set with a rest timer, or just tick an exercise when you finish it. Either way it’s logged and its calories are added to today’s budget. Calories depend on time and effort; heavier weights change them only slightly.</p>}
     </>
   )
 }

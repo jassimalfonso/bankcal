@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom'
 import { Children, cloneElement, isValidElement, useEffect, useState } from 'react'
 import { askFood, cleanExercises } from '../ai'
+import { exSeen, keepEx } from '../exLookups'
 import { WORKOUTS, earned, fmt, workoutKcal, workoutMinutes } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
@@ -29,29 +30,46 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
   const [ai, setAi] = useState({ busy: false, results: null, q: '' })
   const [aiAct, setAiAct] = useState(null) // an online activity being logged by minutes: { name, met }
   const term = q.trim()
+  // an exercise found online, as a row that can be picked and logged
+  const toRows = (list) => {
+    const have = new Set(index.map((e) => e.item.name.toLowerCase()))
+    return list.filter((x) => !have.has(x.name.toLowerCase())).map((x) => {
+      if (x.kind === 'minutes') return { key: 'ai-' + x.name, kind: 'aimin', item: { name: x.name, emoji: x.emoji }, met: x.met, dose: 'by minutes' }
+      const item = { name: x.name, emoji: x.emoji, kind: x.kind, sets: 3, ...(x.kind === 'time' ? { sec: 30 } : { reps: 10 }), ...(x.weighted ? { kg: 5 } : {}), ...(x.each ? { each: true } : {}), rest: 60, met: x.met }
+      return { key: 'ai-' + x.name, kind: 'lib', ai: true, item, dose: doseOf(item) }
+    })
+  }
   const [force, setForce] = useState('') // "Not it? Search online" was tapped for this search
   const thin = found.filter((r) => r.score >= 40).length < 2 || force === term.toLowerCase()
   useEffect(() => {
     if (term.length < 3 || !thin) { setAi({ busy: false, results: null, q: '' }); return }
     const key = term.toLowerCase()
-    if (onlineSeen.has(key)) { setAi({ busy: false, results: onlineSeen.get(key), q: key }); return }
+    if (exSeen(key)) { setAi({ busy: false, results: toRows(exSeen(key)), q: key }); return }
     setAi((a) => ({ ...a, busy: true }))
     let live = true
     const t = setTimeout(async () => {
       try {
-        const j = await askFood({ mode: 'exercise', q: term })
-        const have = new Set(index.map((e) => e.item.name.toLowerCase()))
-        const list = cleanExercises(j.results).filter((x) => !have.has(x.name.toLowerCase())).map((x) => {
-          if (x.kind === 'minutes') return { key: 'ai-' + x.name, kind: 'aimin', item: { name: x.name, emoji: x.emoji }, met: x.met, dose: 'by minutes' }
-          const item = { name: x.name, emoji: x.emoji, kind: x.kind, sets: 3, ...(x.kind === 'time' ? { sec: 30 } : { reps: 10 }), ...(x.weighted ? { kg: 5 } : {}), ...(x.each ? { each: true } : {}), rest: 60, met: x.met }
-          return { key: 'ai-' + x.name, kind: 'lib', ai: true, item, dose: doseOf(item) }
-        })
-        onlineSeen.set(key, list)
-        if (live) setAi({ busy: false, results: list, q: key })
+        const list = cleanExercises((await askFood({ mode: 'exercise', q: term })).results)
+        keepEx(key, list)
+        if (live) setAi({ busy: false, results: toRows(list), q: key })
       } catch { if (live) setAi({ busy: false, results: [], q: key }) }
     }, 600)
     return () => { live = false; clearTimeout(t) }
   }, [term, thin]) // eslint-disable-line react-hooks/exhaustive-deps
+  // "More options": other versions of the exercise, fetched only when asked for
+  const [more, setMore] = useState({ q: '', busy: false, err: '' })
+  async function moreOptions() {
+    const key = term.toLowerCase(), have = exSeen(key) ?? []
+    setMore({ q: key, busy: true, err: '' })
+    try {
+      const names = new Set(have.map((x) => x.name.toLowerCase()))
+      const extra = cleanExercises((await askFood({ mode: 'exercise', q: term, have: have.map((x) => x.name) })).results, 6).filter((x) => !names.has(x.name.toLowerCase()))
+      const all = [...have, ...extra]
+      keepEx(key, Object.assign(all, { more: true }))
+      setAi({ busy: false, results: toRows(all), q: key })
+      setMore({ q: key, busy: false, err: extra.length ? '' : 'No other versions found.', done: true })
+    } catch (e) { setMore({ q: key, busy: false, err: e.message || 'Couldn’t get more options just now.' }) }
+  }
   const online = ai.results ?? []
   const pick = (r) => { if (r.kind === 'aimin') { setAiAct({ name: r.item.name, met: r.met }); setType('custom') } else if (r.kind === 'act') { setAiAct(null); setType(r.type) } else pickOwn(r) }
   const deposit = (w) => {
@@ -135,6 +153,10 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
                 {(ai.busy || online.length > 0) && <p className="sg-h">Online · AI estimate</p>}
                 {ai.busy && !online.length && <div className="sg-skel" aria-label="Checking online"><i /><i /></div>}
                 {online.map(row)}
+                {more.q === term.toLowerCase() && more.busy && <div className="sg-skel" aria-label="Getting more options"><i /><i /></div>}
+                {online.length > 0 && !ai.busy && !(more.q === term.toLowerCase() && (more.busy || more.done)) && (exSeen(term.toLowerCase())?.length ?? 0) <= 4 && (
+                  <button className="suggest-ai" onClick={moreOptions}>{more.q === term.toLowerCase() && more.err ? more.err : 'More options: other versions'}</button>
+                )}
                 {asked && !ai.busy && !online.length && !found.length && <p className="sg-h">No match for “{term}”</p>}
                 {!asked && term.length >= 3 && (
                   <button className="suggest-ai" onClick={() => setForce(term.toLowerCase())}>{found.length ? `Not it? Search online for “${term}”` : `Search online for “${term}”`}</button>
@@ -221,8 +243,6 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
   , document.body
   )
 }
-
-const onlineSeen = new Map() // exercises already looked up online this session
 
 function Line({ label, children }) {
   const kids = Children.map(children, (c) => (isValidElement(c) && c.type === In && !c.props['aria-label'] ? cloneElement(c, { 'aria-label': label }) : c))
