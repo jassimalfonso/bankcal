@@ -21,7 +21,7 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
     if (!enabled || !profile?.onboarded) return
     // saved foods are shared too (name and kcal only), so a partner doesn't have to save them again
     // ⭐ saved foods first, then the foods you've logged (one serving each), up to 100 in all
-    const saved = (profile.myFoods ?? []).slice(0, 60).map((f) => ({ name: String(f.name).slice(0, 120), kcal: Math.round(+f.kcal) || 0, cat: f.cat, ...(f.serving ? { serving: String(f.serving).slice(0, 30) } : {}) }))
+    const saved = (profile.myFoods ?? []).slice(0, 60).map((f) => ({ name: String(f.name).slice(0, 120), kcal: Math.round(+f.kcal) || 0, cat: f.cat, ...(f.full > 0 ? { full: Math.round(+f.full) } : {}), ...(f.serving ? { serving: String(f.serving).slice(0, 30) } : {}) }))
     const foods = profile.shareFoods === false ? [] : [...saved, ...usual.filter((u) => !saved.some((f) => f.name.toLowerCase() === u.name.toLowerCase()))].slice(0, 100).map((f) => ({ ...f, cat: catOf(f, profile.foodCats) })) // your type fixes travel with them
     // saved workouts too (the exercise and amounts), so a partner can deposit them in one tap
     const pick = ['name', 'emoji', 'kind', 'sets', 'reps', 'sec', 'kg', 'each', 'rest', 'met', 'ex']

@@ -2167,3 +2167,13 @@ body:has(.sheet-wrap) .fab { transform: scale(0.4); }
 .rec { padding-left: 8px; padding-right: 8px; min-width: 0; }
 .rec span, .rec small { white-space: nowrap; letter-spacing: -0.01em; }
 @media (max-width: 370px) { .rec span { font-size: 12px; } .rec small { font-size: 11px; } }
+
+/* a food with two amounts: theirs (or your usual) and the full portion */
+.whose { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 2px; }
+.whose button { display: grid; gap: 2px; padding: 10px 14px; border-radius: 16px; background: var(--card); box-shadow: var(--shadow); border: 2.5px solid transparent; text-align: left; min-width: 0; }
+.whose button.on { border-color: var(--accent); }
+.whose small { font-size: 12px; font-weight: 750; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.whose b { font-size: 18px; font-weight: 850; font-variant-numeric: tabular-nums; }
+.whose b i { font-style: normal; font-size: 12px; font-weight: 700; color: var(--muted); }
+.mf-full { flex: none; margin-left: 8px; padding: 2px 8px; border-radius: 99px; background: var(--soft); color: var(--muted); font-size: 12px; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kcal-row .step { text-align: center; }

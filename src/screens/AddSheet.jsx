@@ -9,6 +9,7 @@ import { IconCamera, IconClose } from '../icons'
 import { useEscape } from '../motion'
 import { useSheetDrag } from '../motion'
 import { HoldButton, useRepeat } from '../Hold'
+import { FOODS } from '../foods'
 import { firstTime } from '../keyboard'
 
 // Online answers are kept on this phone for two months, so a food looked up once comes back instantly,
@@ -94,6 +95,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
     notify?.(`Saved ${nm}`)
   }
   // Your partner's saved foods (the ones you haven't saved yourself), ready to use
+  const builtIn = useMemo(() => new Map(FOODS.map((f) => [words(String(f.name)).join(' '), f])), [])
   const theirs = useMemo(() => {
     const key = (n) => words(String(n)).join(' ') // "Max’s" and "Max's" count as the same food
     const have = new Set(myFoods.map((f) => key(f.name)))
@@ -103,7 +105,10 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
       for (const f of sh?.foods ?? []) {
         const k = key(f.name)
         if (!f.name || have.has(k) || !(f.kcal >= 0)) continue
-        have.add(k); out.push({ id: `p-${id}-${k}`, name: f.name, kcal: f.kcal, cat: f.cat, serving: f.serving, portion: `${sh.name}’s food`, from: sh.name })
+        const listed = builtIn.get(k)
+        const full = f.full > 0 ? f.full : listed?.kcal
+        have.add(k); out.push({ id: `p-${id}-${k}`, name: f.name, kcal: f.kcal, cat: f.cat, serving: f.serving, portion: `${sh.name}’s food`, from: sh.name,
+          ...(full > 0 && Math.abs(full - f.kcal) >= 5 ? { full, ...(f.full > 0 ? {} : { listed: true, fullPortion: listed?.portion ?? '' }) } : {}) })
       }
     }
     return out
@@ -194,17 +199,21 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
   // a chosen food can be scaled: ½, 1, 1½, 2 or 3 portions
   const [base, setBase] = useState(null)
   const [mult, setMult] = useState(1)
+  const base0 = useRef(0) // the kcal the chosen food came with, before any change
   function choose(f) {
+    base0.current = f.kcal
     setName(f.name)
     setKcal(String(f.kcal))
     setPicked(true)
-    setBase({ kcal: f.kcal, portion: f.portion, cat: f.cat })
+    setBase({ kcal: f.kcal, portion: f.portion, cat: f.cat, ...(f.full > 0 && Math.abs(f.full - f.kcal) >= 5 ? { full: f.full, own: f.kcal, from: f.from, fullPortion: f.fullPortion, listed: f.listed, serving: f.serving || realPortion(f.portion) } : {}) })
     setServing(f.serving || realPortion(f.portion))
     setMult(1)
     setAi((a) => ({ ...a, results: null }))
     inputRef.current?.blur() // put the keyboard away so the amount and Spend are in view
   }
   const portion = (m) => { setMult(m); if (base) setKcal(String(Math.round(base.kcal * m))) }
+  // a food someone cut down (or topped up): take their amount, or the food's full one
+  const amount = (k) => { setBase((b) => ({ ...b, kcal: k })); setKcal(String(Math.round(k * mult))); setServing(k === base.full ? (base.fullPortion ?? '') : (base.serving ?? '')) } // their portion note belongs to their amount only
 
   const asked = useRef('')
   async function searchAi(auto = false, retry = true) {
@@ -291,10 +300,10 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
   const more50 = useRepeat(() => bump(50), n >= 5000)
   // hold a saved or recent food to log it straight away, without opening it
   const [holdTip, setHoldTip] = useState(() => { try { return !localStorage.getItem('bankcal:hint:hold-food') } catch { return false } })
-  const logNow = (f) => onSave({ name: f.name, kcal: Math.round(f.kcal), meal, cat: catOf(f, cats), serving: (f.serving || realPortion(f.portion)).trim().slice(0, 30) })
+  const logNow = (f) => onSave({ name: f.name, kcal: Math.round(f.kcal), meal, cat: catOf(f, cats), serving: (f.serving || realPortion(f.portion)).trim().slice(0, 30), ...(f.full > 0 ? { full: f.full } : {}) })
   const quick = peek || editing ? null : (f) => {
     if (holdTip) { firstTime('hold-food'); setHoldTip(false) }
-    onSave({ name: f.name, kcal: Math.round(f.kcal), meal, cat: catOf(f, cats), serving: (f.serving || realPortion(f.portion)).trim().slice(0, 30) })
+    onSave({ name: f.name, kcal: Math.round(f.kcal), meal, cat: catOf(f, cats), serving: (f.serving || realPortion(f.portion)).trim().slice(0, 30), ...(f.full > 0 ? { full: f.full } : {}) })
   }
 
   function save() {
@@ -303,15 +312,19 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
     const cat = catOf({ name: nm, cat: picked ? base?.cat : undefined }, cats)
     const sv = serving.trim().slice(0, 30)
     const one = baseName(nm) // My foods keeps a single serving, not "×3"
+    // the food's own kcal for one serving, kept when you logged a different amount (a smaller plate, say)
+    const per = Math.round(n / (qty || 1) / (picked ? mult || 1 : 1))
+    const source = picked && base ? (base.full > 0 ? (base.listed && base.kcal !== base.full ? 0 : base.full) : ['my food', 'your usual'].includes(base.portion) || /’s food$/.test(base.portion ?? '') ? 0 : base0.current) : 0
+    const full = source > 0 && Math.abs(source - per) >= 5 ? source : 0
     const had = myFoods.find((f) => f.name.toLowerCase() === one.toLowerCase())
     if (keep && !had) {
-      updateProfile({ myFoods: [{ id: String(Date.now()), name: one, kcal: Math.round(n / qty), portion: 'my food', cat, ...(sv ? { serving: sv } : {}) }, ...myFoods].slice(0, 60) })
+      updateProfile({ myFoods: [{ id: String(Date.now()), name: one, kcal: Math.round(n / qty), portion: 'my food', cat, ...(full ? { full } : {}), ...(sv ? { serving: sv } : {}) }, ...myFoods].slice(0, 60) })
     } else if (had && myFoods[0] !== had && !editing) {
       // the ones you use most float to the top
       updateProfile({ myFoods: [had, ...myFoods.filter((f) => f !== had)] })
     }
     const label = { 0.5: '½', 1.5: '1½', 2: '2', 3: '3' }[mult]
-    onSave({ name: picked && label ? `${nm} ×${label}` : nm, kcal: n, meal, photo, cat, serving: sv })
+    onSave({ name: picked && label ? `${nm} ×${label}` : nm, kcal: n, meal, photo, cat, serving: sv, ...(full ? { full } : {}) })
   }
 
   return (
@@ -372,11 +385,21 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
             </div>
           )
         })()}
+        {picked && base?.full > 0 && !editing && (
+          <div className="whose" role="radiogroup" aria-label="Which amount">
+            <button role="radio" aria-checked={base.kcal === base.own} className={base.kcal === base.own ? 'on' : ''} onClick={() => amount(base.own)}>
+              <small>{base.from ? `${base.from}’s portion` : 'Your usual portion'}</small><b>{fmt(base.own)}<i> kcal</i></b>
+            </button>
+            <button role="radio" aria-checked={base.kcal === base.full} className={base.kcal === base.full ? 'on' : ''} onClick={() => amount(base.full)}>
+              <small>{base.listed ? 'BankCal’s list' : 'Full portion'}{base.fullPortion ? ` · ${base.fullPortion}` : ''}</small><b>{fmt(base.full)}<i> kcal</i></b>
+            </button>
+          </div>
+        )}
         {picked && base && !editing && (
           <div className="portion" role="radiogroup" aria-label="How much">
             <span>How much?</span>
             {[[0.5, '½'], [1, '1'], [1.5, '1½'], [2, '2'], [3, '3']].map(([m, l]) => (
-              <button key={m} role="radio" aria-checked={mult === m} className={mult === m ? 'on' : ''} onClick={() => portion(m)}>{l}{m === 1 && base.portion && base.portion !== 'my food' && base.portion !== 'your usual' ? <small> {base.portion}</small> : '×'}</button>
+              <button key={m} role="radio" aria-checked={mult === m} className={mult === m ? 'on' : ''} onClick={() => portion(m)}>{l}{m === 1 && realPortion(base.portion) ? <small> {base.portion}</small> : '×'}</button>
             ))}
           </div>
         )}
@@ -436,7 +459,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
                 const row = (f) => (
                   <HoldButton key={f.id} onHold={quick && !fixCats ? () => quick(f) : undefined} className="mf-row" onClick={() => choose(f)} aria-label={`${f.name}, ${fmt(f.kcal)} kcal, from ${f.from}`}>
                     <Badge f={f} /><span className="mf-name">{f.name}</span>
-                    <span className="mf-kcal">{fmt(f.kcal)}</span>
+                    <span className="mf-kcal">{fmt(f.kcal)}</span>{f.full > 0 && <span className="mf-full">{f.listed ? 'listed' : 'full'} {fmt(f.full)}</span>}
                   </HoldButton>
                 )
                 return filter || fixCats ? theirs.filter(fits).map(row) : groups(theirs, 'theirs', row)

@@ -430,7 +430,7 @@ function Bank({ user }) {
           onClose={() => setAdding(false)}
           onRemove={(old) => {
             store.removeEntry(old.id)
-            notify(`Removed ${old.name}`, () => store.addEntry({ name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo, day: old.day, cat: old.cat, serving: old.serving }))
+            notify(`Removed ${old.name}`, () => store.addEntry({ name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo, day: old.day, cat: old.cat, serving: old.serving, full: old.full }))
             setAdding(false)
           }}
           onSave={(e) => {
