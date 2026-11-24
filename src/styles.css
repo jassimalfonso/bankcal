@@ -2177,3 +2177,10 @@ body:has(.sheet-wrap) .fab { transform: scale(0.4); }
 .whose b i { font-style: normal; font-size: 12px; font-weight: 700; color: var(--muted); }
 .mf-full { flex: none; margin-left: 8px; padding: 2px 8px; border-radius: 99px; background: var(--soft); color: var(--muted); font-size: 12px; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .kcal-row .step { text-align: center; }
+
+/* while a hold is in progress nothing can be text-selected (see Hold.jsx) */
+body.holding, body.holding * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+/* It's an app, not a page: labels and buttons don't get text-selected by a long press.
+   Anything you type in stays selectable as usual. */
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }

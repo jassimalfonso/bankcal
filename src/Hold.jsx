@@ -4,6 +4,34 @@ import { useEffect, useRef, useState } from 'react'
 const stopMenu = (e) => e.preventDefault()
 const buzz = (ms) => { try { navigator.vibrate?.(ms) } catch { /* not supported (iPhone) */ } }
 
+// A hold often opens something right under the finger (a sheet, a menu). The phone's own long-press
+// would then select text in it and leave the page stuck in selection mode. So from the moment a hold
+// fires until the finger lifts, nothing on the page can be selected and the long-press menu is off.
+let guardOffTimer = null
+const noMenu = (e) => e.preventDefault()
+const clearSelection = () => { try { window.getSelection()?.removeAllRanges() } catch { /* ignore */ } }
+function guardOn() {
+  clearTimeout(guardOffTimer)
+  document.body.classList.add('holding')
+  document.addEventListener('contextmenu', noMenu, true)
+  document.addEventListener('selectstart', noMenu, true)
+  clearSelection()
+  // the finger may lift over something else entirely, so listen on the whole page
+  const lift = () => { window.removeEventListener('pointerup', lift, true); window.removeEventListener('pointercancel', lift, true); window.removeEventListener('touchend', lift, true); guardOff() }
+  window.addEventListener('pointerup', lift, true); window.addEventListener('pointercancel', lift, true); window.addEventListener('touchend', lift, true)
+  guardOffTimer = setTimeout(guardOff, 8000) // never leave the page unselectable
+}
+function guardOff() {
+  clearTimeout(guardOffTimer)
+  // a moment later, so a long-press that lands just after the finger lifts is still ignored
+  guardOffTimer = setTimeout(() => {
+    document.body.classList.remove('holding')
+    document.removeEventListener('contextmenu', noMenu, true)
+    document.removeEventListener('selectstart', noMenu, true)
+    clearSelection()
+  }, 350)
+}
+
 // Hold an element for a moment to run onHold. Moving the finger (a scroll or swipe) cancels it,
 // and the tap that would follow a hold is swallowed.
 export function useHold(onHold, ms = 450) {
@@ -19,7 +47,7 @@ export function useHold(onHold, ms = 450) {
     onPointerDown: (e) => {
       if (e.button) return
       clearTimeout(st.current.t)
-      st.current = { x: e.clientX, y: e.clientY, fired: false, t: setTimeout(() => { st.current.fired = true; st.current.t = null; buzz(12); cb.current?.() }, ms) }
+      st.current = { x: e.clientX, y: e.clientY, fired: false, t: setTimeout(() => { st.current.fired = true; st.current.t = null; guardOn(); buzz(12); cb.current?.() }, ms) }
     },
     onPointerMove: (e) => { const s = st.current; if (s.t && (Math.abs(e.clientX - s.x) > 10 || Math.abs(e.clientY - s.y) > 10)) clear() },
     onPointerUp: up, onPointerLeave: clear, onPointerCancel: up,
@@ -67,7 +95,7 @@ export function HoldConfirm({ onConfirm, onTap, ms = 650, className = '', childr
   const stop = () => { clearTimeout(st.current.t); setOn(false) }
   return (
     <button {...rest} className={`hold-confirm holdable ${on ? 'holding' : ''} ${className}`} style={{ '--hold-ms': `${ms}ms` }}
-      onPointerDown={(e) => { if (e.button) return; st.current.done = false; setOn(true); clearTimeout(st.current.t); st.current.t = setTimeout(() => { st.current.done = true; setOn(false); buzz(20); onConfirm() }, ms) }}
+      onPointerDown={(e) => { if (e.button) return; st.current.done = false; setOn(true); clearTimeout(st.current.t); st.current.t = setTimeout(() => { st.current.done = true; setOn(false); guardOn(); buzz(20); onConfirm() }, ms) }}
       onPointerUp={stop} onPointerLeave={stop} onPointerCancel={stop} onContextMenu={stopMenu}
       onClick={(e) => { if (st.current.done) { st.current.done = false; return } if (e.detail === 0) onConfirm(); else onTap?.() }}>
       <span>{children}</span>
