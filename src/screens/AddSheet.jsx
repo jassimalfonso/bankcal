@@ -108,6 +108,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
         const listed = builtIn.get(k)
         const full = f.full > 0 ? f.full : listed?.kcal
         have.add(k); out.push({ id: `p-${id}-${k}`, name: f.name, kcal: f.kcal, cat: f.cat, serving: f.serving, portion: `${sh.name}’s food`, from: sh.name,
+          ...(f.full > 0 && Math.abs(f.full - f.kcal) < 5 ? { whole: true } : {}),
           ...(full > 0 && Math.abs(full - f.kcal) >= 5 ? { full, ...(f.full > 0 ? {} : { listed: true, fullPortion: listed?.portion ?? '' }) } : {}) })
       }
     }
@@ -205,13 +206,29 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
     setName(f.name)
     setKcal(String(f.kcal))
     setPicked(true)
-    setBase({ kcal: f.kcal, portion: f.portion, cat: f.cat, ...(f.full > 0 && Math.abs(f.full - f.kcal) >= 5 ? { full: f.full, own: f.kcal, from: f.from, fullPortion: f.fullPortion, listed: f.listed, serving: f.serving || realPortion(f.portion) } : {}) })
+    setLook({ busy: false, msg: '' })
+    setBase({ kcal: f.kcal, portion: f.portion, cat: f.cat, ...(f.from ? { from: f.from, own: f.kcal, serving: f.serving || realPortion(f.portion), whole: f.whole } : {}), ...(f.full > 0 && Math.abs(f.full - f.kcal) >= 5 ? { full: f.full, own: f.kcal, from: f.from, fullPortion: f.fullPortion, listed: f.listed, serving: f.serving || realPortion(f.portion) } : {}) })
     setServing(f.serving || realPortion(f.portion))
     setMult(1)
     setAi((a) => ({ ...a, results: null }))
     inputRef.current?.blur() // put the keyboard away so the amount and Spend are in view
   }
   const portion = (m) => { setMult(m); if (base) setKcal(String(Math.round(base.kcal * m))) }
+  // a partner's food with no original on record: look up what a usual portion is online
+  const [look, setLook] = useState({ busy: false, msg: '' })
+  async function lookUp() {
+    const q = baseName(name.trim())
+    setLook({ busy: true, msg: '' })
+    try {
+      const k = q.toLowerCase()
+      const found = onlineCache.get(k) ?? cleanFoods((await askFood({ mode: 'search', q })).results)
+      const r = found[0]
+      if (!r) { setLook({ busy: false, msg: 'Couldn’t find this one online.' }); return }
+      if (Math.abs(r.kcal - base.own) < 5) { setLook({ busy: false, msg: `Online, a usual portion is about the same (${fmt(r.kcal)} kcal), so this looks like the full amount.` }); return }
+      setBase((b) => ({ ...b, full: r.kcal, own: b.own ?? b.kcal, fullPortion: realPortion(r.portion), listed: true, looked: true }))
+      setLook({ busy: false, msg: '' })
+    } catch (e) { setLook({ busy: false, msg: e.message || 'Couldn’t look it up just now.' }) }
+  }
   // a food someone cut down (or topped up): take their amount, or the food's full one
   const amount = (k) => { setBase((b) => ({ ...b, kcal: k })); setKcal(String(Math.round(k * mult))); setServing(k === base.full ? (base.fullPortion ?? '') : (base.serving ?? '')) } // their portion note belongs to their amount only
 
@@ -315,7 +332,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
     // the food's own kcal for one serving, kept when you logged a different amount (a smaller plate, say)
     const per = Math.round(n / (qty || 1) / (picked ? mult || 1 : 1))
     const source = picked && base ? (base.full > 0 ? (base.listed && base.kcal !== base.full ? 0 : base.full) : ['my food', 'your usual'].includes(base.portion) || /’s food$/.test(base.portion ?? '') ? 0 : base0.current) : 0
-    const full = source > 0 && Math.abs(source - per) >= 5 ? source : 0
+    const full = source > 0 ? source : 0 // kept even when equal, so a partner can tell "this is the full portion"
     const had = myFoods.find((f) => f.name.toLowerCase() === one.toLowerCase())
     if (keep && !had) {
       updateProfile({ myFoods: [{ id: String(Date.now()), name: one, kcal: Math.round(n / qty), portion: 'my food', cat, ...(full ? { full } : {}), ...(sv ? { serving: sv } : {}) }, ...myFoods].slice(0, 60) })
@@ -391,9 +408,17 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
               <small>{base.from ? `${base.from}’s portion` : 'Your usual portion'}</small><b>{fmt(base.own)}<i> kcal</i></b>
             </button>
             <button role="radio" aria-checked={base.kcal === base.full} className={base.kcal === base.full ? 'on' : ''} onClick={() => amount(base.full)}>
-              <small>{base.listed ? 'BankCal’s list' : 'Full portion'}{base.fullPortion ? ` · ${base.fullPortion}` : ''}</small><b>{fmt(base.full)}<i> kcal</i></b>
+              <small>{base.looked ? 'Usual portion online' : base.listed ? 'BankCal’s list' : 'Full portion'}{base.fullPortion ? ` · ${base.fullPortion}` : ''}</small><b>{fmt(base.full)}<i> kcal</i></b>
             </button>
           </div>
+        )}
+        {picked && base?.from && !(base.full > 0) && !editing && (
+          base.whole
+            ? <p className="whose-note">This is the food’s full portion, as {base.from} logged it.</p>
+            : <p className="whose-note">
+                This is {base.from}’s amount{base.serving ? ` (${base.serving})` : ''}. The food’s original wasn’t recorded.
+                {look.msg ? <span> {look.msg}</span> : <button className="link-btn" onClick={lookUp} disabled={look.busy}>{look.busy ? 'Looking it up…' : 'Look up the usual amount'}</button>}
+              </p>
         )}
         {picked && base && !editing && (
           <div className="portion" role="radiogroup" aria-label="How much">
@@ -459,7 +484,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
                 const row = (f) => (
                   <HoldButton key={f.id} onHold={quick && !fixCats ? () => quick(f) : undefined} className="mf-row" onClick={() => choose(f)} aria-label={`${f.name}, ${fmt(f.kcal)} kcal, from ${f.from}`}>
                     <Badge f={f} /><span className="mf-name">{f.name}</span>
-                    <span className="mf-kcal">{fmt(f.kcal)}</span>{f.full > 0 && <span className="mf-full">{f.listed ? 'listed' : 'full'} {fmt(f.full)}</span>}
+                    <span className="mf-kcal">{fmt(f.kcal)}</span>{f.full > 0 && <span className="mf-full">{f.listed ? 'listed' : 'full'} {fmt(f.full)}</span>}{f.whole && <span className="mf-full">full portion</span>}
                   </HoldButton>
                 )
                 return filter || fixCats ? theirs.filter(fits).map(row) : groups(theirs, 'theirs', row)

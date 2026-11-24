@@ -2184,3 +2184,8 @@ body.holding, body.holding * { -webkit-user-select: none !important; user-select
    Anything you type in stays selectable as usual. */
 body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
+
+/* a partner's food with one amount: say whose it is, and offer to look up the usual one */
+.whose-note { margin: 12px 4px 2px; font-size: 14px; font-weight: 650; color: var(--muted); line-height: 1.45; }
+.whose-note .link-btn { display: inline; margin: 0 0 0 4px; padding: 0; font-size: 14px; }
+.whose-note span { color: var(--ink); }
