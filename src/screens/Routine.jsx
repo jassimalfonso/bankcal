@@ -4,6 +4,7 @@ import { fmt, workoutKcal } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag } from '../motion'
 import { useRepeat } from '../Hold'
+import { WatchHow } from '../Moves'
 import { EFFORTS, routineWorkout } from '../training'
 
 const uid = () => crypto.randomUUID?.() ?? String(Math.random())
@@ -141,6 +142,7 @@ export function CustomSheet({ initial: given, weight, inRoutine, existing = [], 
           <label className="keep-food"><input type="checkbox" checked={!!c.weighted} onChange={(e) => set({ weighted: e.target.checked })} /><span>Uses weights (track kg)</span></label>
         )}
 
+        {c.name.trim().length >= 3 && <WatchHow name={c.name.trim()} />}
         <h3 className="ex-h">Your usual amount</h3>
         <div className="card rt-adjust own-adjust">
           <Stepper label="Sets" value={sets} min={1} max={20} onChange={(v) => set({ sets: v })} />

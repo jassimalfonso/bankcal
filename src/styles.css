@@ -2192,3 +2192,21 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 
 /* kcal per 100 g of a food found online, as a quick sense check */
 .per100 { margin: 10px 4px 0; font-size: 14px; font-weight: 650; color: var(--muted); }
+/* ───── Exercise animations (Moves.jsx) ───── */
+.ex-move { margin: 0 0 14px; padding: 6px 12px 2px; border-radius: 22px; background: var(--card); box-shadow: var(--shadow); text-align: center; }
+.move { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto; }
+.mv-limb, .mv-far, .mv-torso { stroke: var(--ink); stroke-linecap: round; stroke-linejoin: round; }
+.mv-limb { stroke-width: 8; }
+.mv-far { stroke-width: 8; opacity: 0.38; }
+.mv-torso { stroke-width: 11; }
+.mv-head { fill: var(--ink); }
+.mv-floor { stroke: var(--line); stroke-width: 3; stroke-linecap: round; }
+.mv-prop line { stroke: var(--muted); stroke-width: 6; stroke-linecap: round; opacity: 0.55; }
+.mv-prop line.thin { stroke-width: 4; }
+.mv-weight { stroke: var(--accent); stroke-width: 9; stroke-linecap: round; }
+.mv-ghost { opacity: 0.22; }
+.watch-how { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 6px; color: var(--accent); font-size: 14px; font-weight: 850; text-decoration: none; }
+.ex-move .watch-how { margin-top: -2px; }
+.ex-move.slim { margin-bottom: 10px; }
+.ex-move.slim .move { max-width: 220px; }
+.ex-move:not(:has(.move)) { padding: 0; background: none; box-shadow: none; text-align: left; margin-bottom: 6px; }

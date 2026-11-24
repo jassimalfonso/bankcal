@@ -8,6 +8,7 @@ import { doseOf, exerciseIndex, routineWorkout, searchExercises } from '../train
 import { useMemo } from 'react'
 import { Stepper } from './Routine'
 import { Hl } from './AddSheet'
+import Move, { WatchHow, hasMove } from '../Moves'
 
 // Pick an exercise, enter amounts, see the calories it earns, deposit.
 // `mine` = your routine and your own exercises, shown first since they're what you usually do.
@@ -87,6 +88,10 @@ export default function WorkoutSheet({ profile, mine = [], theirs = [], start = 
 
         {own ? (
           <>
+            <div className="ex-move slim">
+              {hasMove(it.ex) && <Move id={it.ex} label={`How ${it.name} moves`} />}
+              <WatchHow name={it.name} />
+            </div>
             <div className="card rt-adjust own-adjust">
               <Stepper label="Sets" value={it.sets} min={1} max={20} onChange={(v) => setIt({ ...it, sets: v })} />
               {it.kind === 'time'

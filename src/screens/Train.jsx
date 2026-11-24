@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import { fmt, workoutKcal } from '../calc'
 import { IconClose } from '../icons'
 import { useEscape, useSheetDrag, useSideFit } from '../motion'
+import Move, { WatchHow, hasMove } from '../Moves'
 import { EXERCISES, GROUPS, LEVELS, PLANS, exerciseById, routineFromCustom, routineFromExercise, routineWorkout, toSession, toWorkout, weightRange } from '../training'
 import { CustomSheet, RoutineCard } from './Routine'
 
@@ -196,6 +197,11 @@ function ExerciseSheet({ ex, level, profile, kg, fav, onFav, onKg, onLog, onClos
             <h2>{ex.emoji} {ex.name}</h2>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button>
+        </div>
+
+        <div className="ex-move">
+          {hasMove(ex.id) && <Move id={ex.id} label={`How a ${ex.name.toLowerCase()} moves`} />}
+          <WatchHow name={ex.name} />
         </div>
 
         <div className="ex-dosecard">

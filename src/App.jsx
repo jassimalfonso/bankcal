@@ -120,6 +120,12 @@ function Bank({ user }) {
   }, [])
   // The morning welcome: first open of the day (unless switched off in Settings), or on request
   const [replay, setReplay] = useState(false)
+  // sheets open on top of the page (outside .app), so the colour theme lives on the body too
+  useEffect(() => {
+    const b = document.body
+    for (const c of [...b.classList]) if (c.startsWith('theme-')) b.classList.remove(c)
+    if (profile?.theme) b.classList.add(`theme-${profile.theme}`)
+  }, [profile?.theme])
   const [plus, setPlus] = useState(false) // the + menu
   const [heldPlus, setHeldPlus] = useState(() => { try { return !!localStorage.getItem('bankcal:hint:held-plus') } catch { return true } })
   // hold the + to skip the menu and go straight to Log food
