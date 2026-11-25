@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { tidyFoods, barcodeFoods } from '../api/food.js'
+import { tidyFoods, barcodeFoods, dbFoods } from '../api/food.js'
 
 test('tidyFoods keeps a consistent answer as it is', () => {
   const [f] = tidyFoods([{ name: 'Chicken biryani', portion: '1 plate (400 g)', g: 400, per100: 150, kcal: 600, cat: 'meal' }])
@@ -45,4 +45,19 @@ test('barcodeFoods returns nothing for unknown products or bad codes', async () 
   assert.deepEqual(await barcodeFoods('6291003001234', off(null, 0)), [])
   assert.deepEqual(await barcodeFoods('abc', off({ product_name: 'x' })), [])
   assert.deepEqual(await barcodeFoods('6291003001234', async () => ({ ok: false })), [])
+})
+
+test('dbFoods lists label numbers by name, one row per product', async () => {
+  let asked = ''
+  const fake = async (url) => { asked = url; return { ok: true, json: async () => ({ products: [
+    { product_name: 'Laban Up', brands: 'Almarai', quantity: '340 ml', product_quantity: 340, serving_size: '200 ml', serving_quantity: 200, nutriments: { 'energy-kcal_100g': 60, 'energy-kcal_serving': 120 } },
+    { product_name: 'Laban Up', brands: 'Almarai', serving_size: '200 ml', serving_quantity: 200, nutriments: { 'energy-kcal_100g': 60, 'energy-kcal_serving': 120 } },
+    { product_name: 'Plain Laban', brands: '', nutriments: { 'energy-kcal_100g': 55 } },
+    { product_name: '', brands: '', nutriments: {} },
+  ] }) } }
+  const out = await dbFoods('laban up', fake)
+  assert.match(asked, /search_terms=laban%20up/)
+  assert.deepEqual(out.map((x) => [x.name, x.kcal]), [['Almarai Laban Up', 120], ['Plain Laban', 55]])
+  assert.match(out[1].portion, /^100/)
+  assert.deepEqual(await dbFoods('x', async () => ({ ok: false })), [])
 })

@@ -155,15 +155,9 @@ export function tidyFoods(list, limit = 6) {
 
 // A packaged product by its barcode, from Open Food Facts (free, community-run). Returns the
 // amounts someone might log: one serving, the whole pack, and 100 g.
-export async function barcodeFoods(code, fetcher = fetch) {
-  if (!/^\d{8,14}$/.test(code)) return []
-  const r = await fetcher(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,product_name_en,brands,nutriments,serving_size,serving_quantity,quantity,product_quantity`, {
-    headers: { 'user-agent': 'BankCal/1.0 (https://bankcal.vercel.app)' }, signal: AbortSignal.timeout(6000),
-  })
-  if (!r.ok) return []
-  const j = await r.json().catch(() => null)
-  const p = j?.product
-  if (!p || j.status === 0) return []
+// One Open Food Facts product → rows (a serving, the whole pack, 100 g) from the label's own numbers
+function productRows(p) {
+  if (!p) return []
   const n = p.nutriments || {}
   const kj = (v) => (Number(v) > 0 ? Number(v) / 4.184 : NaN)
   const per100 = Number(n['energy-kcal_100g']) >= 0 && n['energy-kcal_100g'] !== '' && n['energy-kcal_100g'] != null ? Number(n['energy-kcal_100g']) : kj(n['energy_100g'])
@@ -182,6 +176,36 @@ export async function barcodeFoods(code, fetcher = fetch) {
   if (Number.isFinite(per100) && packQ > 0 && packQ <= 3000 && Math.round(per100 * packQ / 100) !== Math.round(serving)) out.push({ name, portion: `whole pack (${txt(p.quantity).slice(0, 20) || `${packQ} ${unit}`})`, kcal: Math.round(per100 * packQ / 100) })
   if (Number.isFinite(per100)) out.push({ name, portion: `100 ${unit}`, kcal: Math.round(per100) })
   return out.filter((x) => x.kcal >= 0 && x.kcal < 6000).map((x) => ({ ...x, ...(Number.isFinite(per100) ? { per100: Math.round(per100) } : {}), ...(drink ? { cat: 'drink' } : {}), barcode: true }))
+}
+
+// The food database, by name: used when the AI's free searches for the day are used up.
+// Real label numbers from Open Food Facts; best for packaged and branded foods.
+export async function dbFoods(q, fetcher = fetch) {
+  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=12&sort_by=unique_scans_n&fields=product_name,product_name_en,brands,nutriments,serving_size,serving_quantity,quantity,product_quantity`
+  const r = await fetcher(url, { headers: { 'user-agent': 'BankCal/1.0 (https://bankcal.vercel.app)' }, signal: AbortSignal.timeout(7000) })
+  if (!r.ok) return []
+  const j = await r.json().catch(() => null)
+  const seen = new Set(), out = []
+  for (const p of j?.products ?? []) {
+    const row = productRows(p).find((x) => !/^whole pack/.test(x.portion)) // a serving if the label has one, else 100 g
+    const key = row && `${row.name.toLowerCase()}|${row.kcal}`
+    if (!row || seen.has(key)) continue
+    seen.add(key); out.push(row)
+    if (out.length >= 6) break
+  }
+  return out
+}
+
+export async function barcodeFoods(code, fetcher = fetch) {
+  if (!/^\d{8,14}$/.test(code)) return []
+  const r = await fetcher(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,product_name_en,brands,nutriments,serving_size,serving_quantity,quantity,product_quantity`, {
+    headers: { 'user-agent': 'BankCal/1.0 (https://bankcal.vercel.app)' }, signal: AbortSignal.timeout(6000),
+  })
+  if (!r.ok) return []
+  const j = await r.json().catch(() => null)
+  const p = j?.product
+  if (!p || j.status === 0) return []
+  return productRows(p)
 }
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST' })
@@ -217,8 +241,17 @@ export default async function handler(req, res) {
     if (body.mode === 'search') {
       const q = String(body.q || '').replace(/["\\\n\r]/g, ' ').slice(0, 80).trim()
       if (q.length < 2) return res.status(400).json({ error: 'Type a little more.' })
-      const raw = await callGemini(key, [{ text: PROMPTS.search(q) }], 'search', body.hint)
-      const out = { results: tidyFoods(raw?.results), via: via('search') }
+      let out
+      try {
+        const raw = await callGemini(key, [{ text: PROMPTS.search(q) }], 'search', body.hint)
+        out = { results: tidyFoods(raw?.results), via: via('search') }
+      } catch (e) {
+        // the AI's free searches are used up: answer from the food database instead
+        if (e.status !== 429) throw e
+        const results = await dbFoods(q).catch(() => [])
+        if (!results.length) throw e
+        return res.status(200).json({ results, db: true })
+      }
       res.setHeader('Cache-Control', 'private, max-age=3600')
       return res.status(200).json(out)
     }

@@ -276,9 +276,9 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
     try {
       const j = await askFood({ mode: 'search', q })
       const found = cleanFoods(j.results)
-      keepOnline(k, found)
+      if (!j.db) keepOnline(k, found) // database stand-ins aren't kept or shared: the AI answer is better when it's back
       if (asked.current !== k) return // they kept typing; a newer search is on its way
-      setAi({ busy: false, err: '', results: found, items: null, confidence: '' })
+      setAi({ busy: false, err: '', results: found, items: null, confidence: '', db: !!j.db })
     } catch (e) {
       if (asked.current !== k) return
       // one quiet retry first (the online service is sometimes briefly busy), unless the free quota is used up
@@ -439,7 +439,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
           const GROUPS = [['size', 'Other sizes'], ['style', 'Other styles'], ['brand', 'Restaurants and brands'], [undefined, 'Also']]
           const online = (ai.busy || ai.results?.length > 0) && (
             <>
-              <p className="sg-h">{ai.barcode ? 'From the barcode · Open Food Facts' : 'Online · AI estimate'}</p>
+              <p className="sg-h">{ai.barcode ? 'From the barcode · Open Food Facts' : ai.db ? 'From the food database · Open Food Facts' : 'Online · AI estimate'}</p>
               {ai.busy && <div className="sg-skel" aria-label="Checking online"><i /><i /></div>}
               {ai.results?.map((f) => row(f, 'ai' + f.name + f.portion))}
               {moreNow?.list && GROUPS.map(([g, label]) => {
@@ -447,7 +447,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
                 return items.length > 0 && <div key={label}><p className="sg-h">{label}</p>{items.map((f) => row(f, 'mo' + f.name + f.portion))}</div>
               })}
               {moreNow?.busy && <div className="sg-skel" aria-label="Getting more options"><i /><i /></div>}
-              {ai.results?.length > 0 && !ai.barcode && !moreNow?.list && !moreNow?.busy && (
+              {ai.results?.length > 0 && !ai.barcode && !ai.db && !moreNow?.list && !moreNow?.busy && (
                 <button className="suggest-ai" onClick={moreOptions}>{moreNow?.err || 'More options: sizes, styles, brands'}</button>
               )}
             </>
