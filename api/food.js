@@ -98,10 +98,13 @@ async function callGemini(key, parts, kind, hint) {
   }
   try {
     // Start the preferred model. If it hasn't answered after a few seconds, start the other
-    // one too and use whichever answers first. Typed searches prefer the quick "lite" model
-    // (the full one joins after 3 s); photos prefer the full model (lite joins after 8 s).
+    // one too and use whichever answers first. Photos prefer the full model (lite joins after 8 s).
+    // Typed searches stay on the "lite" model, whose free daily allowance is far larger: the full
+    // one only steps in if lite fails or is still silent after 7 s, so its small allowance is
+    // kept for photos.
     const lite = 'gemini-flash-lite-latest'
     const full = 'gemini-flash-latest'
+    if (kind !== 'photo' && good[kind] && !/lite/.test(good[kind].model)) good[kind] = null // don't let a one-off rescue by the full model stick
     const first = good[kind]?.model ?? OVERRIDE[0] ?? (kind === 'photo' ? full : lite)
     const second = first === full ? lite : full
     const known = good[kind]?.model === first ? good[kind].extra : undefined
@@ -112,7 +115,7 @@ async function callGemini(key, parts, kind, hint) {
       let t = null
       const fin = (o) => { if (done) return; if (o) { done = true; resolve(o) } else if (--left === 0) { done = true; resolve(null) } }
       const startSecond = () => { if (started) return; started = true; clearTimeout(t); if (!done) attempt(second).then(fin, () => fin(null)) }
-      t = setTimeout(startSecond, kind === 'photo' ? 8000 : 3000)
+      t = setTimeout(startSecond, kind === 'photo' ? 8000 : 7000)
       // if the first one fails before the timer, the second starts straight away
       attempt(first, known).then((o) => { if (!o) startSecond(); fin(o) }, () => { startSecond(); fin(null) })
     })
