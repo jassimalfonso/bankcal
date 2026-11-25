@@ -26,6 +26,7 @@ export default function Statement(props) {
   const [open, setOpen] = useState(false) // a tapped bar opens that day's details under the chart
   const [view, setView] = useState('week')
   const [replay, setReplay] = useState(false)
+  const replaySeen = replay || (() => { try { return !!localStorage.getItem('bankcal:replay-seen') } catch { return true } })()
   const recapRef = useRef(null)
   const sideRef = useRef(null)
   useSideFit(sideRef, recapRef, view)
@@ -73,18 +74,18 @@ export default function Statement(props) {
       <DeficitCard {...props} keys={days.map((d) => d.key)} />
       <WeightCheckCard {...props} />
 
+      <button className="card replay-card" onClick={() => { setReplay(true); try { localStorage.setItem('bankcal:replay-seen', '1') } catch { /* ignore */ } }}>
+        <span className="rc-play" aria-hidden="true">▶</span>
+        <span><b>Progress replay{!replaySeen && <i>New</i>}</b><small>Tap to watch your days play back, then share the video</small></span>
+      </button>
+      {replay && <ReplaySheet mine={mine} profile={props.profile} budgetFor={budgetFor} notify={props.notify} onClose={() => setReplay(false)} />}
+
       <SleepWeek days={days} log={props.profile?.days ?? {}} profile={props.profile} mine={mine} />
       <SleepCoach profile={props.profile} mine={mine} />
       </>}
 
       <h2 className="group-title">Progress</h2>
       <Progress {...props} />
-
-      <button className="card replay-card" onClick={() => setReplay(true)}>
-        <span className="rc-play" aria-hidden="true">▶</span>
-        <span><b>Progress replay</b><small>Your days played back as a short video to share</small></span>
-      </button>
-      {replay && <ReplaySheet mine={mine} profile={props.profile} budgetFor={budgetFor} notify={props.notify} onClose={() => setReplay(false)} />}
 
       <Milestones badges={props.profile?.badges ?? {}} character={props.profile?.character} notify={props.notify} />
 

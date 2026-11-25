@@ -67,70 +67,72 @@ export function drawReplay(ctx, data, p, opts) {
     ctx.restore()
   }
 
-  // the days: one tile each, popping in as the date reaches them
-  const box = { x: 60, y: 320, w: 600, h: 430 }
-  let cols = 7
-  if (n > 35) { cols = 8; while (Math.ceil(n / cols) * (box.w / cols) > box.h) cols++ }
+  // the journey: a line that draws itself day by day, with the buddy walking on its tip.
+  // Weight (shape and change only) when asked for; otherwise everything you did, adding up.
+  const hero = { x: 70, y: 360, w: 580, h: 330 }
+  ctx.fillStyle = alpha('#ffffff', 0.6); rr(ctx, hero.x - 30, hero.y - 50, hero.w + 60, hero.h + 90, 32); ctx.fill()
+  const weighed = days.map((d, i) => ({ i, v: d.weight })).filter((q) => q.v)
+  const asWeight = showWeight && weighed.length > 1
+  let sum = 0
+  const pts = asWeight ? weighed : days.map((d, i) => ({ i, v: (sum += (d.state !== 'none' ? 1 : 0) + d.workouts * 0.5 + Math.min(1, d.steps / 10000) * 0.5) }))
+  if (!asWeight) pts.unshift({ i: -0.5, v: 0 })
+  const lo = Math.min(...pts.map((q) => q.v)), hi = Math.max(...pts.map((q) => q.v))
+  const i0 = pts[0].i, i1 = Math.max(pts.at(-1).i, i0 + 1)
+  const xOf = (i) => hero.x + ((i - i0) / (i1 - i0)) * hero.w
+  const yOf = (v) => hero.y + 30 + (1 - (v - lo) / (hi - lo || 1)) * (hero.h - 60)
+  ctx.textAlign = 'left'; ctx.fillStyle = alpha(INK, 0.6); ctx.font = font(800, 26)
+  ctx.fillText(asWeight ? 'Weight trend' : 'Adding up, day by day', hero.x, hero.y - 8)
+  const lim = Math.min(i1, i0 + play * (i1 - i0))
+  const path = [[xOf(pts[0].i), yOf(pts[0].v)]]
+  for (let k = 1; k < pts.length; k++) {
+    const a = pts[k - 1], q = pts[k]
+    if (q.i <= lim) path.push([xOf(q.i), yOf(q.v)])
+    else { const f = clamp((lim - a.i) / (q.i - a.i)); path.push([xOf(a.i) + (xOf(q.i) - xOf(a.i)) * f, yOf(a.v) + (yOf(q.v) - yOf(a.v)) * f]); break }
+  }
+  const tip = path.at(-1)
+  if (path.length > 1) {
+    const fill = ctx.createLinearGradient(0, hero.y, 0, hero.y + hero.h)
+    fill.addColorStop(0, alpha(t.accent, 0.3)); fill.addColorStop(1, alpha(t.accent, 0))
+    ctx.beginPath(); path.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
+    ctx.lineTo(tip[0], hero.y + hero.h); ctx.lineTo(path[0][0], hero.y + hero.h); ctx.closePath(); ctx.fillStyle = fill; ctx.fill()
+    ctx.beginPath(); path.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
+    ctx.strokeStyle = t.accent; ctx.lineWidth = 9; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke()
+  }
+  ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(tip[0], tip[1], 12, 0, Math.PI * 2); ctx.fill()
+  ctx.fillStyle = t.accent; ctx.beginPath(); ctx.arc(tip[0], tip[1], 7, 0, Math.PI * 2); ctx.fill()
+  if (cache.bud) { // the buddy steps along while the line draws, then hops when it arrives
+    const walking = play > 0 && play < 1
+    const hop = walking ? Math.abs(Math.sin(p * SECONDS * 9)) * 10 : end * Math.abs(Math.sin(p * SECONDS * 7)) * 22
+    const bx = Math.max(70, Math.min(VW - 70, tip[0])), by = Math.max(hero.y + 10, tip[1] - 62 - hop)
+    ctx.save(); ctx.translate(bx, by); ctx.rotate(walking ? Math.sin(p * SECONDS * 9) * 0.07 : 0); ctx.scale(0.72, 0.72)
+    ctx.drawImage(cache.bud, -90, -90); ctx.restore()
+  }
+  if (asWeight && end > 0 && data.weightChange != null) {
+    ctx.save(); ctx.globalAlpha = end; ctx.textAlign = 'right'; ctx.fillStyle = INK; ctx.font = font(900, 30)
+    const c = data.weightChange
+    ctx.fillText(c === 0 ? 'Holding steady' : `${c < 0 ? '−' : '+'}${Math.abs(c).toFixed(1)} kg`, hero.x + hero.w, hero.y - 8); ctx.restore()
+  }
+
+  // the days: one small tile each, lighting up as the date reaches them
+  const box = { x: 60, y: 760, w: 600, h: 200 }
+  let cols = Math.min(n, 15)
+  while (Math.ceil(n / cols) * (box.w / cols) > box.h) cols++
   const rows = Math.ceil(n / cols)
-  const cell = Math.min(box.w / cols, box.h / rows)
-  const ox = box.x + (box.w - cell * cols) / 2, oy = box.y + (box.h - cell * rows) / 2
-  const gap = Math.max(3, cell * 0.12)
+  const cell = Math.min(box.w / cols, box.h / rows, 80)
+  const ox = box.x + (box.w - cell * Math.min(cols, n)) / 2, oy = box.y + (box.h - cell * rows) / 2
+  const gap = Math.max(2, cell * 0.14)
   days.forEach((d, i) => {
     const cx = ox + (i % cols) * cell + cell / 2, cy = oy + Math.floor(i / cols) * cell + cell / 2
     const size = cell - gap
-    ctx.fillStyle = alpha('#ffffff', 0.55)
+    ctx.fillStyle = alpha('#ffffff', 0.6)
     rr(ctx, cx - size / 2, cy - size / 2, size, size, size * 0.28); ctx.fill()
     const a = pop((upto - i) / 1.6)
     if (a <= 0 || d.state === 'none') return
     const s = size * a
     ctx.fillStyle = d.state === 'on' ? t.accent : mix(t.accent, '#ffffff', 0.55)
     rr(ctx, cx - s / 2, cy - s / 2, s, s, s * 0.28); ctx.fill()
-    if (d.workouts && cell > 34) { // a little spark on workout days
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(cx, cy, s * 0.14, 0, Math.PI * 2); ctx.fill()
-    }
+    if (d.workouts && cell > 30) { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(cx, cy, s * 0.14, 0, Math.PI * 2); ctx.fill() }
   })
-
-  // the trend: weight as a line (shape and change only) when asked for, otherwise steps as bars
-  const tr = { x: 70, y: 800, w: 580, h: 150 }
-  ctx.fillStyle = alpha('#ffffff', 0.6); rr(ctx, tr.x - 20, tr.y - 50, tr.w + 40, tr.h + 76, 28); ctx.fill()
-  const pts = days.map((d, i) => ({ i, w: d.weight })).filter((q) => q.w)
-  const asWeight = showWeight && pts.length > 1
-  ctx.textAlign = 'left'; ctx.fillStyle = alpha(INK, 0.6); ctx.font = font(800, 26)
-  ctx.fillText(asWeight ? 'Weight trend' : 'Steps', tr.x, tr.y - 12)
-  const xOf = (i) => tr.x + (n === 1 ? tr.w / 2 : (i / (n - 1)) * tr.w)
-  if (asWeight) {
-    const lo = Math.min(...pts.map((q) => q.w)), hi = Math.max(...pts.map((q) => q.w))
-    const yOf = (w) => tr.y + 14 + (1 - (w - lo) / (hi - lo || 1)) * (tr.h - 28)
-    const lim = Math.max(0, upto - 0.5)
-    ctx.strokeStyle = t.accent; ctx.lineWidth = 8; ctx.lineJoin = 'round'; ctx.lineCap = 'round'
-    ctx.beginPath()
-    let tip = null
-    pts.forEach((q, k) => {
-      if (q.i <= lim) { k ? ctx.lineTo(xOf(q.i), yOf(q.w)) : ctx.moveTo(xOf(q.i), yOf(q.w)); tip = [xOf(q.i), yOf(q.w)] }
-      else if (k && pts[k - 1].i <= lim) { // part-way to the next weigh-in
-        const a = pts[k - 1], f = (lim - a.i) / (q.i - a.i)
-        tip = [xOf(a.i) + (xOf(q.i) - xOf(a.i)) * f, yOf(a.w) + (yOf(q.w) - yOf(a.w)) * f]; ctx.lineTo(...tip)
-      }
-    })
-    ctx.stroke()
-    if (tip) { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(tip[0], tip[1], 11, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = t.accent; ctx.beginPath(); ctx.arc(tip[0], tip[1], 7, 0, Math.PI * 2); ctx.fill() }
-    if (end > 0 && data.weightChange != null) {
-      ctx.save(); ctx.globalAlpha = end; ctx.textAlign = 'right'; ctx.fillStyle = INK; ctx.font = font(900, 30)
-      const c = data.weightChange
-      ctx.fillText(c === 0 ? 'Holding steady' : `${c < 0 ? '−' : '+'}${Math.abs(c).toFixed(1)} kg`, tr.x + tr.w, tr.y - 12); ctx.restore()
-    }
-  } else {
-    const top = Math.max(1, ...days.map((d) => d.steps))
-    const bw = Math.max(2, Math.min(40, tr.w / n - Math.max(2, 60 / n)))
-    days.forEach((d, i) => {
-      const a = ease((upto - i) / 1.6)
-      const h = Math.max(6, (d.steps / top) * tr.h) * a
-      if (h <= 0) return
-      const x = tr.x + ((i + 0.5) / n) * tr.w - bw / 2
-      ctx.fillStyle = d.steps ? t.accent : alpha(INK, 0.12)
-      rr(ctx, x, tr.y + tr.h - h, bw, h, Math.min(bw / 2, 10)); ctx.fill()
-    })
-  }
 
   // running totals
   const seen = days.slice(0, Math.min(n, Math.ceil(upto)))
@@ -161,9 +163,7 @@ export function drawReplay(ctx, data, p, opts) {
     }
   }
 
-  // buddy and sign-off
-  const bob = Math.sin(p * Math.PI * 2 * SECONDS * 0.9) * 6 - end * Math.abs(Math.sin(p * Math.PI * 2 * SECONDS * 1.6)) * 14
-  if (cache.bud) ctx.drawImage(cache.bud, 118 - 90, 1192 + bob - 90)
+  // sign-off
   ctx.textAlign = 'center'; ctx.font = font(900, 30); ctx.fillStyle = alpha(INK, 0.6)
   ctx.fillText('BankCal', VW / 2, 1216)
 }
