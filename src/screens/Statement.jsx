@@ -65,7 +65,7 @@ export default function Statement(props) {
         </div>
         <p className="chart-detail">
           <b>{sel.d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</b>
-          {sel.items.length ? <> · ate {fmt(sel.spent)}{budgetFor(sel.key) != null ? ` of ${fmt(budgetFor(sel.key))}` : ''}{sel.net != null ? <> · <span className={sel.net < 0 ? 'neg' : 'pos'}>{sel.net >= 0 ? `${fmt(sel.net)} under` : `${fmt(-sel.net)} over`}</span></> : ''}</> : ' · nothing logged'}
+          {props.profile?.days?.[sel.key]?.party ? ' · 🎉 celebration day' : ''}{sel.items.length ? <> · ate {fmt(sel.spent)}{budgetFor(sel.key) != null ? ` of ${fmt(budgetFor(sel.key))}` : ''}{sel.net != null ? <> · <span className={sel.net < 0 ? 'neg' : 'pos'}>{sel.net >= 0 ? `${fmt(sel.net)} under` : `${fmt(-sel.net)} over`}</span></> : ''}</> : ' · nothing logged'}
           <small>{open ? ' Tap the bar again to close' : ' Tap a bar for that day’s details'}</small>
         </p>
         {open && <DayDetail d={sel} budget={budgetFor(sel.key)} profile={props.profile} onFull={() => document.getElementById('day-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />}
@@ -135,7 +135,7 @@ function DayDetail({ d, budget, profile, onFull }) {
       {biggest.length > 0 && <p className="dd-note"><b>Biggest:</b> {biggest.map((e) => `${e.name} (${fmt(e.kcal)})`).join(', ')}</p>}
       <div className="dd-grid">
         <div><small>Eaten</small><b>{fmt(d.spent)} kcal</b></div>
-        <div><small>Budget</small><b>{budget != null ? `${fmt(budget)} kcal` : '—'}</b></div>
+        <div><small>Budget</small><b>{log.party ? 'Free 🎉' : budget != null ? `${fmt(budget)} kcal` : '—'}</b></div>
         <div><small>Burned</small><b>{burn.total ? `+${fmt(burn.total)} kcal` : '—'}</b></div>
         <div><small>Steps</small><b>{+log.steps ? fmt(+log.steps) : '—'}</b></div>
         {(log.workouts ?? []).length > 0 && <div className="wide"><small>Workouts</small><b>{log.workouts.map((w) => w.label).filter(Boolean).join(', ') || `${log.workouts.length} logged`}</b></div>}

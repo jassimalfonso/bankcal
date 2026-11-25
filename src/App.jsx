@@ -246,11 +246,13 @@ function Bank({ user }) {
   const dayLog = pf.days?.[today] ?? {}
   const earn = earned(dayLog, pf.weight)
   const budget = base != null ? base + earn.total : null // activity is a deposit into today's budget
-  const budgetFor = (key) => { const b = key === today ? base : (pf.days?.[key]?.base ?? base); return b != null ? b + earned(pf.days?.[key], pf.weight).total : null }
+  // a celebration day has no budget at all: nothing to go over, and the streak simply skips it
+  const party = !!dayLog.party
+  const budgetFor = (key) => { if (pf.days?.[key]?.party) return null; const b = key === today ? base : (pf.days?.[key]?.base ?? base); return b != null ? b + earned(pf.days?.[key], pf.weight).total : null }
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
-  budgetRef.current = budget != null ? budget - spent : null
+  budgetRef.current = budget != null && !party ? budget - spent : null
   const closed = !!dayLog.closed
-  const isBreak = (k) => !!pf.days?.[k]?.vac
+  const isBreak = (k) => !!pf.days?.[k]?.vac || !!pf.days?.[k]?.party
   const sInfo = streakInfo(entries, budgetFor, today, closed, isBreak)
   const streakDays = sInfo.days
   const yKey = (() => { const [y, m, d] = today.split('-').map(Number); return dayKey(new Date(y, m - 1, d - 1)) })()
@@ -272,11 +274,21 @@ function Bank({ user }) {
   }
   // Close my day: available any time once something is logged; can be reopened
   const closeDay = () => {
+    if (party) { // no result to weigh up on a celebration day
+      store.setDay(today, { closed: true })
+      notify('Day closed 🌙 Hope it was a good one', () => store.setDay(today, { closed: false }))
+      return
+    }
     const under = budget != null && spent - budget <= 0
     store.setDay(today, { closed: true })
     if (under) play('win')
     setResult(true)
     notify('Day closed 🌙', () => { store.setDay(today, { closed: false }); setResult(false) })
+  }
+  const setParty = (on) => {
+    store.setDay(today, { party: on })
+    if (on) celebrate('Celebration day! 🎉 No budget today, enjoy it.')
+    else notify('Back to your usual budget')
   }
   const reopenDay = () => { store.setDay(today, { closed: false }); notify('Day reopened. Log away.') }
   const livePartner = usePartners({
@@ -285,7 +297,7 @@ function Bank({ user }) {
       // gentle reminders: what the server needs to decide if one is due (times and flags only)
       remind: pf.remindMeal || pf.remindClose ? {
         meal: !!pf.remindMeal, close: !!pf.remindClose, tz: Intl.DateTimeFormat().resolvedOptions().timeZone, bed: pf.bedTime || DEFAULT_BED, name: pf.name,
-        left: budget != null ? Math.round(budget - spent) : null, lastFood: todays.length ? Math.max(...todays.map((e) => e.ts || 0)) : null,
+        left: budget != null && !party ? Math.round(budget - spent) : null, lastFood: todays.length ? Math.max(...todays.map((e) => e.ts || 0)) : null,
         loggedDay: todays.length ? today : null, closed: dayLog.closed ? today : null,
       } : { meal: false, close: false },
       // today's wins for your partner to react to: names only, never food or weight
@@ -330,7 +342,7 @@ function Bank({ user }) {
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const ctx = { ...store, sInfo, logFood, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), doWorkout: (m) => setWorking({ start: m }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, reopenDay, closed, openWords: () => setReplay(true), goSetup: (section) => {
+  const ctx = { ...store, party, setParty, sInfo, logFood, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), doWorkout: (m) => setWorking({ start: m }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, reopenDay, closed, openWords: () => setReplay(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }

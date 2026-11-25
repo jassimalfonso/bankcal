@@ -18,7 +18,7 @@ function split(p) {
   return { weekday: wk && dailyBudget(q, wk), weekend: we && dailyBudget(q, we), days }
 }
 
-export function BreaksSettings({ profile: p, updateProfile: set, today, partner, celebrate, notify }) {
+export function BreaksSettings({ profile: p, updateProfile: set, today, partner, celebrate, notify, party, setParty }) {
   const bd = breakdown(p)
   const base = dailyBudget({ ...p, vacation: null, weekend: null })
   const extra = bd && base != null ? Math.max(0, Math.round(bd.tdee / 10) * 10 - base) : null
@@ -36,6 +36,12 @@ export function BreaksSettings({ profile: p, updateProfile: set, today, partner,
   return (
     <>
       <h2 className="group-title" id="breaks">Breaks</h2>
+      <div className="card form-list breaks">
+        <label className="line toggle-line">
+          <span className="line-label">🎉 Celebration day<small>Birthday, wedding, a big dinner? No budget today. Back to normal tomorrow.</small></span>
+          <input type="checkbox" className="switch" checked={!!party} onChange={(e) => setParty?.(e.target.checked)} />
+        </label>
+      </div>
       <div className="card form-list breaks">
         <label className="line toggle-line">
           <span className="line-label">☀️ Weekend mode<small>Eat more on the weekend, a little less on weekdays</small></span>

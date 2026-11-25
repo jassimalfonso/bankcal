@@ -32,7 +32,7 @@ export const toFtIn = (cm) => {
 }
 export const toCm = (ft, inch) => (+ft > 0 ? Math.round(((+ft || 0) * 12 + (+inch || 0)) * 2.54) : '')
 
-export default function Me({ user, profile: p, updateProfile, resetProgress, partner, openWords, today, celebrate, notify }) {
+export default function Me({ user, profile: p, updateProfile, resetProgress, partner, openWords, today, celebrate, notify, party, setParty }) {
   const [confirmReset, setConfirmReset] = useState(false)
   const sideRef = useRef(null)
   useSideFit(sideRef)
@@ -178,7 +178,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
       )}
 
 
-      <BreaksSettings profile={p} updateProfile={updateProfile} today={today} partner={partner} celebrate={celebrate} notify={notify} />
+      <BreaksSettings profile={p} updateProfile={updateProfile} today={today} partner={partner} celebrate={celebrate} notify={notify} party={party} setParty={setParty} />
 
       <h2 className="group-title" id="about">About you</h2>
       <div className="card form-list">
