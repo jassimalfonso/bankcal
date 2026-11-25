@@ -701,3 +701,25 @@ export const SLEEP_STRATEGIES = [
   ['😴', 'Short naps only', 'If you nap, keep it under 30 minutes and before mid-afternoon.'],
   ['🛏️', 'Can’t sleep? Get up', 'After about 20 minutes awake, get up and do something calm in dim light, then try again. Lying there frustrated teaches your brain the bed is for worrying.'],
 ]
+
+// ───────── Progress replay ─────────
+// One row per day for the share video. Deliberately holds no calories: a day is 'on' (logged and
+// within budget), 'over' (logged) or 'none'. Weight is only a change over the range, and optional.
+export function replayDays({ entries, profile, budgetFor, keys }) {
+  const spent = {}
+  for (const e of entries) spent[e.day] = (spent[e.day] ?? 0) + e.kcal
+  const days = keys.map((key) => {
+    const log = profile?.days?.[key] ?? {}
+    const b = budgetFor?.(key)
+    const state = !(key in spent) ? 'none' : b == null || spent[key] <= b ? 'on' : 'over'
+    return { key, state, steps: +log.steps || 0, workouts: (log.workouts ?? []).length, weight: +log.weight || null }
+  })
+  const weighed = days.filter((d) => d.weight)
+  return {
+    days,
+    logged: days.filter((d) => d.state !== 'none').length,
+    workouts: days.reduce((a, d) => a + d.workouts, 0),
+    steps: days.reduce((a, d) => a + d.steps, 0),
+    weightChange: weighed.length > 1 ? Math.round((weighed.at(-1).weight - weighed[0].weight) * 10) / 10 : null,
+  }
+}

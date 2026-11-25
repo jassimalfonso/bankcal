@@ -367,3 +367,15 @@ test('sleepCoach needs at least three nights', () => {
   const profile = nightsOf([['2026-11-19', '23:00', '06:30'], ['2026-11-20', '23:00', '06:30']])
   assert.equal(sleepCoach({ profile, entries: [], keys: Object.keys(profile.days) }), null)
 })
+
+import { replayDays } from '../src/calc.js'
+test('replayDays marks each day and totals without calories', () => {
+  const keys = ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04']
+  const profile = { days: { '2026-11-01': { weight: 85, steps: 5000, workouts: [{}, {}] }, '2026-11-03': { steps: '3000' }, '2026-11-04': { weight: 84.2 } } }
+  const entries = [{ day: '2026-11-01', kcal: 1500 }, { day: '2026-11-01', kcal: 300 }, { day: '2026-11-02', kcal: 2500 }]
+  const r = replayDays({ entries, profile, budgetFor: () => 2000, keys })
+  assert.deepEqual(r.days.map((d) => d.state), ['on', 'over', 'none', 'none'])
+  assert.equal(r.logged, 2); assert.equal(r.workouts, 2); assert.equal(r.steps, 8000); assert.equal(r.weightChange, -0.8)
+  assert.ok(!JSON.stringify(r).includes('kcal'))
+  assert.equal(replayDays({ entries: [], profile: {}, budgetFor: () => null, keys }).weightChange, null)
+})

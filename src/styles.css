@@ -2308,3 +2308,17 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 .sc-list p { margin-top: 2px; font-size: 14px; line-height: 1.45; color: var(--muted); font-weight: 600; }
 .sleep-coach .link-btn { margin: 0; text-align: left; }
 .sleep-coach .fine { margin: 0; }
+
+/* ───── Progress replay ───── */
+.replay-card { display: grid; grid-template-columns: 44px 1fr; align-items: center; gap: 12px; width: 100%; margin-top: 12px; padding: 16px; text-align: left; }
+.replay-card .rc-play { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; font-size: 16px; padding-left: 3px; }
+.replay-card b { display: block; font-size: 16px; font-weight: 850; }
+.replay-card small { display: block; margin-top: 2px; font-size: 14px; font-weight: 650; color: var(--muted); }
+.replay-card:active { transform: scale(0.985); }
+.share-preview canvas { width: 100%; height: 100%; display: block; }
+.replay-seg { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; margin-bottom: 12px; }
+.replay-seg button { min-height: 44px; text-align: center; justify-content: center; }
+.replay-opt { display: grid; grid-template-columns: 24px 1fr; align-items: center; gap: 10px; margin: 0 2px 12px; font-size: 16px; font-weight: 750; }
+.replay-opt input { width: 22px; height: 22px; accent-color: var(--accent); }
+.replay-opt small { display: block; font-size: 12px; font-weight: 650; color: var(--muted); }
+.replay-note { margin: 10px 0 0; text-align: center; }

@@ -7,6 +7,7 @@ import { Row, mealKey } from './Today'
 import BodyCard from './BodyCard'
 import Progress from './Progress'
 import ShareSheet from './ShareSheet'
+import ReplaySheet from './ReplaySheet'
 import Activity from './Activity'
 import { WeeklyCard } from './DailyCards'
 
@@ -24,6 +25,7 @@ export default function Statement(props) {
   const [pick, setPick] = useState(days[6].key)
   const [open, setOpen] = useState(false) // a tapped bar opens that day's details under the chart
   const [view, setView] = useState('week')
+  const [replay, setReplay] = useState(false)
   const recapRef = useRef(null)
   const sideRef = useRef(null)
   useSideFit(sideRef, recapRef, view)
@@ -77,6 +79,12 @@ export default function Statement(props) {
 
       <h2 className="group-title">Progress</h2>
       <Progress {...props} />
+
+      <button className="card replay-card" onClick={() => setReplay(true)}>
+        <span className="rc-play" aria-hidden="true">▶</span>
+        <span><b>Progress replay</b><small>Your days played back as a short video to share</small></span>
+      </button>
+      {replay && <ReplaySheet mine={mine} profile={props.profile} budgetFor={budgetFor} notify={props.notify} onClose={() => setReplay(false)} />}
 
       <Milestones badges={props.profile?.badges ?? {}} character={props.profile?.character} notify={props.notify} />
 

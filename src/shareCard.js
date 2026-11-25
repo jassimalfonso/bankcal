@@ -10,11 +10,11 @@ const INK = '#26262b'
 const BUBBLES = ['Let’s go!', 'Fresh start!', 'We got this!', 'Today’s a good day', 'One step at a time', 'Rise and shine!', 'Small wins count!', 'Grace for today', 'Hello, sunshine!']
 
 // ---------- helpers ----------
-function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296) }
+export function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296) }
 const hex = (h) => { const n = parseInt(String(h).replace('#', '').slice(0, 6), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255] }
-const mix = (a, b, t) => { const x = hex(a); const y = hex(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('') }
-const alpha = (a, o) => `rgba(${hex(a).join(',')},${o})`
-const font = (w, s) => `${w} ${s}px ${FONT}`
+export const mix = (a, b, t) => { const x = hex(a); const y = hex(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('') }
+export const alpha = (a, o) => `rgba(${hex(a).join(',')},${o})`
+export const font = (w, s) => `${w} ${s}px ${FONT}`
 
 function lines(ctx, text, max) {
   const out = []
@@ -34,9 +34,9 @@ function fit(ctx, text, weight, size, min, max, maxLines) {
   ctx.font = font(weight, s)
   return { size: s, rows: lines(ctx, text, max) }
 }
-function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h) }
+export function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h) }
 
-function svgImage(svg, size) {
+export function svgImage(svg, size) {
   return new Promise((ok) => {
     if (!svg) return ok(null)
     const s = svg.cloneNode(true)
@@ -49,7 +49,7 @@ function svgImage(svg, size) {
   })
 }
 
-function sticker(ctx, img, cx, cy, size, rot) {
+export function sticker(ctx, img, cx, cy, size, rot) {
   if (!img) return
   ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot)
   ctx.filter = 'brightness(0) invert(1)' // white die-cut outline
