@@ -323,3 +323,47 @@ test('sleep insights: bedtime spread across midnight, debt, short-night eating',
   assert.equal(r.debt, 4)
   assert.equal(r.effect, 500) // 2,050 after short nights vs 1,550 after rested ones
 })
+
+// ───── sleep coach ─────
+import { sleepCoach } from '../src/calc.js'
+const nightsOf = (rows) => ({ days: Object.fromEntries(rows.map(([k, bed, wake]) => [k, { sleep: { bed, wake } }])) })
+
+test('sleepCoach works tonight’s plan back from the usual wake-up', () => {
+  // Mon–Fri mornings, bed around 00:30, up at 06:30: 6 hours a night
+  const profile = nightsOf([['2026-11-16', '00:30', '06:30'], ['2026-11-17', '00:20', '06:30'], ['2026-11-18', '00:40', '06:30'], ['2026-11-19', '00:30', '06:30'], ['2026-11-20', '00:30', '06:30']])
+  const c = sleepCoach({ profile, entries: [], keys: Object.keys(profile.days) })
+  assert.equal(c.usualWake, '06:30')
+  assert.equal(c.usualBed, '00:30')
+  assert.equal(c.plan.lightsOut, '23:00') // 06:30 minus 7 h and 30 min to drop off
+  assert.equal(c.plan.windDown, '22:15')
+  assert.equal(c.plan.dinner, '20:30')
+  assert.equal(c.plan.caffeine, '15:00')
+  assert.equal(c.tips[0].id, 'earlier')
+})
+
+test('sleepCoach leaves a good sleeper alone and keeps their own bedtime', () => {
+  const profile = nightsOf([['2026-11-16', '22:15', '06:30'], ['2026-11-17', '22:30', '06:30'], ['2026-11-18', '22:20', '06:30'], ['2026-11-19', '22:25', '06:30']])
+  const c = sleepCoach({ profile, entries: [], keys: Object.keys(profile.days) })
+  assert.equal(c.tips[0].id, 'good')
+  assert.equal(c.plan.lightsOut, '22:25') // their own usual bedtime (the middle of the four), already early enough: not pushed later
+  assert.equal(c.shift, 0)
+})
+
+test('sleepCoach notices uneven bedtimes, weekend lie-ins and late meals', () => {
+  const profile = nightsOf([['2026-11-18', '22:30', '06:30'], ['2026-11-19', '01:00', '06:30'], ['2026-11-20', '23:00', '06:30'], ['2026-11-21', '01:30', '09:30'], ['2026-11-22', '00:30', '09:00']])
+  const at = (day, time) => new Date(`${day}T${time}`).getTime()
+  // a meal within two hours of bed on three of the nights (logged the evening before, or just after midnight)
+  const entries = [{ ts: at('2026-11-17', '21:30'), kcal: 600 }, { ts: at('2026-11-19', '00:10'), kcal: 400 }, { ts: at('2026-11-19', '19:00'), kcal: 700 }, { ts: at('2026-11-21', '00:20'), kcal: 500 }]
+  const c = sleepCoach({ profile, entries, keys: Object.keys(profile.days) })
+  const ids = c.tips.map((t) => t.id)
+  assert.ok(ids.includes('steady'))
+  assert.ok(ids.includes('weekend'))
+  assert.ok(ids.includes('late-food'))
+  assert.equal(c.checked, 4)
+  assert.equal(c.late, 3)
+})
+
+test('sleepCoach needs at least three nights', () => {
+  const profile = nightsOf([['2026-11-19', '23:00', '06:30'], ['2026-11-20', '23:00', '06:30']])
+  assert.equal(sleepCoach({ profile, entries: [], keys: Object.keys(profile.days) }), null)
+})

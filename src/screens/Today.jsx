@@ -46,7 +46,7 @@ export function Ring({ value, size = 220, stroke = 20, children }) {
 }
 
 // any spelling of a meal lands in the right group; unknown counts as a snack
-const mealKey = (m) => { const k = String(m || '').toLowerCase(); return k.startsWith('break') ? 'Breakfast' : k.startsWith('lunch') ? 'Lunch' : k.startsWith('din') || k.startsWith('sup') ? 'Dinner' : 'Snack' }
+export const mealKey = (m) => { const k = String(m || '').toLowerCase(); return k.startsWith('break') ? 'Breakfast' : k.startsWith('lunch') ? 'Lunch' : k.startsWith('din') || k.startsWith('sup') ? 'Dinner' : 'Snack' }
 // how Meals is shown: grouped by meal, by food type, or one list (remembered on this phone)
 function useMealView() {
   const [v, setV] = useState(() => { try { return localStorage.getItem('bankcal:meal-view') || 'meal' } catch { return 'meal' } })

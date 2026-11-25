@@ -2267,3 +2267,44 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 .pc-week small { flex-basis: 100%; color: var(--muted); font-weight: 700; font-size: 12px; }
 .pc-why { margin: 10px 0 4px; }
 .pc-nextup { margin: 10px 0 0; text-align: center; }
+
+/* ───── Progress: a tapped bar opens that day's (or night's) details ───── */
+.day-detail { margin-top: 10px; padding: 14px; border-radius: 16px; background: var(--bg); display: grid; gap: 12px; animation: rise 0.25s var(--ease) backwards; }
+.dd-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 16px; }
+.dd-head b { font-weight: 850; }
+.dd-head span { font-size: 14px; font-weight: 800; white-space: nowrap; }
+.day-detail .pos { color: var(--accent); }
+.day-detail .neg { color: var(--neg); }
+.dd-meals { display: grid; gap: 8px; }
+.dd-meal { display: grid; grid-template-columns: 78px 1fr auto; align-items: center; gap: 10px; font-size: 14px; }
+.dd-meal span { font-weight: 750; color: var(--muted); }
+.dd-meal i { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.dd-meal em { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+.dd-meal b { font-weight: 850; font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
+.dd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dd-grid > div { padding: 10px 12px; border-radius: 12px; background: var(--card); display: grid; gap: 2px; min-width: 0; }
+.dd-grid > div.wide { grid-column: 1 / -1; }
+.dd-grid small { font-size: 12px; font-weight: 700; color: var(--muted); }
+.dd-grid b { font-size: 14px; font-weight: 850; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.dd-note { margin: 0; font-size: 14px; line-height: 1.45; }
+.dd-note b { font-weight: 850; }
+.day-detail .link-btn { margin: 0; text-align: left; }
+.sw-hint { margin: 10px 0 0; }
+/* sleep coach */
+.sleep-coach { margin-top: 12px; padding: 16px; display: grid; gap: 12px; }
+.sleep-coach h3 { font-size: 21px; font-weight: 850; }
+.sleep-coach h4 { margin-top: 4px; font-size: 16px; font-weight: 850; }
+.sc-sub { font-size: 14px; color: var(--muted); font-weight: 650; line-height: 1.45; }
+.sc-tip { padding: 12px 14px; border-radius: 14px; background: var(--soft); }
+.sc-tip b { font-size: 16px; font-weight: 850; }
+.sc-tip p { margin-top: 4px; font-size: 14px; line-height: 1.45; }
+.sc-plan { list-style: none; margin: 0; padding: 0; display: grid; }
+.sc-plan li { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px; padding: 10px 2px; font-size: 16px; }
+.sc-plan li + li { border-top: 1px solid var(--line); }
+.sc-plan b { font-weight: 850; font-variant-numeric: tabular-nums; }
+.sc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.sc-list li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; }
+.sc-list b { font-size: 16px; font-weight: 850; }
+.sc-list p { margin-top: 2px; font-size: 14px; line-height: 1.45; color: var(--muted); font-weight: 600; }
+.sleep-coach .link-btn { margin: 0; text-align: left; }
+.sleep-coach .fine { margin: 0; }

@@ -641,3 +641,63 @@ export function usualFor(entries, meal, todayKey, todays = []) {
   const best = [...tally.values()].filter((t) => t.n >= 2 && !done.has(t.name.toLowerCase())).sort((a, b) => b.n - a.n)[0]
   return best ? { name: best.name, kcal: best.kcal, cat: best.cat, meal, times: best.n } : null
 }
+
+// ───────── Sleep coach ─────────
+const hm = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m }
+const clock = (mins) => { const m = ((Math.round(mins / 5) * 5) % 1440 + 1440) % 1440; return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}` }
+const eve = (t) => (hm(t) - 18 * 60 + 1440) % 1440 // minutes after 18:00, so 23:30 and 00:30 sit an hour apart
+const median = (xs) => { const s = [...xs].sort((a, b) => a - b), n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2 }
+export const clockOf = clock
+
+// What your recent nights say, and a plan for tonight built back from when you get up.
+// keys: recent days, oldest first (a night's sleep is stored on the morning it ended).
+export function sleepCoach({ profile, entries, keys }) {
+  const nights = keys.map((k) => ({ k, s: profile.days?.[k]?.sleep, h: sleepHours(profile.days?.[k]?.sleep) })).filter((n) => n.h != null)
+  if (nights.length < 3) return null
+  const avg = nights.reduce((a, n) => a + n.h, 0) / nights.length
+  const beds = nights.map((n) => eve(n.s.bed)), wakes = nights.map((n) => hm(n.s.wake))
+  const usualBed = median(beds) + 18 * 60, usualWake = median(wakes)
+  const spread = Math.max(...beds) - Math.min(...beds)
+  // weekend mornings (Saturday, Sunday) against weekday ones
+  const dow = (k) => new Date(k + 'T12:00').getDay()
+  const we = nights.filter((n) => [0, 6].includes(dow(n.k))).map((n) => hm(n.s.wake)), wd = nights.filter((n) => ![0, 6].includes(dow(n.k))).map((n) => hm(n.s.wake))
+  const lieIn = we.length && wd.length ? Math.round(median(we) - median(wd)) : 0
+  // eating close to bed: the last thing logged the evening before, against that night's bedtime
+  let late = 0, checked = 0
+  for (const n of nights) {
+    const morning = new Date(n.k + 'T00:00').getTime()
+    const b = hm(n.s.bed)
+    const bedAt = morning + (b >= 12 * 60 ? b - 1440 : b) * 60000
+    const before = (entries ?? []).filter((e) => e.ts && e.ts <= bedAt && e.ts > bedAt - 8 * 3600e3 && (+e.kcal || 0) >= 150)
+    if (!before.length) continue
+    checked++
+    if (bedAt - Math.max(...before.map((e) => e.ts)) < 2 * 3600e3) late++
+  }
+  // tonight, worked back from the usual wake-up: enough time in bed for the target plus about 20 minutes to drop off
+  const need = SLEEP_TARGET * 60 + 30
+  // both on one evening-to-morning scale (22:20 = 1340, 00:30 = 1470); never later than you already manage
+  const lightsOut = Math.min(usualWake - need + (usualWake - need < 12 * 60 ? 1440 : 0), usualBed)
+  const out = ((lightsOut % 1440) + 1440) % 1440
+  const plan = { wake: clock(usualWake), lightsOut: clock(out), windDown: clock(out - 45), dinner: clock(out - 150), caffeine: clock(out - 8 * 60) }
+  const shift = Math.round((usualBed - lightsOut) / 5) * 5 // minutes earlier than the usual bedtime (0 = already fine)
+  const tips = []
+  if (avg < SLEEP_TARGET && shift >= 15) tips.push({ id: 'earlier', title: `Lights out by ${plan.lightsOut}`, text: `You average ${fmtSleep(avg)} and usually get to bed around ${clock(usualBed)}. Getting up at ${plan.wake} leaves room for ${SLEEP_TARGET} hours only if lights are out by ${plan.lightsOut}. Move ${shift > 30 ? '15 minutes earlier every few nights' : `${shift} minutes earlier`} until you’re there.` })
+  else if (avg < SLEEP_TARGET) tips.push({ id: 'short', title: 'A little more time in bed', text: `You average ${fmtSleep(avg)}, under the ${SLEEP_TARGET} hours most adults need. An extra 20 to 30 minutes on either end is enough to close the gap.` })
+  if (spread > 90) tips.push({ id: 'steady', title: 'Keep bedtime within an hour', text: `Your bedtimes ranged from ${clock(Math.min(...beds) + 18 * 60)} to ${clock(Math.max(...beds) + 18 * 60)}. A steady bedtime trains your body clock, and usually helps more than extra hours now and then.` })
+  if (lieIn >= 75) tips.push({ id: 'weekend', title: 'Shorter weekend lie-ins', text: `You get up about ${lieIn < 60 ? `${lieIn} minutes` : fmtSleep(lieIn / 60)} later at weekends. That works like a small jet lag on Monday. Keeping it within an hour makes Sunday night easier.` })
+  if (checked >= 3 && late / checked >= 0.5) tips.push({ id: 'late-food', title: `Finish eating by ${plan.dinner}`, text: `On ${late} of ${checked} nights you ate a meal within two hours of bed. A full stomach makes sleep lighter. Earlier dinners, or a smaller last meal, help.` })
+  if (!tips.length) tips.push({ id: 'good', title: 'Your sleep looks steady', text: `You average ${fmtSleep(avg)} with regular bedtimes. Keep doing what you’re doing.` })
+  return { nights: nights.length, avg, usualBed: clock(usualBed), usualWake: clock(usualWake), spread, lieIn, late, checked, plan, shift: Math.max(0, shift), tips }
+}
+
+// Always-true habits for better sleep (general guidance, not medical advice)
+export const SLEEP_STRATEGIES = [
+  ['☀️', 'Morning light', 'Get daylight within an hour of waking, even 10 minutes on a balcony. It sets your body clock for the night.'],
+  ['☕', 'Caffeine cut-off', 'Coffee, tea, cola and energy drinks stay in your system for hours. Stop about 8 hours before bed.'],
+  ['📵', 'Dim the last hour', 'Lower the lights and put the phone down for the last 45 to 60 minutes. Read, stretch or shower instead.'],
+  ['❄️', 'Cool, dark, quiet', 'Most people sleep best in a cool room, around 18 to 22 °C, with blackout curtains or an eye mask.'],
+  ['🍽️', 'Lighter, earlier dinner', 'Finish your last big meal 2 to 3 hours before bed. If you’re hungry later, keep it small.'],
+  ['🏃', 'Move in the day', 'Regular exercise deepens sleep. Finish hard sessions at least an hour or two before bed.'],
+  ['😴', 'Short naps only', 'If you nap, keep it under 30 minutes and before mid-afternoon.'],
+  ['🛏️', 'Can’t sleep? Get up', 'After about 20 minutes awake, get up and do something calm in dim light, then try again. Lying there frustrated teaches your brain the bed is for worrying.'],
+]
