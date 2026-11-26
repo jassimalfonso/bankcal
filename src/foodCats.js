@@ -11,7 +11,7 @@ export const catById = Object.fromEntries(CATS.map((c) => [c.id, c]))
 export const isCat = (c) => !!catById[c]
 
 const WORDS = {
-  drink: 'coffee, latte, cappuccino, americano, espresso, macchiato, mocha, frappe, frappuccino, iced tea, chai, karak, juice, smoothie, shake, milkshake, milk, laban, lassi, water, soda, cola, pepsi, coke, sprite, 7up, fanta, drink, beer, wine, kombucha, yakult, zesty, protein shake, energy, redbull, red bull, gatorade, lemonade, mojito, capp, hot chocolate, cocoa, matcha, boba, bubble tea',
+  drink: 'tea, green tea, black tea, herbal tea, chamomile, peppermint tea, earl grey, oolong, tisane, infusion, flat white, cortado, qahwa, arabic coffee, turkish coffee, milo, horlicks, ovaltine, ayran, kefir, coconut water, buko juice, calamansi, gulaman, cocktail, mocktail, cider, tonic, sparkling water, oat milk, almond milk, soy milk, coffee, latte, cappuccino, americano, espresso, macchiato, mocha, frappe, frappuccino, iced tea, chai, karak, juice, smoothie, shake, milkshake, milk, laban, lassi, water, soda, cola, pepsi, coke, sprite, 7up, fanta, drink, beer, wine, kombucha, yakult, zesty, protein shake, energy, redbull, red bull, gatorade, lemonade, mojito, capp, hot chocolate, cocoa, matcha, boba, bubble tea',
   fruit: 'apple, banana, orange, saging, mango, grape, grapes, watermelon, melon, strawberry, strawberries, berries, blueberry, pineapple, papaya, kiwi, pear, peach, plum, dates, date, fig, figs, pomegranate, guava, lychee, cherry, cherries, avocado, salad, cucumber, carrot, carrots, tomato, tomatoes, lettuce, broccoli, spinach, vegetables, veggies, veg, fruit, fruits, corn, kangkong, ampalaya, pechay, okra, eggplant, sitaw, beans, greens, fattoush, tabbouleh',
   snack: 'banana bread, chocolate, choc, biscuit, biscuits, cookie, cookies, cake, cupcake, brownie, donut, doughnut, ice cream, gelato, chips, crisps, popcorn, candy, sweets, dessert, pudding, leche flan, halo-halo, halo, kunafa, knafeh, baklava, luqaimat, muffin, croissant, pastry, cheesecake, wafer, bar, granola, nuts, almonds, cashews, peanuts, pistachio, crackers, pretzel, kitkat, snickers, mars, twix, oreo, pringles, doritos, lays, jelly, gummy, turon, banana cue, bibingka, puto, kakanin, ensaymada, pandesal, cinnamon roll, pie, tart, waffle, pancake, pancakes, churros',
   side: 'rice, plain rice, garlic rice, bread, toast, roti, chapati, naan, paratha, khubz, pita, bun, fries, french fries, mashed potato, hummus, sauce, dip, ketchup, mayo, mayonnaise, gravy, dressing, butter, cheese slice, egg, boiled egg, fried egg, coleslaw, pickles, olives, oil, ghee, sugar, honey, jam, syrup, creamer',
@@ -33,7 +33,8 @@ export function guessCat(name) {
 
 // The type to show: your own choice first, then what the food came with, then the guess
 export const keyOf = (name) => norm(name).trim().replace(/\s×.*$/, '')
-export const catOf = (f, overrides = {}) => overrides[keyOf(f.name)] || (isCat(f.cat) ? f.cat : guessCat(f.name))
+// ("meal" is the catch-all, so a food filed as a meal whose name is plainly a drink is shown as a drink)
+export const catOf = (f, overrides = {}) => overrides[keyOf(f.name)] || (isCat(f.cat) && !(f.cat === 'meal' && guessCat(f.name) === 'drink') ? f.cat : guessCat(f.name))
 
 // A picture for foods without a photo: the closest food emoji, else the type's emoji
 const PICS = [

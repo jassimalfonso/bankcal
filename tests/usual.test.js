@@ -85,3 +85,12 @@ test('reminders: lunch only if nothing logged lately, close day only once at bed
   assert.equal(dueFor({ ...r, loggedDay: '2026-11-22', closed: '2026-11-22' }, at('23:35')), null)
   assert.equal(dueFor({ ...r, meal: false }, at('12:40')), null)
 })
+
+import { catOf as catOfT } from '../src/foodCats.js'
+test('teas are drinks, even when they were filed as a meal', () => {
+  for (const n of ['Chamomile tea', 'Green tea', 'Tea with milk', 'Flat white', 'Karak chai']) assert.equal(guessCat(n), 'drink', n)
+  assert.equal(catOfT({ name: 'Chamomile tea', cat: 'meal' }), 'drink')
+  assert.equal(catOfT({ name: 'Chamomile tea', cat: 'meal' }, { 'chamomile tea': 'meal' }), 'meal') // your own choice still wins
+  assert.equal(guessCat('Chicken steak'), 'meal')
+  assert.equal(catOfT({ name: 'Protein shake', cat: 'snack' }), 'snack')
+})
