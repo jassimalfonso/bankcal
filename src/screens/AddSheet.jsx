@@ -537,7 +537,8 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
                   )
                 )
                 // a filter or Edit shows a plain list; otherwise grouped by type
-                return filter || editMine || fixCats ? myFoods.filter(fits).map(row) : groups(myFoods, 'mine', row)
+                const az = [...myFoods].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true })) // saved foods read A to Z within each type
+                return filter || editMine || fixCats ? az.filter(fits).map(row) : groups(az, 'mine', row)
               })()}
             </div>
           </div>

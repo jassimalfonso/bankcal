@@ -2,7 +2,7 @@
 // the online search also suggests one, and you can change any of them by hand.
 export const CATS = [
   { id: 'meal', e: '🍛', label: 'Meals' },
-  { id: 'fruit', e: '🍎', label: 'Fruit & veg' },
+  { id: 'fruit', e: '🍎', label: 'Fruit & salad' },
   { id: 'snack', e: '🍪', label: 'Snacks & sweets' },
   { id: 'drink', e: '🥤', label: 'Drinks' },
   { id: 'side', e: '🍞', label: 'Sides & extras' },
