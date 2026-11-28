@@ -128,7 +128,7 @@ const TOUR = [
   { tab: 'today', title: 'Quick moves on your list', text: 'On a logged food: swipe right to log it again, swipe left to remove it, or press and hold for more options.' },
   { tab: 'week', at: '[data-tour="week"]', title: 'Progress', text: 'Your week, weight and sleep. Tap any bar for that day’s details, and make a short replay video of your progress to share.' },
   { tab: 'train', at: '[data-tour="train"]', title: 'Train', text: 'Simple routines and plans with moves shown step by step. Pick your level and what kit you have.' },
-  { tab: 'me', at: '[data-tour="me"]', title: 'Settings', text: 'Change your goal, buddy and colours, set reminders, take a break or a celebration day, and link a partner if you want to cheer each other on.' },
+  { tab: 'me', at: '[data-tour="me"]', title: 'Settings', text: 'Change your goal, buddy and colours, set reminders, and take a break or a celebration day. You can also switch on macro tracking (protein, carbs, fat) under Your day, and link a partner to cheer each other on.' },
 ]
 export function Tour({ setTab, onDone }) {
   const installStep = !isInstalled() && installKind() !== 'desktop'

@@ -478,6 +478,13 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
             </div>
           )
         })()}
+        {!macrosOn && !peek && !editing && profile?.macroHint !== false && (picked || n > 0) && (
+          <div className="macro-hint" role="note">
+            <span>Want protein, carbs and fat too?</span>
+            <button className="link-btn" onClick={() => { updateProfile({ macros: true, macroHint: false }); notify?.('Macros on. Switch them off any time in Settings → Your day') }}>Track macros</button>
+            <button className="link-btn quiet" onClick={() => updateProfile({ macroHint: false })} aria-label="No thanks, hide this">No thanks</button>
+          </div>
+        )}
         {macrosOn && !peek && (picked || n > 0) && (
           <div className="macro-row" role="group" aria-label="Macros in grams, optional">
             {[['p', 'Protein'], ['c', 'Carbs'], ['f', 'Fat']].map(([k, label]) => (
