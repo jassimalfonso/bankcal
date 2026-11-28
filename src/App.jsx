@@ -345,7 +345,7 @@ function Bank({ user }) {
   useEffect(() => {
     if (profile?.onboarded && !profile.tourSeen && profile.createdAt && Date.now() - profile.createdAt < 7 * 86400000 && !showM && !helloOn) setTour(true)
   }, [profile?.onboarded, profile?.tourSeen, profile?.createdAt, showM, helloOn])
-  const endTour = () => { setTour(false); setTab('today'); if (!profile?.tourSeen) store.updateProfile({ tourSeen: true }) }
+  const endTour = () => { setTour(false); setTab('today'); if (!profile?.tourSeen) { store.updateProfile({ tourSeen: true }); notify('You can replay the tour any time from Settings 🧭') } }
   const focus = profile?.onboarded ? oneThing({ profile: pf, todayKey: today, yesterday, plans: PLANS }) : null
 
   if (!profile) return <div className="loading" />

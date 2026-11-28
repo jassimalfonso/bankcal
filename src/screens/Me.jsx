@@ -114,6 +114,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
       </header>
 
       <nav className="jump-row" aria-label="Jump to a section">
+        <button onClick={startTour}>🧭 Tour</button>
         {[['goal', '🎯 Goal'], ['breaks', '🏖️ Breaks'], ['about', '👤 About you'], ['day', '🌙 Your day'], ['habits', '✅ Habits'], ...(partner ? [['partner', '🤝 Partner']] : []), ['buddy', '🥚 Buddy'], ['look', '🎨 Look']].map(([id, l]) => (
           <button key={id} onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{l}</button>
         ))}
