@@ -379,3 +379,10 @@ test('replayDays marks each day and totals without calories', () => {
   assert.ok(!JSON.stringify(r).includes('kcal'))
   assert.equal(replayDays({ entries: [], profile: {}, budgetFor: () => null, keys }).weightChange, null)
 })
+
+import { macrosOf as mOf, sumMacros } from '../src/calc.js'
+test('macros scale with the portion and total up per day', () => {
+  assert.deepEqual(mOf({ p: 24, c: 30, f: 11.5 }, 0.5), { p: 12, c: 15, f: 5.8 })
+  assert.deepEqual(mOf({ p: 24, c: '', f: 3 }), {})
+  assert.deepEqual(sumMacros([{ kcal: 300, p: 20, c: 30, f: 10 }, { kcal: 100 }, { kcal: 50, p: 1.4, c: 2, f: 0 }]), { p: 21, c: 32, f: 10, n: 2, of: 3 })
+})

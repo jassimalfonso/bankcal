@@ -9,6 +9,7 @@ import { PartnerSettings } from './Partner'
 import { BreaksSettings } from './Breaks'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
+import { HoldConfirm } from '../Hold'
 import { soundOn, setSoundOn, testSound } from '../sound'
 
 // Each background comes with a matching colour; you can still pick another colour after.
@@ -32,7 +33,38 @@ export const toFtIn = (cm) => {
 }
 export const toCm = (ft, inch) => (+ft > 0 ? Math.round(((+ft || 0) * 12 + (+inch || 0)) * 2.54) : '')
 
-export default function Me({ user, profile: p, updateProfile, resetProgress, partner, openWords, today, celebrate, notify, party, setParty }) {
+// Delete everything and the account itself. Two steps: open it, then press and hold.
+function DeleteAccount({ profile, deleteAccount }) {
+  const [open, setOpen] = useState(false)
+  const [state, setState] = useState('') // '', 'busy', 'signin', or an error message
+  if (!open) return <button className="link-btn delete-acct-link" onClick={() => setOpen(true)}>Delete my account</button>
+  const go = async () => {
+    setState('busy')
+    try {
+      const r = await deleteAccount(profile?.inviteCode)
+      if (r === 'signin') setState('signin') // otherwise the sign-in screen takes over by itself
+    } catch { setState('Couldn’t delete everything. Check your connection and try again.') }
+  }
+  return (
+    <div className="card delete-acct" role="group" aria-label="Delete my account">
+      {state === 'signin' ? (
+        <p><b>Your data is deleted.</b> Google needs a fresh sign-in to remove the account itself: sign in once more, then tap Delete my account again.</p>
+      ) : (
+        <>
+          <p><b>Delete your account and everything in it?</b></p>
+          <p className="fine">This removes your profile, every food, workout, weight and sleep entry, your saved foods, and what you share with a linked partner. It can’t be undone.</p>
+          {state && state !== 'busy' && <p className="fine neg" role="alert">{state}</p>}
+          <div className="rc-btns">
+            <button className="btn-plain" disabled={state === 'busy'} onClick={() => setOpen(false)}>Keep my account</button>
+            <HoldConfirm className="btn-plain danger solid" ms={1500} disabled={state === 'busy'} onConfirm={go} aria-label="Delete my account. Press and hold to confirm">{state === 'busy' ? 'Deleting…' : 'Hold to delete'}</HoldConfirm>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+export default function Me({ user, profile: p, updateProfile, resetProgress, partner, openWords, today, celebrate, notify, party, setParty, deleteAccount }) {
   const [confirmReset, setConfirmReset] = useState(false)
   const sideRef = useRef(null)
   useSideFit(sideRef)
@@ -225,6 +257,10 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
           <input type="checkbox" className="switch" checked={p.morningCard !== false} onChange={(e) => set({ morningCard: e.target.checked })} />
         </label>
         {openWords && <button className="line link-line" onClick={openWords}>Show it now</button>}
+        <label className="line toggle-line">
+          <span className="line-label">Track macros<small>Protein, carbs and fat for the foods you look up or type in. Calories stay the main number.</small></span>
+          <input type="checkbox" className="switch" checked={!!p.macros} onChange={(e) => set({ macros: e.target.checked })} />
+        </label>
         <SoundLine />
         <RemindLines p={p} set={set} push={partner?.push} notify={notify} />
       </div>
@@ -312,6 +348,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
         <p className="fine">iPhone: open in Safari, tap Share, then Add to Home Screen. Android: open in Chrome, tap ⋮, then Install app.</p>
       </details>
       <button className="btn-plain" onClick={logOut}>Sign out</button>
+      <DeleteAccount profile={p} deleteAccount={deleteAccount} />
       <p className="fine disclaimer">BankCal gives estimates from standard methods: the Mifflin-St Jeor equation for calories burned at rest, the Compendium of Physical Activities for exercise, about 7,700 kcal per kg of body fat, and WHO BMI categories. Real results vary from person to person. It isn’t medical advice, so check with a doctor before big changes, especially if you’re pregnant, under 18, or managing a health condition.</p>
       <p className="foot">BankCal version {VERSION} ({BUILD}). Updates itself. Synced to your Google account and works offline.</p>
       {(() => {

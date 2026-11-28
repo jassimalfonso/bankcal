@@ -1,5 +1,10 @@
 // Client for /api/food (Gemini on the server). Needs internet + a signed-in user.
 import { auth } from './firebase'
+import { macrosOf } from './calc'
+
+// switched on from Settings: lookups then also ask for protein, carbs and fat
+let wantMacros = false
+export const setMacroLookups = (on) => { wantMacros = !!on }
 
 export async function askFood(body) {
   if (import.meta.env.MODE === 'demo') {
@@ -9,7 +14,7 @@ export async function askFood(body) {
     if (body.mode === 'barcode') return { results: [{ name: 'Demo Brand Oat Biscuits', portion: '1 serving (30 g)', kcal: 135, per100: 450, barcode: true }, { name: 'Demo Brand Oat Biscuits', portion: 'whole pack (150 g)', kcal: 675, per100: 450, barcode: true }, { name: 'Demo Brand Oat Biscuits', portion: '100 g', kcal: 450, per100: 450, barcode: true }] }
     return body.mode === 'photo'
       ? { name: 'Demo plate', kcal: 480, items: [{ name: 'Rice', portion: '1 cup', kcal: 205 }], confidence: 'medium' }
-      : { results: [{ name: `${body.q} (demo online result)`, portion: '1 serving', kcal: 321 }, { name: `${body.q}, large`, portion: { amount: 1, unit: 'large bag' }, kcal: '640 kcal' }] }
+      : { results: [{ name: `${body.q} (demo online result)`, portion: '1 serving', kcal: 321, ...(wantMacros ? { p: 24, c: 30, f: 11.5 } : {}) }, { name: `${body.q}, large`, portion: { amount: 1, unit: 'large bag' }, kcal: '640 kcal' }] }
   }
   if (!navigator.onLine) throw new Error('You’re offline. Type the calories for now.')
   const user = auth.currentUser
@@ -26,7 +31,7 @@ export async function askFood(body) {
   const r = await fetch('/api/food', {
     method: 'POST', signal,
     headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
+    body: JSON.stringify(wantMacros && ['search', 'more', 'photo'].includes(body.mode) ? { ...body, macros: true } : body),
   })
   .catch((e) => { throw new Error(e.name === 'TimeoutError' || e.name === 'AbortError' ? 'That took too long. Try again, or type the calories.' : 'Couldn’t reach the online search. Check your connection.') })
   const j = await r.json().catch(() => ({}))
@@ -62,7 +67,7 @@ const txt = (v) => (typeof v === 'string' ? v : typeof v === 'number' ? String(v
 export function cleanFoods(list, limit = 6) {
   if (!Array.isArray(list)) return []
   return list
-    .map((x) => ({ ...(Number(x?.per100) > 0 && Number(x.per100) <= 900 ? { per100: Math.round(Number(x.per100)) } : {}), ...(['size', 'style', 'brand'].includes(x?.group) ? { group: x.group } : {}), ...(x?.barcode === true ? { barcode: true } : {}), ...(['meal', 'fruit', 'snack', 'drink', 'side'].includes(x?.cat) ? { cat: x.cat } : {}), name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: x?.kcal == null || x.kcal === '' ? NaN : Math.round(Number(String(x.kcal).replace(/[^\d.]/g, '') || NaN)) }))
+    .map((x) => ({ ...macrosOf(x), ...(Number(x?.per100) > 0 && Number(x.per100) <= 900 ? { per100: Math.round(Number(x.per100)) } : {}), ...(['size', 'style', 'brand'].includes(x?.group) ? { group: x.group } : {}), ...(x?.barcode === true ? { barcode: true } : {}), ...(['meal', 'fruit', 'snack', 'drink', 'side'].includes(x?.cat) ? { cat: x.cat } : {}), name: txt(x?.name).slice(0, 120), portion: txt(x?.portion).slice(0, 60), kcal: x?.kcal == null || x.kcal === '' ? NaN : Math.round(Number(String(x.kcal).replace(/[^\d.]/g, '') || NaN)) }))
     .filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000)
     .slice(0, limit)
 }

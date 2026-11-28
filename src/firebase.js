@@ -1,7 +1,7 @@
 // Firebase: Google sign-in + Firestore with an on-device cache,
 // so the app keeps working offline and syncs when back online.
 import { initializeApp } from 'firebase/app'
-import { getAuth, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth'
+import { deleteUser, getAuth, getRedirectResult, GoogleAuthProvider, reauthenticateWithPopup, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth'
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'
 
 // These values are public by design — access is protected by firestore.rules.
@@ -48,3 +48,18 @@ export async function signIn() {
 export const redirectResult = getRedirectResult(auth)
 
 export const logOut = () => signOut(auth)
+
+// Set while an account is being deleted, so nothing writes the data back
+export const leaving = { on: false }
+// Remove the sign-in itself. Google insists on a recent sign-in for this; if it can't be
+// confirmed here, we sign out and report 'signin' so the person can finish after signing in again.
+export async function removeSignIn() {
+  const u = auth.currentUser
+  try { await deleteUser(u); return 'done' } catch (e) {
+    if (e?.code === 'auth/requires-recent-login') {
+      try { await reauthenticateWithPopup(u, new GoogleAuthProvider()); await deleteUser(u); return 'done' } catch { /* fall through */ }
+    }
+    await signOut(auth).catch(() => {})
+    return 'signin'
+  }
+}

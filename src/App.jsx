@@ -1,3 +1,4 @@
+import { setMacroLookups } from './ai'
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from './firebase'
@@ -242,6 +243,7 @@ function Bank({ user }) {
 
   // (calculations tolerate a profile that hasn't loaded yet so the hooks below always run in the same order)
   const pf = profile ?? {}
+  setMacroLookups(pf.macros) // lookups ask for protein, carbs and fat only when macro tracking is on
   const base = profile ? dailyBudget(profile, today) : null
   const dayLog = pf.days?.[today] ?? {}
   const earn = earned(dayLog, pf.weight)
@@ -453,7 +455,7 @@ function Bank({ user }) {
           onClose={() => setAdding(false)}
           onRemove={(old) => {
             store.removeEntry(old.id)
-            notify(`Removed ${old.name}`, () => store.addEntry({ name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo, day: old.day, cat: old.cat, serving: old.serving, full: old.full }))
+            notify(`Removed ${old.name}`, () => store.addEntry({ name: old.name, kcal: old.kcal, meal: old.meal, photo: old.photo, day: old.day, cat: old.cat, serving: old.serving, full: old.full, p: old.p, c: old.c, f: old.f }))
             setAdding(false)
           }}
           onSave={(e) => {

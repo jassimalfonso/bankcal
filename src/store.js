@@ -3,8 +3,8 @@
 // sync automatically when the phone is back online.
 import { useCallback, useEffect, useState } from 'react'
 import { collection, deleteDoc, deleteField, doc, getDocs, limit, onSnapshot, orderBy, query, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
-import { db } from './firebase'
-import { dayKey } from './calc'
+import { db, leaving, removeSignIn } from './firebase'
+import { dayKey, macrosOf } from './calc'
 
 // You two are set up automatically; everyone else picks their own.
 const PRESETS = {
@@ -59,7 +59,7 @@ export function useStore(user) {
           setDoc(ref, { freshV1: true }, { merge: true }).then(() => wipeProgress(uid))
         }
         setProfile({ ...BLANK, ...data })
-      } else if (!snap.metadata.fromCache) {
+      } else if (!snap.metadata.fromCache && !leaving.on) {
         const preset = PRESETS[user.email?.toLowerCase()] ?? { name: user.displayName?.split(' ')[0] ?? '' }
         const fresh = { ...BLANK, ...preset, email: user.email, createdAt: Date.now(), freshV1: true }
         setProfile(fresh)
@@ -72,12 +72,14 @@ export function useStore(user) {
   }, [uid, user.email, user.displayName])
 
   const updateProfile = useCallback((patch) => {
+    if (leaving.on) return
     setProfile((p) => ({ ...p, ...patch }))
     setDoc(doc(db, 'users', uid), patch, { merge: true })
   }, [uid])
 
   // Per-day log (steps, treadmill, weight) kept in the profile doc as days.{YYYY-MM-DD}.
   const setDay = useCallback((key, patch) => {
+    if (leaving.on) return
     setProfile((p) => ({ ...p, days: { ...(p.days ?? {}), [key]: { ...(p.days?.[key] ?? {}), ...patch } } }))
     // drop empty (undefined) fields first: the database refuses them
     const clean = JSON.parse(JSON.stringify(patch))
@@ -87,14 +89,14 @@ export function useStore(user) {
   const addEntry = useCallback((e) => {
     const ref = doc(collection(db, 'users', uid, 'entries'))
     const now = new Date()
-    const entry = { ts: now.getTime(), day: e.day ?? dayKey(now), name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo ?? null, ...(e.cat ? { cat: e.cat } : {}), ...(e.full > 0 ? { full: Math.round(e.full) } : {}), ...(e.serving ? { serving: String(e.serving).slice(0, 30) } : {}) }
+    const entry = { ts: now.getTime(), day: e.day ?? dayKey(now), name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo ?? null, ...(e.cat ? { cat: e.cat } : {}), ...(e.full > 0 ? { full: Math.round(e.full) } : {}), ...(e.serving ? { serving: String(e.serving).slice(0, 30) } : {}), ...macrosOf(e) }
     setDoc(ref, entry) // the local cache updates instantly; the cloud catches up when online
     return ref.id
   }, [uid])
 
   const removeEntry = useCallback((id) => { deleteDoc(doc(db, 'users', uid, 'entries', id)) }, [uid])
   const updateEntry = useCallback((id, patch) => {
-    const keep = Object.fromEntries(Object.entries(patch).filter(([k]) => ['name', 'kcal', 'meal', 'photo', 'cat', 'serving', 'full'].includes(k)))
+    const keep = Object.fromEntries(Object.entries(patch).filter(([k]) => ['name', 'kcal', 'meal', 'photo', 'cat', 'serving', 'full', 'p', 'c', 'f'].includes(k)))
     setDoc(doc(db, 'users', uid, 'entries', id), keep, { merge: true })
   }, [uid])
 
@@ -104,7 +106,26 @@ export function useStore(user) {
     await wipeProgress(uid)
   }, [uid])
 
-  return { profile, entries, updateProfile, setDay, addEntry, removeEntry, updateEntry, resetProgress }
+  // Delete everything this account holds, then the sign-in itself. Returns 'done', or 'signin'
+  // when the data is gone but Google wants a fresh sign-in before the account can be removed.
+  const deleteAccount = useCallback(async (inviteCode) => {
+    leaving.on = true // nothing may be written back while we delete
+    try {
+      const snap = await getDocs(collection(db, 'users', uid, 'entries'))
+      for (let i = 0; i < snap.docs.length; i += 450) {
+        const b = writeBatch(db)
+        snap.docs.slice(i, i + 450).forEach((d) => b.delete(d.ref))
+        await b.commit()
+      }
+      if (inviteCode) await deleteDoc(doc(db, 'invites', inviteCode)).catch(() => {})
+      await deleteDoc(doc(db, 'shares', uid)).catch(() => {})
+      await deleteDoc(doc(db, 'users', uid))
+      try { Object.keys(localStorage).filter((k) => k.startsWith('bankcal:')).forEach((k) => localStorage.removeItem(k)) } catch { /* ignore */ }
+    } catch (e) { leaving.on = false; throw e }
+    return removeSignIn()
+  }, [uid])
+
+  return { profile, entries, updateProfile, setDay, addEntry, removeEntry, updateEntry, resetProgress, deleteAccount }
 }
 
 // Shrink a camera photo to a small JPEG thumbnail so cloud storage stays tiny (~8–15 KB).

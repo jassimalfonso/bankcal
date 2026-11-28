@@ -2,7 +2,7 @@ import Calendar from './Calendar'
 import { MILESTONES } from '../milestones'
 import { useRef, useState } from 'react'
 import { useSideFit } from '../motion'
-import { dayKey, deficitDays, earned, sleepInsights, sleepCoach, SLEEP_STRATEGIES, weightCheck, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
+import { sumMacros, dayKey, deficitDays, earned, sleepInsights, sleepCoach, SLEEP_STRATEGIES, weightCheck, fmt, KCAL_PER_KG, fmtSleep, sleepHours, SLEEP_TARGET } from '../calc'
 import { Row, mealKey } from './Today'
 import BodyCard from './BodyCard'
 import Progress from './Progress'
@@ -138,6 +138,7 @@ function DayDetail({ d, budget, profile, onFull }) {
         <div><small>Budget</small><b>{log.party ? 'Free 🎉' : budget != null ? `${fmt(budget)} kcal` : '—'}</b></div>
         <div><small>Burned</small><b>{burn.total ? `+${fmt(burn.total)} kcal` : '—'}</b></div>
         <div><small>Steps</small><b>{+log.steps ? fmt(+log.steps) : '—'}</b></div>
+        {profile?.macros && sumMacros(d.items).n > 0 && (() => { const m = sumMacros(d.items); return <div className="wide"><small>Protein, carbs, fat{m.n < m.of ? ` (from ${m.n} of ${m.of} foods)` : ''}</small><b>{m.p} g, {m.c} g, {m.f} g</b></div> })()}
         {(log.workouts ?? []).length > 0 && <div className="wide"><small>Workouts</small><b>{log.workouts.map((w) => w.label).filter(Boolean).join(', ') || `${log.workouts.length} logged`}</b></div>}
         {slept != null && <div className="wide"><small>Sleep the night before</small><b>{fmtSleep(slept)} · {log.sleep.bed} → {log.sleep.wake}</b></div>}
       </div>

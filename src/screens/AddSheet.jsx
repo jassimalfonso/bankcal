@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CATS, catById, catOf, keyOf as catKey } from '../foodCats'
 import { compressPhoto } from '../store'
-import { fmt, mealFor } from '../calc'
+import { macrosOf, fmt, mealFor } from '../calc'
 import { searchFoods } from '../foods'
 import { askFood, cleanFoods, warmFood } from '../ai'
 import { shareLookups } from '../partner'
@@ -199,7 +199,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
   const suggestions = useMemo(() => {
     const t = name.trim().toLowerCase()
     if (picked || t.length < 2) return []
-    const saved = myFoods.filter((f) => f.name.toLowerCase().includes(t)).map((f) => ({ name: f.name, kcal: f.kcal, portion: f.portion || 'my food', serving: f.serving }))
+    const saved = myFoods.filter((f) => f.name.toLowerCase().includes(t)).map((f) => ({ name: f.name, kcal: f.kcal, portion: f.portion || 'my food', serving: f.serving, ...macrosOf(f) }))
     const past = recent.filter((r) => r.name.toLowerCase().includes(t) && !saved.some((s) => s.name.toLowerCase() === r.name.toLowerCase())).map((r) => ({ name: r.name, kcal: r.kcal, portion: 'your usual' }))
     const qw = words(t)
     const shared = theirs.filter((f) => { const fw = words(f.name); return qw.every((w) => fw.some((x) => x.startsWith(w))) && !saved.some((o) => o.name.toLowerCase() === f.name.toLowerCase()) })
@@ -220,8 +220,17 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
   const [base, setBase] = useState(null)
   const [mult, setMult] = useState(1)
   const base0 = useRef(0) // the kcal the chosen food came with, before any change
+  // Macros (only when switched on in Settings). `mac` is what the chosen food came with, scaled as
+  // the calories change; `macIn` is what you typed over it, which then stays as typed.
+  const macrosOn = !!profile?.macros
+  const [mac, setMac] = useState(() => ('p' in macrosOf(editing) ? { kcal: editing.kcal, ...macrosOf(editing) } : null))
+  const [macIn, setMacIn] = useState(null)
+  const takeMac = (f) => { setMac('p' in macrosOf(f) ? { kcal: Number(f.kcal) || 0, ...macrosOf(f) } : null); setMacIn(null) }
+  const macAuto = mac ? macrosOf(mac, mac.kcal > 0 ? n / mac.kcal : 1) : {}
+  const macNow = !macrosOn ? {} : macIn ? macrosOf(macIn) : picked ? macAuto : {}
   function choose(f) {
     base0.current = f.kcal
+    takeMac(f)
     setName(f.name)
     setKcal(String(f.kcal))
     setPicked(true)
@@ -360,6 +369,7 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
       j.name = typeof j.name === 'string' ? j.name.slice(0, 120) : ''
       setName(j.name || 'Meal')
       setKcal(String(Math.round(j.kcal)))
+      takeMac(j)
       setPicked(true)
       setAi({ busy: false, err: '', results: null, items: cleanFoods(j.items), confidence: typeof j.confidence === 'string' ? j.confidence : '' })
     } catch (e) {
@@ -373,10 +383,10 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
   const more50 = useRepeat(() => bump(50), n >= 5000)
   // hold a saved or recent food to log it straight away, without opening it
   const [holdTip, setHoldTip] = useState(() => { try { return !localStorage.getItem('bankcal:hint:hold-food') } catch { return false } })
-  const logNow = (f) => onSave({ name: f.name, kcal: Math.round(f.kcal), meal, cat: catOf(f, cats), serving: (f.serving || realPortion(f.portion)).trim().slice(0, 30), ...(f.full > 0 ? { full: f.full } : {}) })
+  const logNow = (f) => onSave({ name: f.name, kcal: Math.round(f.kcal), meal, cat: catOf(f, cats), serving: (f.serving || realPortion(f.portion)).trim().slice(0, 30), ...(f.full > 0 ? { full: f.full } : {}), ...(macrosOn ? macrosOf(f) : {}) })
   const quick = peek || editing ? null : (f) => {
     if (holdTip) { firstTime('hold-food'); setHoldTip(false) }
-    onSave({ name: f.name, kcal: Math.round(f.kcal), meal, cat: catOf(f, cats), serving: (f.serving || realPortion(f.portion)).trim().slice(0, 30), ...(f.full > 0 ? { full: f.full } : {}) })
+    onSave({ name: f.name, kcal: Math.round(f.kcal), meal, cat: catOf(f, cats), serving: (f.serving || realPortion(f.portion)).trim().slice(0, 30), ...(f.full > 0 ? { full: f.full } : {}), ...(macrosOn ? macrosOf(f) : {}) })
   }
 
   function save() {
@@ -391,13 +401,13 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
     const full = source > 0 ? source : 0 // kept even when equal, so a partner can tell "this is the full portion"
     const had = myFoods.find((f) => f.name.toLowerCase() === one.toLowerCase())
     if (keep && !had) {
-      updateProfile({ myFoods: [{ id: String(Date.now()), name: one, kcal: Math.round(n / qty), portion: 'my food', cat, ...(full ? { full } : {}), ...(sv ? { serving: sv } : {}) }, ...myFoods].slice(0, 60) })
+      updateProfile({ myFoods: [{ id: String(Date.now()), name: one, kcal: Math.round(n / qty), portion: 'my food', cat, ...(full ? { full } : {}), ...(sv ? { serving: sv } : {}), ...macrosOf(macNow, 1 / (qty || 1)) }, ...myFoods].slice(0, 60) })
     } else if (had && myFoods[0] !== had && !editing) {
       // the ones you use most float to the top
       updateProfile({ myFoods: [had, ...myFoods.filter((f) => f !== had)] })
     }
     const label = { 0.5: '½', 1.5: '1½', 2: '2', 3: '3' }[mult]
-    onSave({ name: picked && label ? `${nm} ×${label}` : nm, kcal: n, meal, photo, cat, serving: sv, ...(full ? { full } : {}) })
+    onSave({ name: picked && label ? `${nm} ×${label}` : nm, kcal: n, meal, photo, cat, serving: sv, ...(full ? { full } : {}), ...macNow })
   }
 
   return (
@@ -468,6 +478,17 @@ export default function AddSheet({ notify, partner, mine, todays, budget, onClos
             </div>
           )
         })()}
+        {macrosOn && !peek && (picked || n > 0) && (
+          <div className="macro-row" role="group" aria-label="Macros in grams, optional">
+            {[['p', 'Protein'], ['c', 'Carbs'], ['f', 'Fat']].map(([k, label]) => (
+              <label key={k}>
+                <span>{label} (g)</span>
+                <input inputMode="decimal" autoComplete="off" name={`macro-${k}`} placeholder="–" value={macIn ? macIn[k] : picked && macAuto[k] != null ? String(macAuto[k]) : ''}
+                  onChange={(e) => setMacIn({ ...(macIn ?? { p: picked ? String(macAuto.p ?? '') : '', c: picked ? String(macAuto.c ?? '') : '', f: picked ? String(macAuto.f ?? '') : '' }), [k]: e.target.value.replace(',', '.').replace(/[^\d.]/g, '').slice(0, 5) })} />
+              </label>
+            ))}
+          </div>
+        )}
         {picked && base?.per100 > 0 && !editing && <p className="per100">About {fmt(base.per100)} kcal per 100 {base.cat === 'drink' ? 'ml' : 'g'}</p>}
         {picked && base?.full > 0 && !editing && (
           <div className="whose" role="radiogroup" aria-label="Which amount">

@@ -615,7 +615,7 @@ export function usualFoods(entries, limit = 60) {
     if (!name || seen.has(k) || !(e.kcal >= 0)) continue
     seen.add(k)
     const q = m ? QTY[m[1]] ?? +m[1] : 1
-    out.push({ name: name.slice(0, 120), kcal: Math.round(e.kcal / (q || 1)), ...(e.cat ? { cat: e.cat } : {}), ...(e.full > 0 ? { full: e.full } : {}), ...(e.serving ? { serving: e.serving } : {}) })
+    out.push({ name: name.slice(0, 120), kcal: Math.round(e.kcal / (q || 1)), ...(e.cat ? { cat: e.cat } : {}), ...(e.full > 0 ? { full: e.full } : {}), ...(e.serving ? { serving: e.serving } : {}), ...macrosOf(e, 1 / (q || 1)) })
     if (out.length >= limit) break
   }
   return out
@@ -722,4 +722,22 @@ export function replayDays({ entries, profile, budgetFor, keys }) {
     steps: days.reduce((a, d) => a + d.steps, 0),
     weightChange: weighed.length > 1 ? Math.round((weighed.at(-1).weight - weighed[0].weight) * 10) / 10 : null,
   }
+}
+
+// ───────── Macros (optional) ─────────
+// Protein, carbs and fat in grams. All three or nothing; k scales them (half a portion, one of three…).
+export function macrosOf(x, k = 1) {
+  const out = {}
+  for (const m of ['p', 'c', 'f']) {
+    const v = Number(x?.[m])
+    if (x?.[m] == null || x[m] === '' || !Number.isFinite(v) || v < 0 || v > 2000) return {}
+    out[m] = Math.round(v * k * 10) / 10
+  }
+  return out
+}
+// A day's totals, and how many of its foods carried macros at all
+export function sumMacros(entries) {
+  let p = 0, c = 0, f = 0, n = 0
+  for (const e of entries) { const m = macrosOf(e); if ('p' in m) { p += m.p; c += m.c; f += m.f; n++ } }
+  return { p: Math.round(p), c: Math.round(c), f: Math.round(f), n, of: entries.length }
 }

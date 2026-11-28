@@ -72,12 +72,12 @@ async function ask(key, model, parts, extra, signal) {
 // `hint` = the model and thinking setting that worked last time on this phone. The function
 // goes to sleep between uses (there are only a few users), so without the hint every search
 // would spend a second or two re-learning which setting the model accepts.
-async function callGemini(key, parts, kind, hint) {
+async function callGemini(key, parts, kind, hint, guest = false) {
   const tried = new Set()
   let busy = false
   let empties = 0
   let emptyOut = null
-  if (!good[kind] && hint && /^gemini-[\w.-]+$/.test(hint.model || '') && THINKING[hint.x]) good[kind] = { model: hint.model, extra: THINKING[hint.x] }
+  if (!guest && !good[kind] && hint && /^gemini-[\w.-]+$/.test(hint.model || '') && THINKING[hint.x]) good[kind] = { model: hint.model, extra: THINKING[hint.x] }
   const signal = AbortSignal.timeout(kind === 'photo' ? 45000 : 12000)
   const attempt = async (model, known) => {
     if (!model || tried.has(model)) return null
@@ -89,11 +89,11 @@ async function callGemini(key, parts, kind, hint) {
       if (r.rejected) continue
       if (r.busy) { busy = true; return null }
       if (r.gone) break
-      good[kind] = { model, extra }
+      if (!guest) good[kind] = { model, extra } // a guest's run never changes which model the owners start with
       if (r.empty) { empties++; emptyOut = r.out; return null }
       return r.out
     }
-    if (good[kind]?.model === model) good[kind] = null
+    if (!guest && good[kind]?.model === model) good[kind] = null
     return null
   }
   try {
@@ -105,8 +105,10 @@ async function callGemini(key, parts, kind, hint) {
     const lite = 'gemini-flash-lite-latest'
     const full = 'gemini-flash-latest'
     if (kind !== 'photo' && good[kind] && !/lite/.test(good[kind].model)) good[kind] = null // don't let a one-off rescue by the full model stick
-    const first = good[kind]?.model ?? OVERRIDE[0] ?? (kind === 'photo' ? full : lite)
-    const second = first === full ? lite : full
+    // Guests (anyone not in OWNER_EMAILS) only ever use the lite model, so the full model's
+    // small daily allowance stays with the owners.
+    const first = guest ? lite : good[kind]?.model ?? OVERRIDE[0] ?? (kind === 'photo' ? full : lite)
+    const second = guest ? null : first === full ? lite : full
     const known = good[kind]?.model === first ? good[kind].extra : undefined
     const out = await new Promise((resolve) => {
       let done = false
@@ -120,10 +122,10 @@ async function callGemini(key, parts, kind, hint) {
       attempt(first, known).then((o) => { if (!o) startSecond(); fin(o) }, () => { startSecond(); fin(null) })
     })
     if (out) return out
-    if (emptyOut && tried.has(first) && tried.has(second)) return emptyOut // two models agree there's nothing
-    for (const m of [...OVERRIDE, lite, full]) { const o = await attempt(m); if (o) return o }
+    if (emptyOut && tried.has(first) && (guest || tried.has(second))) return emptyOut // two models agree there's nothing
+    for (const m of guest ? [] : [...OVERRIDE, lite, full]) { const o = await attempt(m); if (o) return o }
     if (emptyOut) return emptyOut
-    const found = await discover(key)
+    const found = guest ? (await discover(key)).filter((m) => /lite/.test(m)) : await discover(key)
     const ordered = kind === 'photo' ? found : [...found.filter((m) => /lite/.test(m)), ...found.filter((m) => !/lite/.test(m))]
     for (const m of ordered.slice(0, 6)) { const o = await attempt(m); if (o) return o; if (emptyOut) return emptyOut }
   } catch (e) {
@@ -138,6 +140,14 @@ export { callGemini as _callGemini } // for tests
 
 const txt = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v) : '').trim()
 const CATS = ['meal', 'fruit', 'snack', 'drink', 'side']
+// Asked for only when the person has macro tracking switched on
+const MACROS = ' Also give the protein, carbohydrate and fat in grams for that exact portion as numbers "p", "c" and "f" on every food (and on the whole plate for a photo).'
+// protein, carbs and fat in grams, kept only when they are sensible numbers
+export function macrosOf(x) {
+  const out = {}
+  for (const k of ['p', 'c', 'f']) { const v = Number(x?.[k]); if (x?.[k] != null && x[k] !== '' && Number.isFinite(v) && v >= 0 && v <= 600) out[k] = Math.round(v * 10) / 10 }
+  return Object.keys(out).length === 3 ? out : {}
+}
 // Tidy what the model returned, and check each answer against itself: the weight and the kcal per
 // 100 g are facts models know better than a plate's total, so when weight × per-100 disagrees with
 // the total by a lot, the total is recomputed from them.
@@ -152,7 +162,7 @@ export function tidyFoods(list, limit = 6) {
     }
     let portion = txt(x?.portion).slice(0, 60)
     if (checked && !/\d\s*(g|ml|kg|l)\b/i.test(portion)) portion = `${portion || '1 serving'} (${Math.round(g)} ${x?.cat === 'drink' ? 'ml' : 'g'})`.slice(0, 60)
-    return { name: txt(x?.name).slice(0, 120), portion, kcal, ...(CATS.includes(x?.cat) ? { cat: x.cat } : {}), ...(checked ? { per100: Math.round(per100) } : {}), ...(['size', 'style', 'brand'].includes(x?.group) ? { group: x.group } : {}) }
+    return { name: txt(x?.name).slice(0, 120), portion, kcal, ...(CATS.includes(x?.cat) ? { cat: x.cat } : {}), ...(checked ? { per100: Math.round(per100) } : {}), ...(['size', 'style', 'brand'].includes(x?.group) ? { group: x.group } : {}), ...macrosOf(x) }
   }).filter((x) => x.name && Number.isFinite(x.kcal) && x.kcal >= 0 && x.kcal < 6000).slice(0, limit)
 }
 
@@ -178,7 +188,10 @@ function productRows(p) {
   const packQ = Number(p.product_quantity)
   if (Number.isFinite(per100) && packQ > 0 && packQ <= 3000 && Math.round(per100 * packQ / 100) !== Math.round(serving)) out.push({ name, portion: `whole pack (${txt(p.quantity).slice(0, 20) || `${packQ} ${unit}`})`, kcal: Math.round(per100 * packQ / 100) })
   if (Number.isFinite(per100)) out.push({ name, portion: `100 ${unit}`, kcal: Math.round(per100) })
-  return out.filter((x) => x.kcal >= 0 && x.kcal < 6000).map((x) => ({ ...x, ...(Number.isFinite(per100) ? { per100: Math.round(per100) } : {}), ...(drink ? { cat: 'drink' } : {}), barcode: true }))
+  // the label's protein, carbs and fat per 100, scaled to each row's amount
+  const per = { p: n.proteins_100g, c: n.carbohydrates_100g, f: n.fat_100g }
+  const macros = (kcal) => (per100 > 0 ? macrosOf(Object.fromEntries(Object.entries(per).map(([k, v]) => [k, v == null || v === '' ? null : Number(v) * kcal / per100]))) : {})
+  return out.filter((x) => x.kcal >= 0 && x.kcal < 6000).map((x) => ({ ...x, ...(Number.isFinite(per100) ? { per100: Math.round(per100) } : {}), ...(drink ? { cat: 'drink' } : {}), ...macros(x.kcal), barcode: true }))
 }
 
 // The food database, by name: used when the AI's free searches for the day are used up.
@@ -210,11 +223,46 @@ export async function barcodeFoods(code, fetcher = fetch) {
   if (!p || j.status === 0) return []
   return productRows(p)
 }
+// ───────── Owners first ─────────
+// OWNER_EMAILS (Vercel env, comma-separated Google emails) names the people the free AI allowance
+// is kept for. Everyone else is a guest: lite model only, and a daily cap counted in their own
+// profile document. With OWNER_EMAILS unset, nobody is a guest and nothing is capped.
+const OWNERS = (process.env.OWNER_EMAILS || '').toLowerCase().split(/[\s,;]+/).filter(Boolean)
+export const isGuest = (email, owners = OWNERS) => owners.length > 0 && !owners.includes(String(email || '').toLowerCase())
+export const GUEST_CAP = { search: 30, photo: 5 }
+const FS = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`
+// the allowance resets at midnight Pacific time, so the count does too
+const quotaDay = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
+// What's left for a guest today, and a function that counts one use. Fails open: if the count
+// can't be read, the search still goes ahead.
+export async function guestGate(token, uid, kind, fetcher = fetch) {
+  const day = quotaDay()
+  let used = { search: 0, photo: 0 }
+  try {
+    const r = await fetcher(`${FS}/users/${uid}?mask.fieldPaths=aiUse`, { headers: { authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(2500) })
+    const f = r.ok ? (await r.json()).fields?.aiUse?.mapValue?.fields : null
+    if (f?.d?.stringValue === day) used = { search: Number(f.s?.integerValue) || 0, photo: Number(f.p?.integerValue) || 0 }
+  } catch { /* fail open */ }
+  const ok = used[kind] < GUEST_CAP[kind]
+  const count = () => {
+    const next = { ...used, [kind]: used[kind] + 1 }
+    return fetcher(`${FS}/users/${uid}?updateMask.fieldPaths=aiUse`, {
+      method: 'PATCH', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, signal: AbortSignal.timeout(2500),
+      body: JSON.stringify({ fields: { aiUse: { mapValue: { fields: { d: { stringValue: day }, s: { integerValue: String(next.search) }, p: { integerValue: String(next.photo) } } } } } }),
+    }).catch(() => {})
+  }
+  return { ok, count }
+}
+const capped = () => Object.assign(new Error('You’ve used today’s AI lookups. They’re back around noon UAE time. You can still type the calories yourself.'), { status: 429 })
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST' })
+  let token, me, guest
   try {
-    const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '')
-    await jwtVerify(token, JWKS, { issuer: `https://securetoken.google.com/${PROJECT}`, audience: PROJECT })
+    token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '')
+    const { payload } = await jwtVerify(token, JWKS, { issuer: `https://securetoken.google.com/${PROJECT}`, audience: PROJECT })
+    me = payload.sub
+    guest = isGuest(payload.email)
   } catch {
     return res.status(401).json({ error: 'Please sign in again.' })
   }
@@ -223,6 +271,7 @@ export default async function handler(req, res) {
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {}
   const t0 = Date.now()
+  const more = body.macros === true ? MACROS : ''
   // which model answered and how long it took, so the phone can skip the warm-up next time
   const via = (kind) => ({ model: good[kind]?.model ?? '', x: Math.max(0, THINKING.indexOf(good[kind]?.extra)), ms: Date.now() - t0 })
   try {
@@ -235,7 +284,10 @@ export default async function handler(req, res) {
     if (body.mode === 'photo') {
       const m = /^data:(image\/\w+);base64,(.+)$/.exec(body.image || '')
       if (!m) return res.status(400).json({ error: 'No photo received.' })
-      const out = await callGemini(key, [{ text: PROMPTS.photo }, { inline_data: { mime_type: m[1], data: m[2] } }], 'photo', body.hint)
+      const gate = guest ? await guestGate(token, me, 'photo') : null
+      if (gate && !gate.ok) throw capped()
+      const out = await callGemini(key, [{ text: PROMPTS.photo + more }, { inline_data: { mime_type: m[1], data: m[2] } }], 'photo', body.hint, guest)
+      await gate?.count()
       // a readable barcode in the photo: the product's own numbers beat an estimate
       const code = txt(out?.barcode).replace(/\D/g, '')
       const pack = code ? await barcodeFoods(code).catch(() => []) : []
@@ -246,7 +298,10 @@ export default async function handler(req, res) {
       if (q.length < 2) return res.status(400).json({ error: 'Type a little more.' })
       let out
       try {
-        const raw = await callGemini(key, [{ text: PROMPTS.search(q) }], 'search', body.hint)
+        const gate = guest ? await guestGate(token, me, 'search') : null
+        if (gate && !gate.ok) throw capped()
+        const raw = await callGemini(key, [{ text: PROMPTS.search(q) + more }], 'search', body.hint, guest)
+        await gate?.count()
         out = { results: tidyFoods(raw?.results), via: via('search') }
       } catch (e) {
         // the AI's free searches are used up: answer from the food database instead
@@ -263,7 +318,10 @@ export default async function handler(req, res) {
       const q = String(body.q || '').replace(/["\\\n\r]/g, ' ').slice(0, 80).trim()
       if (q.length < 2) return res.status(400).json({ error: 'Type a little more.' })
       const have = (Array.isArray(body.have) ? body.have : []).slice(0, 8).map((x) => txt(x).replace(/["\\\n\r]/g, ' ').slice(0, 60)).filter(Boolean).join('; ')
-      const raw = await callGemini(key, [{ text: PROMPTS.more(q, have) }], 'search', body.hint)
+      const gate = guest ? await guestGate(token, me, 'search') : null
+      if (gate && !gate.ok) throw capped()
+      const raw = await callGemini(key, [{ text: PROMPTS.more(q, have) + more }], 'search', body.hint, guest)
+      await gate?.count()
       res.setHeader('Cache-Control', 'private, max-age=3600')
       return res.status(200).json({ results: tidyFoods(raw?.results, 8), via: via('search') })
     }
@@ -277,7 +335,10 @@ export default async function handler(req, res) {
       const q = String(body.q || '').replace(/["\\\n\r]/g, ' ').slice(0, 60).trim()
       if (q.length < 3) return res.status(400).json({ error: 'Type a little more.' })
       const haveEx = (Array.isArray(body.have) ? body.have : []).slice(0, 10).map((x) => txt(x).replace(/["\\\n\r]/g, ' ').slice(0, 60)).filter(Boolean).join('; ')
-      const raw = await callGemini(key, [{ text: PROMPTS.exercise(q, haveEx) }], 'search', body.hint)
+      const gate = guest ? await guestGate(token, me, 'search') : null
+      if (gate && !gate.ok) throw capped()
+      const raw = await callGemini(key, [{ text: PROMPTS.exercise(q, haveEx) }], 'search', body.hint, guest)
+      await gate?.count()
       const txt = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v) : '').trim()
       const out = { results: (Array.isArray(raw?.results) ? raw.results : [])
         .map((x) => ({ name: txt(x?.name).slice(0, 60), emoji: txt(x?.emoji).slice(0, 8), kind: ['reps', 'time', 'minutes'].includes(x?.kind) ? x.kind : 'minutes', met: Math.round(Number(x?.met) * 10) / 10, weighted: x?.weighted === true, each: x?.each === true }))

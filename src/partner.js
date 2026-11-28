@@ -3,7 +3,7 @@
 //   invites/{code} a short-lived pairing code
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { arrayUnion, deleteDoc, deleteField, doc, getDoc, increment, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
-import { auth, db } from './firebase'
+import { auth, db, leaving } from './firebase'
 import { myWorkouts } from './training'
 import { catOf } from './foodCats'
 export { usualFoods } from './calc'
@@ -50,7 +50,7 @@ export function usePartners({ enabled, uid, profile, updateProfile, summary, not
     const workouts = profile.shareFoods === false ? [] : myWorkouts(profile).slice(0, 30).map(({ item }) => Object.fromEntries(pick.filter((k) => item[k] != null && item[k] !== '').map((k) => [k, item[k]])))
     const data = { uid, name: profile.name, character: profile.character, theme: profile.theme, partners, foods, workouts, ...summary }
     const sig = JSON.stringify(data)
-    if (sig === last.current) return
+    if (sig === last.current || leaving.on) return
     last.current = sig
     setDoc(doc(db, 'shares', uid), { ...data, updatedAt: Date.now() }, { merge: true }).catch(() => {})
   }, [enabled, uid, profile?.onboarded, profile?.name, profile?.character, profile?.theme, partners.join(','), JSON.stringify(summary), profile?.shareFoods, JSON.stringify(profile?.myFoods ?? []), JSON.stringify(usual), JSON.stringify(profile?.foodCats ?? {}), JSON.stringify(profile?.routine ?? []), JSON.stringify(profile?.customEx ?? [])]) // eslint-disable-line react-hooks/exhaustive-deps

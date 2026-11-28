@@ -5,7 +5,7 @@ import { useCountUp, useSwipe, useSideFit, useEscape, useSheetDrag } from '../mo
 import { IconClose } from '../icons'
 import { useHold, HoldConfirm } from '../Hold'
 import { firstTime } from '../keyboard'
-import { breakdown, dayKey, fmt, KCAL_PER_KG, mealFor, usualFor } from '../calc'
+import { breakdown, dayKey, fmt, KCAL_PER_KG, macrosOf, mealFor, sumMacros, usualFor } from '../calc'
 import { CATS, catOf, foodEmoji } from '../foodCats'
 import Character, { moodFor } from '../Character'
 import { missingFor } from '../calc'
@@ -78,7 +78,7 @@ export default function Today(props) {
   const usedRowTip = () => { if (rowTip) { firstTime('row-gestures'); setRowTip(false) } }
   const again = (e) => {
     const one = oneServing(e)
-    props.logFood?.({ name: one.name, kcal: one.kcal, meal: mealFor(), ...(e.cat ? { cat: e.cat } : {}), ...(e.serving ? { serving: e.serving } : {}) })
+    props.logFood?.({ name: one.name, kcal: one.kcal, ...macrosOf(one), meal: mealFor(), ...(e.cat ? { cat: e.cat } : {}), ...(e.serving ? { serving: e.serving } : {}) })
   }
   const spent = todays.reduce((a, e) => a + e.kcal, 0)
   const left = budget != null ? budget - spent : null
@@ -163,6 +163,16 @@ export default function Today(props) {
               <div><b className="pos">+{fmt(shownEarn)}</b><span>Burned</span></div>
               <div><b>{party ? 'Free' : fmt(budget)}</b><span>Budget</span></div>
             </div>
+            {profile.macros && todays.length > 0 && (() => {
+              const m = sumMacros(todays)
+              if (!m.n) return <p className="hero-macros none">No macros on today’s foods yet. Look a food up, or type them when you log.</p>
+              return (
+                <p className="hero-macros" aria-label={`Macros today: protein ${m.p} grams, carbs ${m.c} grams, fat ${m.f} grams`}>
+                  <span><b>{fmt(m.p)} g</b> protein</span><span><b>{fmt(m.c)} g</b> carbs</span><span><b>{fmt(m.f)} g</b> fat</span>
+                  {m.n < m.of && <small>from {m.n} of {m.of} foods</small>}
+                </p>
+              )
+            })()}
             {party ? <p className="hero-break">Celebration day: no budget, and your streak is safe.</p> : <p className="hero-break">{earn.total > 0
               ? <>Today’s budget: <b>{fmt(base)}</b> base <span className="pos">+ <b>{fmt(earn.total)}</b> burned</span>{earn.work > 0 && earn.steps + earn.tread > 0 ? ` (workouts ${fmt(earn.work)}, steps and walking ${fmt(earn.steps + earn.tread)})` : earn.work > 0 ? ' from workouts' : ' from steps and walking'}</>
               : <>Today’s budget: <b>{fmt(base)}</b> base. Tick a workout or log steps to add burned calories.</>}</p>}
@@ -247,7 +257,7 @@ export default function Today(props) {
         onAgain={props.logFood ? () => { again(menu); setMenu(null) } : null}
         onEdit={() => { setMenu(null); props.editEntry?.(menu) }}
         onMeal={(m) => { const was = menu.meal; props.updateEntry?.(menu.id, { meal: m }); notify(`Moved ${menu.name} to ${m}`, () => props.updateEntry?.(menu.id, { meal: was })); setMenu(null) }}
-        onRemove={() => { const e = menu; removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo, cat: e.cat, serving: e.serving })); setMenu(null) }} />}
+        onRemove={() => { const e = menu; removeEntry(e.id); notify(`Removed ${e.name}`, () => addEntry({ name: e.name, kcal: e.kcal, meal: e.meal, photo: e.photo, cat: e.cat, serving: e.serving, ...macrosOf(e) })); setMenu(null) }} />}
       {!arranging && <p className="arrange-tip">Hold a card’s title (⠿) and drag it to move it. <button className="arrange-link" onClick={() => setArranging(true)}>Or arrange as a list</button></p>}
 
     </>
@@ -258,7 +268,7 @@ export default function Today(props) {
 export function oneServing(e) {
   const m = String(e.name).match(/\s×(1½|½|\d+)$/)
   const q = m ? ({ '½': 0.5, '1½': 1.5 }[m[1]] ?? +m[1]) : 1
-  return { name: m ? e.name.slice(0, m.index) : e.name, kcal: Math.round(e.kcal / (q || 1)) }
+  return { name: m ? e.name.slice(0, m.index) : e.name, kcal: Math.round(e.kcal / (q || 1)), ...macrosOf(e, 1 / (q || 1)) }
 }
 
 const MEALS = ['Breakfast', 'Lunch', 'Dinner', 'Snack']
@@ -331,7 +341,7 @@ function MealShortcut(props) {
   const total = had.reduce((a, e) => a + e.kcal, 0)
   const names = had.map((e) => e.name).join(', ')
   const add = () => {
-    const ids = had.map((e) => addEntry({ name: e.name, kcal: e.kcal, meal, ...(e.cat ? { cat: e.cat } : {}), ...(e.serving ? { serving: e.serving } : {}), ...(e.full > 0 ? { full: e.full } : {}) }))
+    const ids = had.map((e) => addEntry({ name: e.name, kcal: e.kcal, meal, ...(e.cat ? { cat: e.cat } : {}), ...(e.serving ? { serving: e.serving } : {}), ...(e.full > 0 ? { full: e.full } : {}), ...macrosOf(e) }))
     setDone(yKey + meal)
     notify?.(`Added yesterday’s ${meal.toLowerCase()} · ${fmt(total)} kcal`, () => { ids.forEach((id) => removeEntry(id)); setDone('') })
   }
