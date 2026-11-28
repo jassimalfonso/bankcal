@@ -2379,4 +2379,20 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 .tour-line { display: grid; grid-template-columns: 32px 1fr; align-items: center; gap: 12px; width: 100%; margin: 12px 0 0; padding: 16px; text-align: left; font-size: 22px; }
 .tour-line b { display: block; font-size: 16px; font-weight: 850; }
 .tour-line small { display: block; margin-top: 2px; font-size: 14px; font-weight: 650; color: var(--muted); }
-.tour-line + .more { margin-top: 12px; }
+.tour-line + .more, .tour-line + .tour-line + .more { margin-top: 12px; }
+
+/* ───── Owners: people using the app ───── */
+.admin-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.admin-list li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 16px; border-radius: 22px; background: var(--card); box-shadow: var(--shadow); }
+.al-main { min-width: 0; display: grid; gap: 2px; }
+.al-main b { font-size: 16px; font-weight: 850; overflow-wrap: anywhere; }
+.al-main b i { margin-left: 8px; padding: 2px 8px; border-radius: 99px; background: var(--soft); color: var(--accent); font-size: 12px; font-weight: 850; font-style: normal; vertical-align: 1px; white-space: nowrap; }
+.al-main b i.off { background: var(--line); color: var(--muted); }
+.al-main small { font-size: 14px; font-weight: 650; color: var(--muted); overflow-wrap: anywhere; }
+.admin-list .btn-soft { min-height: 44px; padding: 0 16px; }
+.admin-list .btn-soft.danger { color: var(--neg); }
+.admin-confirm { padding: 16px; display: grid; gap: 8px; }
+.admin-confirm p { margin: 0; font-size: 16px; line-height: 1.45; overflow-wrap: anywhere; }
+.admin-confirm .fine { font-size: 14px; }
+.admin-confirm .btn-plain { margin-top: 4px; box-shadow: none; background: var(--bg); }
+.admin-confirm .btn-plain.keep { color: var(--ink); }

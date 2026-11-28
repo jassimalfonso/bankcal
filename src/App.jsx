@@ -343,8 +343,10 @@ function Bank({ user }) {
   // The tour starts by itself once, for accounts made in the last week; anyone can replay it from Settings
   const [tour, setTour] = useState(false)
   useEffect(() => {
-    if (profile?.onboarded && !profile.tourSeen && profile.createdAt && Date.now() - profile.createdAt < 7 * 86400000 && !showM && !helloOn) setTour(true)
-  }, [profile?.onboarded, profile?.tourSeen, profile?.createdAt, showM, helloOn])
+    // (on 28 Nov 2026 only, everyone already signed in gets it once too)
+    const fresh = profile?.createdAt && Date.now() - profile.createdAt < 7 * 86400000
+    if (profile?.onboarded && !profile.tourSeen && (fresh || today === '2026-11-28') && !showM && !helloOn) setTour(true)
+  }, [profile?.onboarded, profile?.tourSeen, profile?.createdAt, showM, helloOn, today])
   const endTour = () => { setTour(false); setTab('today'); if (!profile?.tourSeen) { store.updateProfile({ tourSeen: true }); notify('You can replay the tour any time from Settings 🧭') } }
   const focus = profile?.onboarded ? oneThing({ profile: pf, todayKey: today, yesterday, plans: PLANS }) : null
 

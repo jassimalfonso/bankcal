@@ -11,6 +11,7 @@ import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
 import { HoldConfirm } from '../Hold'
 import { InstallSteps, isInstalled } from './Guide'
+import { AdminRow } from './Admin'
 import { soundOn, setSoundOn, testSound } from '../sound'
 
 // Each background comes with a matching colour; you can still pick another colour after.
@@ -321,6 +322,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
         <span aria-hidden="true">🧭</span>
         <span><b>Take the tour</b><small>A one-minute walk through the app</small></span>
       </button>
+      <AdminRow notify={notify} />
       <details className="more card">
         <summary>More settings</summary>
       <h3 className="more-h">Daily activity targets</h3>
