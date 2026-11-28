@@ -316,6 +316,10 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
         </Line>
       </div>
 
+      <button className="card tour-line" onClick={startTour}>
+        <span aria-hidden="true">🧭</span>
+        <span><b>Take the tour</b><small>A one-minute walk through the app</small></span>
+      </button>
       <details className="more card">
         <summary>More settings</summary>
       <h3 className="more-h">Daily activity targets</h3>
@@ -347,8 +351,7 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
         )}
         <h3 className="more-h">Add BankCal to your home screen</h3>
         {isInstalled() ? <p className="fine">Already on your home screen on this phone.</p> : <InstallSteps />}
-        <h3 className="more-h">New here?</h3>
-        <button className="btn-soft" onClick={startTour}>Take the tour</button>
+
       </details>
       <button className="btn-plain" onClick={logOut}>Sign out</button>
       <DeleteAccount profile={p} deleteAccount={deleteAccount} />

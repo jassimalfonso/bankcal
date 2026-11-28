@@ -2375,3 +2375,7 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 .tour-btns .btn-soft { min-height: 48px; padding: 0 20px; }
 .tour-btns .btn-primary { flex: 1; min-height: 48px; margin: 0; }
 @media (prefers-reduced-motion: reduce) { .tour-light { transition: none; } .tour-card { animation: none; } }
+
+.tour-line { display: grid; grid-template-columns: 32px 1fr; align-items: center; gap: 12px; width: 100%; margin-bottom: 12px; padding: 16px; text-align: left; font-size: 22px; }
+.tour-line b { display: block; font-size: 16px; font-weight: 850; }
+.tour-line small { display: block; margin-top: 2px; font-size: 14px; font-weight: 650; color: var(--muted); }
