@@ -10,6 +10,7 @@ import { BreaksSettings } from './Breaks'
 import { THEMES, BuddyGrid } from './Onboarding'
 import { logOut } from '../firebase'
 import { HoldConfirm } from '../Hold'
+import { InstallSteps, isInstalled } from './Guide'
 import { soundOn, setSoundOn, testSound } from '../sound'
 
 // Each background comes with a matching colour; you can still pick another colour after.
@@ -64,7 +65,7 @@ function DeleteAccount({ profile, deleteAccount }) {
   )
 }
 
-export default function Me({ user, profile: p, updateProfile, resetProgress, partner, openWords, today, celebrate, notify, party, setParty, deleteAccount }) {
+export default function Me({ user, profile: p, updateProfile, resetProgress, partner, openWords, today, celebrate, notify, party, setParty, deleteAccount, startTour }) {
   const [confirmReset, setConfirmReset] = useState(false)
   const sideRef = useRef(null)
   useSideFit(sideRef)
@@ -345,7 +346,9 @@ export default function Me({ user, profile: p, updateProfile, resetProgress, par
           </div>
         )}
         <h3 className="more-h">Add BankCal to your home screen</h3>
-        <p className="fine">iPhone: open in Safari, tap Share, then Add to Home Screen. Android: open in Chrome, tap ⋮, then Install app.</p>
+        {isInstalled() ? <p className="fine">Already on your home screen on this phone.</p> : <InstallSteps />}
+        <h3 className="more-h">New here?</h3>
+        <button className="btn-soft" onClick={startTour}>Take the tour</button>
       </details>
       <button className="btn-plain" onClick={logOut}>Sign out</button>
       <DeleteAccount profile={p} deleteAccount={deleteAccount} />

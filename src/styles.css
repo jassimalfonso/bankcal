@@ -2343,3 +2343,35 @@ input, textarea, [contenteditable] { -webkit-user-select: text; user-select: tex
 .delete-acct { margin-top: 12px; padding: 16px; display: grid; gap: 8px; }
 .delete-acct p { margin: 0; font-size: 16px; line-height: 1.45; }
 .delete-acct .fine { font-size: 14px; }
+
+/* ───── Install help ───── */
+.install-banner { display: grid; grid-template-columns: 40px 1fr; gap: 4px 12px; align-items: center; margin: 0 0 12px; padding: 16px; border-radius: 22px; background: var(--card); box-shadow: var(--shadow, 0 6px 20px rgba(0, 0, 0, 0.06)); }
+.install-banner .ib-icon { font-size: 26px; text-align: center; }
+.install-banner b { display: block; font-size: 16px; font-weight: 850; }
+.install-banner small { display: block; margin-top: 2px; font-size: 14px; font-weight: 650; color: var(--muted); }
+.install-banner .ib-btns { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+.install-banner .ib-btns .btn-soft { min-height: 44px; padding: 0 18px; }
+.install-banner .ib-btns .link-btn { margin: 0; color: var(--muted); }
+.install-steps { display: grid; gap: 12px; }
+.install-steps .is-lead { margin: 0; font-size: 16px; font-weight: 650; line-height: 1.45; }
+.install-steps ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.install-steps li { display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start; font-size: 16px; line-height: 1.45; }
+.install-steps .is-n { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--soft); color: var(--accent); font-weight: 850; font-variant-numeric: tabular-nums; }
+.install-steps b { font-weight: 850; }
+.share-glyph { display: inline-block; vertical-align: -5px; margin: 0 2px; color: var(--accent); }
+.install-done { width: 100%; min-height: 48px; margin-top: 18px; }
+.si-install { display: block; margin: 12px auto 0; font-size: 14px; text-align: center; }
+/* ───── Tour ───── */
+.tour { position: fixed; inset: 0; z-index: 90; }
+.tour-light { position: fixed; border-radius: 26px; box-shadow: 0 0 0 200vmax rgba(18, 18, 24, 0.62); transition: left 0.35s var(--ease), top 0.35s var(--ease), width 0.35s var(--ease), height 0.35s var(--ease); pointer-events: none; }
+.tour-card { position: fixed; left: 50%; bottom: calc(var(--safe-b) + 16px); transform: translateX(-50%); width: min(calc(100% - 24px), 440px); padding: 16px; border-radius: 22px; background: var(--bg); color: var(--ink); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3); display: grid; gap: 10px; animation: rise 0.3s var(--ease) backwards; max-height: 70dvh; overflow-y: auto; }
+.tour-card.up { bottom: auto; top: calc(var(--safe-t) + 16px); }
+.tour-top { display: flex; align-items: center; justify-content: space-between; min-height: 24px; }
+.tour-count { font-size: 14px; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tour-top .link-btn { margin: 0; font-size: 14px; }
+.tour-card h2 { font-size: 24px; font-weight: 850; line-height: 1.15; text-wrap: balance; }
+.tour-card p { margin: 0; font-size: 16px; line-height: 1.5; }
+.tour-btns { display: flex; gap: 10px; margin-top: 6px; }
+.tour-btns .btn-soft { min-height: 48px; padding: 0 20px; }
+.tour-btns .btn-primary { flex: 1; min-height: 48px; margin: 0; }
+@media (prefers-reduced-motion: reduce) { .tour-light { transition: none; } .tour-card { animation: none; } }

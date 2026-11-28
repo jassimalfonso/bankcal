@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { redirectResult, signIn } from '../firebase'
 import BankCard from './BankCard'
 import VersionLine from './VersionLine'
+import { InstallSheet, installKind, isInstalled } from './Guide'
 
 export default function SignIn() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [how, setHow] = useState(false)
 
   useEffect(() => {
     redirectResult.catch((e) => setErr(explain(e)))
@@ -50,6 +52,12 @@ export default function SignIn() {
       </button>
       {err && <p className="err" role="alert">{err}</p>}
       <p className="si-fine">Free, private to you, and works offline.</p>
+      {!isInstalled() && installKind() !== 'desktop' && (
+        <button className="link-btn si-install" onClick={() => setHow(true)}>
+          {installKind().startsWith('ios') ? '📲 On iPhone? Add it to your home screen first, then sign in there' : '📲 Add it to your home screen'}
+        </button>
+      )}
+      {how && <InstallSheet onClose={() => setHow(false)} />}
       <VersionLine />
     </div>
   )

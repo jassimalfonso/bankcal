@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import { useCountUp, useSwipe, useSideFit, useEscape, useSheetDrag } from '../motion'
 import { IconClose } from '../icons'
 import { useHold, HoldConfirm } from '../Hold'
+import { InstallBanner } from './Guide'
 import { firstTime } from '../keyboard'
 import { breakdown, dayKey, fmt, KCAL_PER_KG, macrosOf, mealFor, sumMacros, usualFor } from '../calc'
 import { CATS, catOf, foodEmoji } from '../foodCats'
@@ -122,6 +123,7 @@ export default function Today(props) {
       <ShieldNote {...props} />
       <VacationBanner {...props} spentOver={(() => { const b = breakdown(profile); return b ? Math.round(spent - b.tdee - earn.total) : 0 })()} />
       <JoinVacation {...props} />
+      <InstallBanner />
       {party && (
         <section className="vac-banner party">
           <span className="vac-sun" aria-hidden="true">🎉</span>

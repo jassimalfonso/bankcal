@@ -20,6 +20,7 @@ const DEMO = import.meta.env.MODE === 'demo'
 import { vacationOn, partnerProgress, dailyBudget, dayKey, earned, fmt, isBedtime, isBirthday, isWindDown, logicalDayKey, streak, streakInfo, describeWorkout, DEFAULT_BED, workoutKcal, WORKOUTS } from './calc'
 import { useDailyWords } from './quotes'
 import { MorningCard, DayResult, WelcomeBack } from './screens/DailyCards'
+import { Tour } from './screens/Guide'
 import Today from './screens/Today'
 import Statement from './screens/Statement'
 import Me from './screens/Me'
@@ -339,12 +340,18 @@ function Bank({ user }) {
     const m = MILESTONES.find((x) => x.id === fresh[0])
     celebrate(fresh.length > 1 ? `${fresh.length} milestones reached! ${m.emoji}` : `Milestone: ${m.label} ${m.emoji}`, m)
   }, [newIds.join(','), showM, helloOn]) // eslint-disable-line react-hooks/exhaustive-deps
+  // The tour starts by itself once, for accounts made in the last week; anyone can replay it from Settings
+  const [tour, setTour] = useState(false)
+  useEffect(() => {
+    if (profile?.onboarded && !profile.tourSeen && profile.createdAt && Date.now() - profile.createdAt < 7 * 86400000 && !showM && !helloOn) setTour(true)
+  }, [profile?.onboarded, profile?.tourSeen, profile?.createdAt, showM, helloOn])
+  const endTour = () => { setTour(false); setTab('today'); if (!profile?.tourSeen) store.updateProfile({ tourSeen: true }) }
   const focus = profile?.onboarded ? oneThing({ profile: pf, todayKey: today, yesterday, plans: PLANS }) : null
 
   if (!profile) return <div className="loading" />
   if (!profile.onboarded) return <Onboarding {...store} />
 
-  const ctx = { ...store, party, setParty, sInfo, logFood, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), doWorkout: (m) => setWorking({ start: m }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, reopenDay, closed, openWords: () => setReplay(true), goSetup: (section) => {
+  const ctx = { ...store, startTour: () => setTour(true), party, setParty, sInfo, logFood, partner, notify, celebrate, receipt, fresh, focus, goTab: setTab, editEntry: (e) => setAdding(e), addFoodOn: (day) => setAdding({ newOn: day }), doWorkout: (m) => setWorking({ start: m }), addEntry: (e) => store.addEntry({ ...e, day: today }), windDown: isWindDown(profile), user, profile, mine: entries, todays, base, budget, earn, dayLog, today, budgetFor, words, streakDays, closeDay, reopenDay, closed, openWords: () => setReplay(true), goSetup: (section) => {
     setTab('me')
     if (section) setTimeout(() => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   } }
@@ -443,6 +450,7 @@ function Bank({ user }) {
       {!showM && helloOn && profile.onboarded && <WelcomeBack leaving={leaving} profile={profile} left={budget != null ? budget - spent : null} onDone={doneHello}
         onSkipNext={() => { store.updateProfile({ helloMode: 'never' }); notify('Got it, you’ll go straight in next time. Change it in Settings → Your day.') ; doneHello() }} />}
       {showM && <MorningCard notify={notify} isNew={shareNew} focus={focus} leaving={leaving} profile={profile} budget={budget} sleep={dayLog.sleep} onSleep={(sl) => store.setDay(today, { sleep: sl })} words={words} yesterday={yesterday} streakDays={streakDays} birthday={isBirthday(profile, today)} onClose={closeMorning} />}
+      {tour && !showM && !helloOn && <Tour setTab={setTab} onDone={endTour} />}
       {result && <DayResult profile={profile} budget={budget} spent={spent} earn={earn} streakDays={streak(entries, budgetFor, today, true, isBreak)} today={today} onClose={() => setResult(false)} />}
 
       {adding && (
@@ -489,7 +497,7 @@ function Bank({ user }) {
 function TabBtn({ id, tab, setTab, label, Icon, up }) {
   const top = up && tab === id
   return (
-    <button className={`tab ${tab === id ? 'on' : ''} ${top ? 'to-top' : ''}`} onClick={() => setTab(id)} aria-current={tab === id ? 'page' : undefined} aria-label={top ? 'Back to top' : undefined}>
+    <button data-tour={id} className={`tab ${tab === id ? 'on' : ''} ${top ? 'to-top' : ''}`} onClick={() => setTab(id)} aria-current={tab === id ? 'page' : undefined} aria-label={top ? 'Back to top' : undefined}>
       {top ? <svg className="tab-up" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg> : <Icon />}
       <span>{top ? 'Top' : label}</span>
     </button>
